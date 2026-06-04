@@ -1,51 +1,53 @@
-/**
- * TopBar - 顶部横条
- * 显示：角色名/等级/金币/资源图标
- */
-
+import React from 'react';
 import { useGameStore } from '../../store/useGameStore';
+import { useInventoryStore } from '../../store/useInventoryStore';
+import { formatNumber } from '../../data/constants';
 
-export function TopBar() {
-  const { hero, materials } = useGameStore();
+export const TopBar: React.FC = () => {
+  const hero = useGameStore((s) => s.hero);
+  const resources = useGameStore((s) => s.resources);
 
-  const resourceIcons: Record<string, string> = {
-    木材: '🌲',
-    铁矿: '⛏️',
-    皮革: '🧤',
-    石头: '⛰️',
-  };
+  const resEntries: { icon: string; name: string; value: number }[] = [
+    { icon: '🪵', name: '木材', value: resources.wood ?? 0 },
+    { icon: '⛏', name: '铁矿', value: resources.iron ?? 0 },
+    { icon: '🧤', name: '皮革', value: resources.hide ?? 0 },
+    { icon: '⛰', name: '石头', value: resources.stone ?? 0 },
+    { icon: '🌿', name: '草药', value: resources.herb ?? 0 },
+  ];
 
   return (
-    <header className="h-12 bg-gradient-to-r from-[#0A1E36] to-[#112244] border-b border-[#1A4080]/50 flex items-center px-4 justify-between shadow-lg shadow-[#0A1E36]/50">
-      {/* 左侧：标题 */}
-      <div className="flex items-center gap-3">
-        <span className="text-xl">⚔️</span>
-        <h1 className="text-lg font-bold text-[#C8A44A]">勇者工坊</h1>
+    <div className="flex items-center gap-4 px-4 py-2 bg-slate-900 border-b border-amber-900/40">
+      {/* Hero info */}
+      <div className="flex items-center gap-2 mr-4">
+        <span className="text-lg">🧙</span>
+        <span className="text-amber-300 font-bold">{hero.name}</span>
+        <span className="text-amber-200/70 text-sm">Lv.{hero.level}</span>
       </div>
 
-      {/* 中间：角色信息 */}
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2">
-          <span className="text-[#7AAAC8]">👤</span>
-          <span className="text-[#D8EEFF] font-medium">
-            {hero.name} Lv.{hero.level}
+      {/* HP */}
+      <div className="flex items-center gap-1 text-sm">
+        <span className="text-red-400">❤</span>
+        <span>{hero.hp}/{hero.maxHp}</span>
+      </div>
+
+      {/* Gold */}
+      <div className="flex items-center gap-1 text-sm">
+        <span className="text-yellow-400">💰</span>
+        <span className="text-yellow-300 font-bold">{formatNumber(hero.gold)}</span>
+      </div>
+
+      {/* Separator */}
+      <div className="w-px h-5 bg-amber-900/40" />
+
+      {/* Resources */}
+      <div className="flex items-center gap-3 text-sm">
+        {resEntries.map((r) => (
+          <span key={r.name} className="flex items-center gap-0.5">
+            <span>{r.icon}</span>
+            <span className="text-amber-200/80">{formatNumber(r.value)}</span>
           </span>
-        </div>
-        <div className="flex items-center gap-2 px-3 py-1 bg-[#1A4080]/40 rounded-lg border border-[#C8A44A]/30">
-          <span className="text-[#C8A44A]">💰</span>
-          <span className="text-[#C8A44A] font-bold">{hero.gold.toLocaleString()}</span>
-        </div>
-      </div>
-
-      {/* 右侧：资源栏 */}
-      <div className="flex items-center gap-4">
-        {Object.entries(materials).map(([name, count]) => (
-          <div key={name} className="flex items-center gap-1 px-2 py-1 bg-[#0A1E36]/60 rounded border border-[#1A4080]/40">
-            <span>{resourceIcons[name] || '📦'}</span>
-            <span className="text-[#D8EEFF] text-sm font-medium">{count}</span>
-          </div>
         ))}
       </div>
-    </header>
+    </div>
   );
-}
+};
