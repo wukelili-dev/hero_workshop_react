@@ -1,5 +1,6 @@
 /**
- * MainCityPanel - 左侧面板：资源 + 建筑 + 奇观
+ * MainCityPanel - 左侧面板：资源 + 建筑
+ * 对照原版界面设计
  */
 
 import React, { useState } from 'react';
@@ -83,28 +84,22 @@ export const MainCityPanel: React.FC = () => {
       {/* 资源区 */}
       <div>
         <h3 className="text-sm font-bold text-gray-700 mb-2">📦 资源</h3>
-        <div className="bg-white rounded-lg border border-gray-200 p-2">
+        <div className="space-y-1">
           {MATERIALS_DATA.map((mat) => (
-            <div key={mat.key} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
-              <div className="flex items-center gap-1.5">
-                <span>{mat.icon}</span>
-                <span className="text-gray-700 text-sm">{mat.name}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-900 font-bold min-w-[36px] text-right text-sm">
-                  {formatNumber(resources[mat.key] ?? 0)}
-                </span>
-                <button
-                  onClick={() => handleSellMaterial(mat.key, mat.sellPrice)}
-                  className="w-5 h-5 flex items-center justify-center rounded bg-red-50 hover:bg-red-100 text-red-500 transition-colors text-xs"
-                  title={`卖出 (+${mat.sellPrice}G)`}
-                >−</button>
-                <button
-                  onClick={() => handleBuyMaterial(mat.key, mat.buyPrice)}
-                  className="w-5 h-5 flex items-center justify-center rounded bg-green-50 hover:bg-green-100 text-green-600 transition-colors text-xs"
-                  title={`购买 (-${mat.buyPrice}G)`}
-                >+</button>
-              </div>
+            <div key={mat.key} className="flex items-center gap-2 py-1">
+              <span>{mat.icon}</span>
+              <span className="text-sm text-gray-700 w-8">{mat.name}:</span>
+              <span className="font-bold text-sm w-10 text-right">{formatNumber(resources[mat.key] ?? 0)}</span>
+              <button
+                onClick={() => handleSellMaterial(mat.key, mat.sellPrice)}
+                className="w-6 h-6 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-gray-600 transition-colors text-xs font-bold"
+                title={`卖出 (+${mat.sellPrice}G)`}
+              >−</button>
+              <button
+                onClick={() => handleBuyMaterial(mat.key, mat.buyPrice)}
+                className="w-6 h-6 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-gray-600 transition-colors text-xs font-bold"
+                title={`购买 (-${mat.buyPrice}G)`}
+              >+</button>
             </div>
           ))}
         </div>
@@ -118,21 +113,18 @@ export const MainCityPanel: React.FC = () => {
             const config = BUILDING_CONFIGS[name];
             const count = buildingCounts[name] || 0;
             return (
-              <div key={name} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="bg-gray-50 px-3 py-1.5 flex items-center justify-between">
-                  <span className="text-gray-700 font-medium text-sm">{name}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-400 text-xs">产出: {BUILDING_OUTPUTS[name]}</span>
-                    <span className="text-gray-600 text-xs font-bold">x{count}</span>
-                  </div>
+              <div key={name}>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">{name}</span>
+                  <span className="text-xs text-gray-400">x{count}</span>
                 </div>
-                <div className="px-3 py-2">
-                  <div className="text-xs text-gray-400 mb-1.5">
-                    需要: {Object.entries(config.buildCost).map(([m, v]) => `${m}×${v}`).join(' ')}
-                  </div>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-xs text-gray-400">
+                    建造: {Object.entries(config.buildCost).map(([m, v]) => `${m}×${v}`).join(' ')}
+                  </span>
                   <button
                     onClick={() => handleBuildBuilding(name)}
-                    className="w-full py-1 rounded bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-xs font-medium transition-colors"
+                    className="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded text-xs text-blue-700 transition-colors"
                   >建造 +1</button>
                 </div>
               </div>
@@ -149,34 +141,24 @@ export const MainCityPanel: React.FC = () => {
             const config = WONDERS[name];
             const isBuilt = builtWonders.has(name);
             return (
-              <div
-                key={name}
-                className={`bg-white rounded-lg border overflow-hidden ${
-                  isBuilt ? 'border-amber-300' : 'border-gray-200'
-                }`}
-              >
-                <div className={`px-3 py-1.5 flex items-center justify-between ${
-                  isBuilt ? 'bg-amber-50' : 'bg-gray-50'
-                }`}>
-                  <span className="text-gray-700 font-medium text-sm">{name}</span>
-                  <span className={`text-xs ${isBuilt ? 'text-amber-600' : 'text-gray-400'}`}>
-                    {isBuilt ? '已建造' : '未建造'}
+              <div key={name}>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">{name}</span>
+                  <span className={`text-xs ${isBuilt ? 'text-green-600' : 'text-gray-400'}`}>
+                    x{isBuilt ? 1 : 0}
                   </span>
                 </div>
-                <div className="px-3 py-2">
-                  <p className="text-gray-500 text-xs mb-1.5">{config.description}</p>
-                  {!isBuilt && (
-                    <>
-                      <div className="text-xs text-gray-400 mb-1.5">
-                        需要: {Object.entries(config.buildCost).map(([m, v]) => `${m}×${v}`).join(' ')}
-                      </div>
-                      <button
-                        onClick={() => handleBuildWonder(name)}
-                        className="w-full py-1 rounded bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-600 text-xs font-medium transition-colors"
-                      >建造奇观</button>
-                    </>
-                  )}
-                </div>
+                {!isBuilt && (
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-xs text-gray-400">
+                      需要: {Object.entries(config.buildCost).map(([m, v]) => `${m}×${v}`).join(' ')}
+                    </span>
+                    <button
+                      onClick={() => handleBuildWonder(name)}
+                      className="px-2 py-0.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded text-xs text-orange-700 transition-colors"
+                    >建造</button>
+                  </div>
+                )}
               </div>
             );
           })}

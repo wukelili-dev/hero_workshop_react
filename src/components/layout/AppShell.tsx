@@ -55,12 +55,12 @@ export const AppShell: React.FC = () => {
       {/* Main content: left + center + right */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel — Resources + Buildings */}
-        <div className="w-60 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-gray-50">
+        <div className="w-56 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-gray-50/50">
           <MainCityPanel />
         </div>
 
         {/* Center panel — Hero + Map */}
-        <div className="w-72 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-white">
+        <div className="w-80 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-white">
           <CenterPanel />
         </div>
 
@@ -71,6 +71,22 @@ export const AppShell: React.FC = () => {
             {renderTab()}
           </div>
         </div>
+      </div>
+
+      {/* Bottom action bar — 存档/读档/图鉴/帮助 */}
+      <div className="flex items-center justify-center gap-3 px-4 py-2 bg-white border-t border-gray-200">
+        <button className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-sm font-medium transition-colors shadow-sm">
+          💾 存档
+        </button>
+        <button className="px-4 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full text-sm font-medium transition-colors shadow-sm">
+          📂 读档
+        </button>
+        <button className="px-4 py-1.5 bg-blue-400 hover:bg-blue-500 text-white rounded-full text-sm font-medium transition-colors shadow-sm">
+          📖 图鉴
+        </button>
+        <button className="px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full text-sm font-medium transition-colors shadow-sm">
+          ❓ 帮助
+        </button>
       </div>
     </div>
   );
