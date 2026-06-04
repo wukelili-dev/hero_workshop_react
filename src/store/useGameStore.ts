@@ -85,6 +85,9 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   farmPlots: Array.from({ length: 6 }, () => ({ plantId: null, plantedAt: null, lastHarvest: null })),
   tavernRoster: [],
   tavernLastRefresh: 0,
+  battleLogs: [],
+  gameLogs: [],
+  discoveredMonsters: [],
 
   setHero: (p) => set((s) => ({ hero: { ...s.hero, ...p } })),
   setResources: (p) => set((s) => ({ resources: { ...s.resources, ...p } })),
@@ -105,6 +108,9 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     farmPlots: Array.from({ length: 6 }, () => ({ plantId: null, plantedAt: null, lastHarvest: null })),
     tavernRoster: [],
     tavernLastRefresh: 0,
+    battleLogs: [],
+    gameLogs: [],
+    discoveredMonsters: [],
   }),
 
   addExp: (amt) => set((s) => {
