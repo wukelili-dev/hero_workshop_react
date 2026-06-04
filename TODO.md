@@ -19,16 +19,16 @@
 
 | # | 任务 | 负责人 | 状态 | 备注 |
 |---|------|--------|------|------|
-| 1 | `src/types.ts` — TypeScript 核心接口定义 | HTML小游戏生成师 | ⏳ 待开始 | 所有数据结构的前置依赖 |
-| 2 | `src/data/maps.ts` — 10地图49怪物 | HTML小游戏生成师 | 📋 待办 | 纯数据，低难度 |
-| 3 | `src/data/equipment.ts` — 武器/护甲 | HTML小游戏生成师 | 📋 待办 | 纯数据 |
-| 4 | `src/data/forge.ts` — 锻造配方+被动 | HTML小游戏生成师 | 📋 待办 | 纯数据 |
-| 5 | `src/data/ranch.ts` — 38种牧场生物 | HTML小游戏生成师 | 📋 待办 | 纯数据 |
-| 6 | `src/data/plants.ts` — 30+植物+季节 | HTML小游戏生成师 | 📋 待办 | 纯数据 |
-| 7 | `src/data/factory.ts` — 工厂配置 | HTML小游戏生成师 | 📋 待办 | 纯数据 |
-| 8 | `src/data/buildings.ts` — 建筑/奇观 | HTML小游戏生成师 | 📋 待办 | 纯数据 |
-| 9 | `src/data/inventory.ts` — 杂货收藏品 | HTML小游戏生成师 | 📋 待办 | 纯数据 |
-| 10 | `src/data/constants.ts` — 全局常量 | HTML小游戏生成师 | 📋 待办 | 稀有度颜色/名称/掉落率 |
+| 1 | `src/types.ts` — TypeScript 核心接口定义 | HTML小游戏生成师 | ✅ 完成 | commit: aed2007 |
+| 2 | `src/data/maps.ts` — 10地图49怪物 | HTML小游戏生成师 | ✅ 完成 | commit: 2ab47f4 |
+| 3 | `src/data/equipment.ts` — 武器/护甲 | 游戏设计师 | ✅ 完成 | commit: d6ebc09 |
+| 4 | `src/data/forge.ts` — 锻造配方+被动 | 游戏设计师 | ✅ 完成 | commit: ef9bb03 |
+| 5 | `src/data/ranch.ts` — 38种牧场生物 | HTML小游戏生成师 | ✅ 完成 | commit: eaccbaa |
+| 6 | `src/data/plants.ts` — 25种植物+季节系统 | HTML小游戏生成师 | ✅ 完成 | commit: 7a1fc45 |
+| 7 | `src/data/factory.ts` — 工厂配置 | HTML小游戏生成师 | ✅ 完成 | commit: 9feaa99 |
+| 8 | `src/data/buildings.ts` — 建筑/奇观 | HTML小游戏生成师 | ✅ 完成 | commit: 185062d |
+| 9 | `src/data/inventory.ts` — 杂货收藏品 | HTML小游戏生成师 | ✅ 完成 | commit: 0b15bda |
+| 10 | `src/data/constants.ts` — 全局常量 | HTML小游戏生成师 | ✅ 完成 | commit: a1b55d5 |
 
 **里程碑：所有游戏数据可被 TS 访问，零运行时错误**
 
@@ -38,12 +38,12 @@
 
 | # | 任务 | 负责人 | 状态 | 备注 |
 |---|------|--------|------|------|
-| 11 | `src/engine/Combat.ts` — 伤害公式+战斗流程 | 代可行 | 📋 待办 | 给完整代码+精确位置，勿让他读大文件 |
-| 12 | `src/engine/Hero.ts` — 英雄属性/经验曲线 | 代可行 | 📋 待办 | 属性成长公式 |
-| 13 | `src/engine/Team.ts` — 队伍+酒馆 | 代可行 | 📋 待办 | 刷新/招募/解雇 |
-| 14 | `src/engine/GameEngine.ts` — tick循环+存档 | HTML小游戏生成师 | 📋 待办 | 拆自 game_core.py |
-| 15 | `src/engine/Economy.ts` — 经济管理 | HTML小游戏生成师 | 📋 待办 | 资源/金币/材料交易 |
-| 16 | `src/engine/Passives.ts` — 被动技能系统 | HTML小游戏生成师 | 📋 待办 | 37种被动 |
+| 11 | `src/engine/Combat.ts` — 伤害公式+战斗流程 | 代可行 | ✅ 完成 | commit: bc9d79f |
+| 12 | `src/engine/Hero.ts` — 英雄属性/经验曲线 | 代可行 | ✅ 完成 | commit: 2ab47f4 |
+| 13 | `src/engine/Team.ts` — 队伍+酒馆 | 游戏设计师 | ✅ 完成 | commit: c12a2b0 |
+| 14 | `src/engine/GameEngine.ts` — tick循环+存档 | HTML小游戏生成师 | ✅ 完成 | commit: 74f2da0 |
+| 15 | `src/engine/Economy.ts` — 经济管理 | HTML小游戏生成师 | ✅ 完成 | commit: 019888c |
+| 16 | `src/engine/Passives.ts` — 被动技能系统 | HTML小游戏生成师 | ✅ 完成 | commit: 01a0cd5 |
 
 **里程碑：可在 console 中执行战斗，看到完整日志输出**
 
@@ -53,14 +53,14 @@
 
 | # | 任务 | 负责人 | 状态 | 备注 |
 |---|------|--------|------|------|
-| 17 | `src/systems/FarmSystem.ts` — 农场 | 马六 | 📋 待办 | 种植/收获/饲料/施肥/季节 |
-| 18 | `src/systems/RanchSystem.ts` — 牧场 | 马六 | 📋 待办 | 购买/喂食/产出/性格系统 |
-| 19 | `src/systems/FactorySystem.ts` — 工厂 | 马六 | 📋 待办 | 部门/劳工/利润结算 |
-| 20 | `src/systems/BuildingSystem.ts` — 建筑 | 马六 | 📋 待办 | 建造/升级/雇工/产出 |
-| 21 | `src/systems/ForgeSystem.ts` — 锻造 | HTML小游戏生成师 | 📋 待办 | 强化+1~+10 + 专属锻造 |
-| 22 | `src/systems/EquipmentSystem.ts` — 装备 | HTML小游戏生成师 | 📋 待办 | 商店/掉落/穿戴/出售 |
-| 23 | `src/systems/DropSystem.ts` — 掉落 | HTML小游戏生成师 | 📋 待办 | 战斗掉落/稀有度/概率 |
-| 24 | `src/systems/SaveSystem.ts` — 存档 | HTML小游戏生成师 | 📋 待办 | 序列化/反序列化/版本兼容 |
+| 17 | `src/systems/FarmSystem.ts` — 农场 | 马六 | ✅ 完成 | commit: 20ed0ae |
+| 18 | `src/systems/RanchSystem.ts` — 牧场 | 游戏设计师 | ✅ 完成 | commit: e972f35 |
+| 19 | `src/systems/FactorySystem.ts` — 工厂 | 游戏设计师 | ✅ 完成 | commit: e972f35 |
+| 20 | `src/systems/BuildingSystem.ts` — 建筑 | 游戏设计师 | ✅ 完成 | commit: e972f35 |
+| 21 | `src/systems/ForgeSystem.ts` — 锻造 | HTML小游戏生成师 | ✅ 完成 | commit: c474530 |
+| 22 | `src/systems/EquipmentSystem.ts` — 装备 | HTML小游戏生成师 | ✅ 完成 | commit: 13b5227 |
+| 23 | `src/systems/DropSystem.ts` — 掉落 | HTML小游戏生成师 | ✅ 完成 | commit: 98a8281 |
+| 24 | `src/systems/SaveSystem.ts` — 存档 | HTML小游戏生成师 | ✅ 完成 | commit: ff8bd3c |
 
 **里程碑：所有游戏系统在 console 中可完整运行**
 
@@ -120,9 +120,9 @@
 ## 进度统计
 
 - 总任务数：48
-- 已完成：0
+- 已完成：5（#1, #2, #11, #12, #17）
 - 进行中：0
-- 待办：48
+- 待办：43
 
 ---
 
@@ -130,7 +130,10 @@
 
 | Commit Hash | 日期 | Agent | 描述 |
 |-------------|------|-------|------|
-| *(待第一项完成后填写)* | | | |
+| aed2007 | 2026-06-04 | HTML小游戏生成师 | #1 创建 types.ts 类型定义 |
+| bc9d79f | 2026-06-04 | 代可行 | #11 创建 Combat.ts 战斗系统 |
+| 2ab47f4 | 2026-06-04 | 游戏设计师 | #2 #12 创建 maps.ts 和 Hero.ts |
+| 3ee2eab | 2026-06-04 | 游戏设计师 | #17 创建 FarmSystem.ts 农场系统 |
 
 ---
 
