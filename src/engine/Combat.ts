@@ -1,28 +1,12 @@
 // 战斗系统核心模块
 // 参考 Python 版 game_core.py 的伤害公式和战斗逻辑
+import type { Monster } from '../types';
 
 export interface HeroStats {
   hp: number;
   atk: number;
   def: number;
-  spd: number;
   crit: number; // 暴击率 0-1
-}
-
-export interface Monster {
-  name: string;
-  hp: number;
-  atk: number;
-  def: number;
-  expReward: number;
-  goldReward: number;
-  drops: Drop[];
-}
-
-export interface Drop {
-  itemId: string;
-  chance: number; // 0-1
-  quantity: [number, number]; // [min, max]
 }
 
 export interface BattleLog {
@@ -37,10 +21,7 @@ export interface BattleLog {
 export interface Rewards {
   exp: number;
   gold: number;
-  drops: Array<{
-    itemId: string;
-    quantity: number;
-  }>;
+  drops: Array<{ itemId: string; quantity: number }>;
 }
 
 /**
@@ -85,9 +66,9 @@ function randomInt(min: number, max: number): number {
  */
 export function executeBattle(
   heroStats: HeroStats,
-  team: HeroStats[],
+  _team: HeroStats[],
   monster: Monster
-): { logs: BattleLog[]; victory: boolean; rewards: Rewards } {
+): { logs: BattleLog[]; victory: boolean; rewards: Rewards; heroFinalHp: number } {
   const logs: BattleLog[] = [];
   
   // 复制 HP 以避免修改原对象
@@ -165,7 +146,7 @@ export function executeBattle(
       : '战斗失败...勇者倒下了。',
   });
   
-  return { logs, victory, rewards };
+  return { logs, victory, rewards, heroFinalHp: heroCurrentHP };
 }
 
 /**

@@ -160,8 +160,10 @@ export interface BuildingState {
 }
 
 // ── 地图 & 战斗 ──
-export interface Drops {
-  [key: string]: number;
+export interface DropItem {
+  itemId: string;
+  chance: number;      // 0-1
+  quantity: [number, number]; // [min, max]
 }
 
 export interface Monster {
@@ -170,9 +172,9 @@ export interface Monster {
   hp: number;
   atk: number;
   def: number;
-  exp: number;
-  gold: number;
-  drops: Drops;
+  expReward: number;
+  goldReward: number;
+  drops: DropItem[];
   level?: number;
   rarity?: Rarity;
   isBoss?: boolean;
@@ -182,10 +184,10 @@ export interface Monster {
 export interface GameMap {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   minLevel: number;
-  enemies: string[];
-  bosses: string[];
+  monsters: Monster[];
+  boss: Monster;
   unlockCost: number;
   bgColor?: string;
 }
