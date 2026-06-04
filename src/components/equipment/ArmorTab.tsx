@@ -1,65 +1,84 @@
 import React from 'react';
-import { ARMORS } from '../../data/equipment';
-import { useGameStore } from '../../store/useGameStore';
-import { RarityBadge } from '../shared/RarityBadge';
-import { RARITY_COLORS, formatNumber } from '../../data/constants';
+import { WEAPONS, ARMORS } from '../../data/equipment';
+import { RARITY_COLORS } from '../../data/constants';
 
-export const ArmorTab: React.FC = () => {
-  const hero = useGameStore((s) => s.hero);
-  const armors = Object.values(ARMORS);
+const TIERS = [
+  { tier: 1, name: '初阶', level: 'Lv.1~5' },
+  { tier: 2, name: '二阶', level: 'Lv.6~10' },
+  { tier: 3, name: '三阶', level: 'Lv.11~15' },
+  { tier: 4, name: '四阶', level: 'Lv.16~20' },
+  { tier: 5, name: '五阶', level: 'Lv.21~25' },
+];
 
-  const tiers = [1, 2, 3, 4, 5];
-  const tierNames: Record<number, string> = { 1: '初阶', 2: '二阶', 3: '三阶', 4: '四阶', 5: '五阶' };
-
-  return (
-    <div className="space-y-6">
-      <h2 className="text-amber-300 font-bold text-lg">🛡 护甲店</h2>
-      {tiers.map((tier) => {
-        const items = armors.filter((a) => a.tier === tier);
-        if (items.length === 0) return null;
-        return (
-          <div key={tier}>
-            <h3 className="text-amber-400/80 font-bold text-sm mb-2 border-b border-amber-900/30 pb-1">
-              {tierNames[tier]}（Lv.{(tier - 1) * 5 + 1}~{tier * 5}）
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {items.map((a) => {
-                const canBuy = hero.gold >= (a.cost?.['金币'] ?? 0) && hero.level >= (a.levelReq ?? 1);
-                const costStr = Object.entries(a.cost || {}).map(([k, v]) => `${k}×${v}`).join(' ');
-                return (
-                  <div
-                    key={a.id}
-                    className="border border-amber-900/30 rounded-lg p-3 bg-slate-900/60 hover:border-amber-700/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-sm" style={{ color: RARITY_COLORS[a.rarity] ?? '#888' }}>
-                        {a.name}
-                      </span>
-                      <RarityBadge rarity={a.rarity} />
-                    </div>
-                    <div className="text-xs text-amber-200/60 space-y-0.5">
-                      {a.stats?.def ? <div>🛡 DEF +{a.stats.def}</div> : null}
-                      {a.stats?.hp ? <div>❤ HP +{a.stats.hp}</div> : null}
-                      {a.stats?.crit ? <div>💥 暴击 {(a.stats.crit * 100).toFixed(0)}%</div> : null}
-                    </div>
-                    <div className="text-xs text-amber-200/40 mt-1">费用: {costStr}</div>
-                    <button
-                      disabled={!canBuy}
-                      className={`mt-2 w-full py-1 rounded text-xs font-bold ${
-                        canBuy
-                          ? 'bg-amber-700 hover:bg-amber-600 text-amber-100'
-                          : 'bg-slate-800 text-amber-200/30 cursor-not-allowed'
-                      }`}
-                    >
-                      购买
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+export const WeaponTab: React.FC = () => (
+  <div className="space-y-5">
+    <h2 className="text-sm font-bold text-gray-700">⚔ 武器</h2>
+    {TIERS.map(({ tier, name, level }) => {
+      const items = Object.values(WEAPONS).filter((w: any) => w.tier === tier);
+      if (!items.length) return null;
+      return (
+        <div key={tier}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-sm font-bold text-gray-700">{name}</span>
+            <span className="text-xs text-gray-400">{level}</span>
           </div>
-        );
-      })}
-    </div>
-  );
-};
+          <div className="space-y-1">
+            {items.map((w: any) => (
+              <div key={w.id} className="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sm" style={{ color: RARITY_COLORS[w.rarity] ?? '#888' }}>{w.name}</span>
+                  <span className="text-xs text-gray-400">{w.rarity}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  {w.stats?.atk ? <span className="text-xs text-red-500">⚔{w.stats.atk}</span> : null}
+                  {w.stats?.crit ? <span className="text-xs text-orange-500">CRIT {w.stats.crit * 100}%</span> : null}
+                  <span className="text-xs text-yellow-600 font-medium">💰{w.cost?.['金币'] ?? 0}</span>
+                  <button className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs font-medium transition-colors">
+                    购买
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+);
+
+export const ArmorTab: React.FC = () => (
+  <div className="space-y-5">
+    <h2 className="text-sm font-bold text-gray-700">🛡 护甲</h2>
+    {TIERS.map(({ tier, name, level }) => {
+      const items = Object.values(ARMORS).filter((a: any) => a.tier === tier);
+      if (!items.length) return null;
+      return (
+        <div key={tier}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-sm font-bold text-gray-700">{name}</span>
+            <span className="text-xs text-gray-400">{level}</span>
+          </div>
+          <div className="space-y-1">
+            {items.map((a: any) => (
+              <div key={a.id} className="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sm" style={{ color: RARITY_COLORS[a.rarity] ?? '#888' }}>{a.name}</span>
+                  <span className="text-xs text-gray-400">{a.rarity}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  {a.stats?.def ? <span className="text-xs text-blue-500">🛡{a.stats.def}</span> : null}
+                  {a.stats?.hp ? <span className="text-xs text-red-400">❤{a.stats.hp}</span> : null}
+                  {a.stats?.crit ? <span className="text-xs text-orange-500">CRIT {a.stats.crit * 100}%</span> : null}
+                  <span className="text-xs text-yellow-600 font-medium">💰{a.cost?.['金币'] ?? 0}</span>
+                  <button className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs font-medium transition-colors">
+                    购买
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+);
