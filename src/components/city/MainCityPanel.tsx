@@ -1,198 +1,317 @@
+/**
+ * MainCityPanel - 主城左侧面板
+ * 仙侠深蓝渐变背景 + 云雾装饰
+ * 包含：资源行 + 建筑卡片列表 + 奇观卡片列表
+ */
+
 import React, { useState } from 'react';
 import { useGameStore } from '../../store/useGameStore';
-import { useCombatStore } from '../../store/useCombatStore';
-import { MAPS, MONSTERS } from '../../data/maps';
-import { BUILDING_CONFIGS, WONDERS, BUILDING_OUTPUTS, getAllBuildingNames, getWonderNames, getBuildingCost } from '../../data/buildings';
-import { formatNumber, formatTime, getRarityColor, getRarityName } from '../../data/constants';
-import { ProgressBar } from '../shared/ProgressBar';
-import { RarityBadge } from '../shared/RarityBadge';
+import { BUILDING_CONFIGS, WONDERS, BUILDING_OUTPUTS, getAllBuildingNames, getWonderNames } from '../../data/buildings';
+import { formatNumber } from '../../data/constants';
 
 export const MainCityPanel: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
   const resources = useGameStore((s) => s.resources);
   const addGold = useGameStore((s) => s.addGold);
   const addResource = useGameStore((s) => s.addResource);
-  const currentMapId = useCombatStore((s) => s.currentMapId);
-  const currentEnemy = useCombatStore((s) => s.currentEnemy);
-  const currentEnemyHp = useCombatStore((s) => s.currentEnemyHp);
-  const isBattling = useCombatStore((s) => s.isBattling);
-  const autoBattle = useCombatStore((s) => s.autoBattle);
-  const battleLogs = useCombatStore((s) => s.battleLogs);
-  const setCurrentMap = useCombatStore((s) => s.setCurrentMap);
-  const setCurrentEnemy = useCombatStore((s) => s.setCurrentEnemy);
-  const startBattle = useCombatStore((s) => s.startBattle);
-  const stopBattle = useCombatStore((s) => s.stopBattle);
-  const toggleAutoBattle = useCombatStore((s) => s.toggleAutoBattle);
 
-  const MATERIALS: { name: string; icon: string; key: string; sellPrice: number; buyPrice: number }[] = [
-    { name: '木材', icon: '🪵', key: 'wood', sellPrice: 1, buyPrice: 3 },
-    { name: '铁矿', icon: '⛏', key: 'iron', sellPrice: 2, buyPrice: 5 },
-    { name: '皮革', icon: '🧤', key: 'hide', sellPrice: 1, buyPrice: 4 },
-    { name: '石头', icon: '⛰', key: 'stone', sellPrice: 2, buyPrice: 5 },
+  // 本地状态：建筑数量和奇观建造状态
+  const [buildingCounts, setBuildingCounts] = useState<Record<string, number>>({});
+  const [builtWonders, setBuiltWonders] = useState<Set<string>>(new Set());
+
+  const MATERIALS_DATA = [
+    { name: '木材', icon: '🪵', key: 'wood' as const, sellPrice: 8, buyPrice: 10 },
+    { name: '铁矿', icon: '⛏', key: 'iron' as const, sellPrice: 12, buyPrice: 15 },
+    { name: '皮革', icon: '🧤', key: 'hide' as const, sellPrice: 10, buyPrice: 12 },
+    { name: '石头', icon: '⛰', key: 'stone' as const, sellPrice: 15, buyPrice: 20 },
   ];
 
-  const currentMap = MAPS.find((m) => m.id === currentMapId);
+  const handleBuyMaterial = (key: string, price: number) => {
+    if (hero.gold >= price) {
+      addGold(-price);
+      addResource(key, 1);
+    }
+  };
+
+  const handleSellMaterial = (key: string, price: number) => {
+    if ((resources[key] || 0) > 0) {
+      addResource(key, -1);
+      addGold(price);
+    }
+  };
+
+  const handleBuildBuilding = (name: string) => {
+    const config = BUILDING_CONFIGS[name];
+    if (!config) return;
+
+    const cost = config.buildCost;
+    const costMap: Record<string, string> = {
+      '金币': 'gold',
+      '木材': 'wood',
+      '铁矿': 'iron',
+      '皮革': 'hide',
+      '石头': 'stone',
+    };
+
+    // 检查资源是否足够
+    let canBuild = true;
+    for (const [mat, amount] of Object.entries(cost)) {
+      const resourceKey = costMap[mat];
+      if (resourceKey === 'gold') {
+        if (hero.gold < amount) canBuild = false;
+      } else if (resourceKey) {
+        if ((resources[resourceKey as keyof typeof resources] || 0) < amount) canBuild = false;
+      }
+    }
+
+    if (!canBuild) return;
+
+    // 扣除资源
+    for (const [mat, amount] of Object.entries(cost)) {
+      const resourceKey = costMap[mat];
+      if (resourceKey === 'gold') {
+        addGold(-amount);
+      } else if (resourceKey) {
+        addResource(resourceKey, -amount);
+      }
+    }
+
+    setBuildingCounts(prev => ({ ...prev, [name]: (prev[name] || 0) + 1 }));
+  };
+
+  const handleBuildWonder = (name: string) => {
+    if (builtWonders.has(name)) return;
+    const config = WONDERS[name];
+    if (!config) return;
+
+    const cost = config.buildCost;
+    const costMap: Record<string, string> = {
+      '金币': 'gold',
+      '木材': 'wood',
+      '铁矿': 'iron',
+      '皮革': 'hide',
+      '石头': 'stone',
+    };
+
+    // 检查资源是否足够
+    let canBuild = true;
+    for (const [mat, amount] of Object.entries(cost)) {
+      const resourceKey = costMap[mat];
+      if (resourceKey === 'gold') {
+        if (hero.gold < amount) canBuild = false;
+      } else if (resourceKey) {
+        if ((resources[resourceKey as keyof typeof resources] || 0) < amount) canBuild = false;
+      }
+    }
+
+    if (!canBuild) return;
+
+    // 扣除资源
+    for (const [mat, amount] of Object.entries(cost)) {
+      const resourceKey = costMap[mat];
+      if (resourceKey === 'gold') {
+        addGold(-amount);
+      } else if (resourceKey) {
+        addResource(resourceKey, -amount);
+      }
+    }
+
+    setBuiltWonders(prev => new Set([...prev, name]));
+  };
 
   return (
-    <div
-      className="h-full p-3 text-amber-100 overflow-y-auto"
-      style={{
-        background: 'linear-gradient(180deg, #060E1C 0%, #0A1E36 40%, #112244 100%)',
-      }}
-    >
-      {/* ── Resources ── */}
-      <div className="mb-4 border border-blue-800/40 rounded-lg p-3 bg-slate-900/60">
-        <h3 className="text-amber-400 font-bold text-sm mb-2">📦 资源</h3>
-        {MATERIALS.map((mat) => (
-          <div key={mat.key} className="flex items-center gap-1 mb-1 text-sm">
-            <span>{mat.icon}</span>
-            <span className="flex-1">{mat.name}</span>
-            <span className="font-bold text-amber-200">{formatNumber(resources[mat.key] ?? 0)}</span>
-            <button
-              onClick={() => { addResource(mat.key, -1); addGold(mat.sellPrice); }}
-              className="w-6 h-5 rounded bg-red-900/60 text-xs hover:bg-red-800"
-            >−</button>
-            <button
-              onClick={() => { addGold(-mat.buyPrice); addResource(mat.key, 1); }}
-              className="w-6 h-5 rounded bg-green-900/60 text-xs hover:bg-green-800"
-            >+</button>
+    <div className="h-full w-full relative overflow-hidden">
+      {/* 深蓝渐变背景 */}
+      <div 
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(180deg, #060E1C 0%, #0A1E36 50%, #112244 100%)',
+        }}
+      />
+
+      {/* 云雾装饰层 */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* 底层大雾团 */}
+        <div className="absolute left-[-40px] top-[400px] w-[280px] h-[100px] rounded-[50%] bg-[#1A4080]/40 blur-xl" />
+        <div className="absolute right-[-20px] top-[500px] w-[200px] h-[80px] rounded-[50%] bg-[#1A4080]/30 blur-xl" />
+        <div className="absolute left-[20px] top-[600px] w-[220px] h-[90px] rounded-[50%] bg-[#1A4080]/40 blur-xl" />
+        
+        {/* 中层雾气 */}
+        <div className="absolute left-[-30px] top-[250px] w-[180px] h-[60px] rounded-[50%] bg-[#1E5090]/30 blur-lg" />
+        <div className="absolute right-[10px] top-[350px] w-[150px] h-[55px] rounded-[50%] bg-[#1E5090]/30 blur-lg" />
+        
+        {/* 散落光点（小星星）*/}
+        <div className="absolute left-[30px] top-[60px] w-[6px] h-[6px] rounded-full bg-white/60" />
+        <div className="absolute left-[100px] top-[40px] w-[5px] h-[5px] rounded-full bg-white/50" />
+        <div className="absolute left-[180px] top-[80px] w-[6px] h-[6px] rounded-full bg-white/60" />
+        <div className="absolute left-[230px] top-[50px] w-[4px] h-[4px] rounded-full bg-white/50" />
+        <div className="absolute left-[80px] top-[120px] w-[5px] h-[5px] rounded-full bg-white/50" />
+      </div>
+
+      {/* 内容层 */}
+      <div className="relative z-10 h-full overflow-y-auto p-4 custom-scrollbar">
+        {/* 标题 */}
+        <div className="text-center mb-4">
+          <h2 className="text-2xl font-bold text-[#C8A44A]" style={{ fontFamily: 'SimHei, sans-serif' }}>
+            白玉京阙
+          </h2>
+          <p className="text-xs text-[#7AAAC8] italic mt-1">
+            白玉为阶云为伴，仙友初临白玉京
+          </p>
+        </div>
+
+        {/* 资源区 */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3 px-2">
+            <span className="text-lg">📦</span>
+            <h3 className="text-sm font-bold text-[#D8EEFF]">资源</h3>
           </div>
-        ))}
-      </div>
-
-      {/* ── Hero Stats ── */}
-      <div className="mb-4 border border-blue-800/40 rounded-lg p-3 bg-slate-900/60">
-        <div className="text-amber-300 font-bold text-base mb-2">🧙 {hero.name} Lv.{hero.level}</div>
-        <ProgressBar current={hero.hp} max={hero.maxHp} color="bg-red-500" label="生命" />
-        <div className="mt-1 space-y-0.5 text-xs text-amber-200/70">
-          <div>⚔ 攻击: <span className="text-amber-200">{hero.atk}</span></div>
-          <div>🛡 防御: <span className="text-amber-200">{hero.def}</span></div>
-          <div>💥 暴击: <span className="text-amber-200">{(hero.critRate * 100).toFixed(0)}%</span></div>
-          <div>🗡 暴伤: <span className="text-amber-200">x{hero.critDmg.toFixed(1)}</span></div>
-          {hero.weapon && <div>🗡 武器: <span style={{ color: hero.weapon.rarityColor }}>{hero.weapon.name}</span></div>}
-          {hero.armor && <div>🛡 护甲: <span style={{ color: hero.armor.rarityColor }}>{hero.armor.name}</span></div>}
-        </div>
-      </div>
-
-      {/* ── Map & Enemy ── */}
-      <div className="mb-4 border border-blue-800/40 rounded-lg p-3 bg-slate-900/60">
-        <h3 className="text-amber-400 font-bold text-sm mb-2">🗺 地图</h3>
-        <div className="flex flex-wrap gap-1 mb-2">
-          {MAPS.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => setCurrentMap(m.id)}
-              className={`px-2 py-1 text-xs rounded ${
-                currentMapId === m.id
-                  ? 'bg-blue-700 text-white font-bold'
-                  : 'bg-slate-700/60 text-amber-200/60 hover:bg-slate-600/60'
-              }`}
-            >
-              {m.name}
-            </button>
-          ))}
-        </div>
-        {currentEnemy && (
-          <div className="border border-red-800/40 rounded p-2 bg-red-950/30 mb-2">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-bold text-red-300">{currentEnemy.name}</span>
-              {currentEnemy.rarity !== undefined && <RarityBadge rarity={currentEnemy.rarity} />}
-              {currentEnemy.isBoss && <span className="text-yellow-400 text-xs">👑 BOSS</span>}
-            </div>
-            <ProgressBar current={currentEnemyHp} max={currentEnemy.hp} color="bg-red-600" />
-            <div className="text-xs text-amber-200/60 mt-1">
-              ATK:{currentEnemy.atk} DEF:{currentEnemy.def} EXP:{currentEnemy.exp || 0} 💰{currentEnemy.gold || 0}
-            </div>
+          <div className="bg-[#0A1E36]/80 rounded-lg border border-[#1A4080]/50 p-3">
+            {MATERIALS_DATA.map((mat) => (
+              <div key={mat.key} className="flex items-center justify-between py-2 border-b border-[#1A4080]/30 last:border-0">
+                <div className="flex items-center gap-2">
+                  <span>{mat.icon}</span>
+                  <span className="text-[#D8EEFF] text-sm">{mat.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#C8A44A] font-bold min-w-[40px] text-right">
+                    {formatNumber(resources[mat.key] ?? 0)}
+                  </span>
+                  <button
+                    onClick={() => handleSellMaterial(mat.key, mat.sellPrice)}
+                    className="w-6 h-6 flex items-center justify-center rounded bg-[#C06060]/40 hover:bg-[#C06060]/60 text-[#D8EEFF] transition-colors text-xs"
+                    title={`卖出 (+${mat.sellPrice}G)`}
+                  >
+                    −
+                  </button>
+                  <button
+                    onClick={() => handleBuyMaterial(mat.key, mat.buyPrice)}
+                    className="w-6 h-6 flex items-center justify-center rounded bg-[#60A060]/40 hover:bg-[#60A060]/60 text-[#D8EEFF] transition-colors text-xs"
+                    title={`购买 (-${mat.buyPrice}G)`}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        )}
-        <button
-          onClick={() => {
-            if (currentMap) {
-              const enemies = currentMap.enemies || currentMap.monsters || [];
-              if (enemies.length > 0) {
-                const e = enemies[Math.floor(Math.random() * enemies.length)];
-                setCurrentEnemy(e);
-              }
-            }
-          }}
-          className="w-full py-1.5 rounded bg-slate-700 text-amber-200 text-sm hover:bg-slate-600"
-        >
-          🔄 刷新敌人
-        </button>
-      </div>
+        </div>
 
-      {/* ── Battle Controls ── */}
-      <div className="mb-4 border border-blue-800/40 rounded-lg p-3 bg-slate-900/60 space-y-2">
-        <button
-          onClick={() => isBattling ? stopBattle() : startBattle()}
-          className={`w-full py-2 rounded font-bold text-sm ${
-            isBattling ? 'bg-gray-700 hover:bg-gray-600' : 'bg-red-800 hover:bg-red-700 text-white'
-          }`}
-        >
-          {isBattling ? '⏹ 停止' : '⚔ 战斗'}
-        </button>
-        <button
-          onClick={toggleAutoBattle}
-          className={`w-full py-1.5 rounded text-sm ${
-            autoBattle ? 'bg-amber-700 text-white' : 'bg-slate-700 text-amber-200/70'
-          }`}
-        >
-          ⚡ 自动战斗: {autoBattle ? '开' : '关'}
-        </button>
-      </div>
+        {/* 建筑区 */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3 px-2">
+            <span className="text-lg">🏗️</span>
+            <h3 className="text-sm font-bold text-[#D8EEFF]">建筑</h3>
+          </div>
+          <div className="space-y-2">
+            {getAllBuildingNames().map((name) => {
+              const config = BUILDING_CONFIGS[name];
+              const count = buildingCounts[name] || 0;
+              return (
+                <div 
+                  key={name} 
+                  className="bg-[#0A1E36]/80 rounded-lg border border-[#1A4080]/50 overflow-hidden"
+                >
+                  {/* 建筑标题 */}
+                  <div className="bg-[#1A4080]/60 px-3 py-2 flex items-center justify-between">
+                    <span className="text-[#D8EEFF] font-medium text-sm">{name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#7AAAC8] text-xs">产出: {BUILDING_OUTPUTS[name]}</span>
+                      <span className="text-[#C8A44A] text-xs font-bold">x{count}</span>
+                    </div>
+                  </div>
+                  
+                  {/* 建造信息 */}
+                  <div className="px-3 py-2">
+                    <div className="text-xs text-[#7AAAC8] mb-2">
+                      需要: {Object.entries(config.buildCost).map(([m, v]) => `${m}×${v}`).join(' ')}
+                    </div>
+                    <button
+                      onClick={() => handleBuildBuilding(name)}
+                      className="w-full py-1.5 rounded bg-[#1A4080]/60 hover:bg-[#1A4080] border border-[#60A8E0]/50 text-[#60A8E0] text-xs font-medium transition-colors"
+                    >
+                      建造 +1
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
-      {/* ── Battle Log ── */}
-      <div className="mb-4 border border-blue-800/40 rounded-lg p-3 bg-slate-900/60">
-        <h3 className="text-red-400 font-bold text-sm mb-2">📋 战斗日志</h3>
-        <div className="max-h-40 overflow-y-auto text-xs space-y-0.5">
-          {battleLogs.slice(-20).map((log, i) => (
-            <div key={i} className="text-amber-200/60">{log}</div>
-          ))}
-          {battleLogs.length === 0 && <div className="text-amber-200/30">暂无日志</div>}
+        {/* 奇观区 */}
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-3 px-2">
+            <span className="text-lg">✨</span>
+            <h3 className="text-sm font-bold text-[#D8EEFF]">奇观</h3>
+          </div>
+          <div className="space-y-2">
+            {getWonderNames().map((name) => {
+              const config = WONDERS[name];
+              const isBuilt = builtWonders.has(name);
+              return (
+                <div 
+                  key={name} 
+                  className={`bg-[#0A1E36]/80 rounded-lg border overflow-hidden ${
+                    isBuilt ? 'border-[#FFA726]/50' : 'border-[#1A4080]/50'
+                  }`}
+                >
+                  {/* 奇观标题 */}
+                  <div className={`px-3 py-2 flex items-center justify-between ${
+                    isBuilt ? 'bg-[#FFA726]/20' : 'bg-[#1A4080]/40'
+                  }`}>
+                    <span className="text-[#D8EEFF] font-medium text-sm">{name}</span>
+                    <span className={`text-xs ${isBuilt ? 'text-[#FFA726]' : 'text-[#7AAAC8]'}`}>
+                      {isBuilt ? '已建造' : '未建造'}
+                    </span>
+                  </div>
+                  
+                  {/* 奇观信息 */}
+                  <div className="px-3 py-2">
+                    <p className="text-[#7AAAC8] text-xs mb-2">{config.description}</p>
+                    {!isBuilt && (
+                      <>
+                        <div className="text-xs text-[#7AAAC8] mb-2">
+                          需要: {Object.entries(config.buildCost).map(([m, v]) => `${m}×${v}`).join(' ')}
+                        </div>
+                        <button
+                          onClick={() => handleBuildWonder(name)}
+                          className="w-full py-1.5 rounded bg-[#FFA726]/20 hover:bg-[#FFA726]/30 border border-[#FFA726]/50 text-[#FFA726] text-xs font-medium transition-colors"
+                        >
+                          建造奇观
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 底部提示 */}
+        <div className="text-center py-2">
+          <p className="text-xs text-[#7AAAC8]/60">点击建筑进入对应功能</p>
         </div>
       </div>
 
-      {/* ── Buildings ── */}
-      <div className="mb-4">
-        <h3 className="text-amber-400 font-bold text-sm mb-2">🏗 建筑</h3>
-        {getAllBuildingNames().map((name) => {
-          const cfg = BUILDING_CONFIGS[name];
-          return (
-            <div key={name} className="border border-blue-800/30 rounded p-2 mb-1.5 bg-slate-900/40">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-bold text-sm text-amber-200">{name}</span>
-                <span className="text-xs text-amber-200/50">产出: {BUILDING_OUTPUTS[name]}</span>
-              </div>
-              <div className="text-xs text-amber-200/40 mb-1">
-                建造: {Object.entries(cfg.buildCost).map(([k, v]) => `${k}×${v}`).join(' ')}
-              </div>
-              <button className="w-full py-1 rounded bg-blue-900/60 text-xs text-amber-200/70 hover:bg-blue-800/60">
-                建造 +1
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* ── Wonders ── */}
-      <div className="mb-4">
-        <h3 className="text-amber-400 font-bold text-sm mb-2">✨ 奇观</h3>
-        {getWonderNames().map((name) => {
-          const cfg = WONDERS[name];
-          return (
-            <div key={name} className="border border-orange-800/30 rounded p-2 mb-1.5 bg-slate-900/40">
-              <div className="font-bold text-sm text-orange-300 mb-1">{name}</div>
-              <div className="text-xs text-amber-200/50 mb-1">{cfg.description}</div>
-              <div className="text-xs text-amber-200/40 mb-1">
-                需要: {Object.entries(cfg.buildCost).map(([k, v]) => `${k}×${v}`).join(' ')}
-              </div>
-              <button className="w-full py-1 rounded bg-orange-900/40 text-xs text-amber-200/60 hover:bg-orange-800/40">
-                建造奇观
-              </button>
-            </div>
-          );
-        })}
-      </div>
+      {/* 自定义滚动条样式 */}
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(26, 64, 128, 0.2);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(200, 164, 74, 0.3);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(200, 164, 74, 0.5);
+        }
+      `}</style>
     </div>
   );
 };
