@@ -8,8 +8,13 @@ export const FarmTab: React.FC = () => {
   const plantCrop = useGameStore((s) => s.plantCrop);
   const harvestCrop = useGameStore((s) => s.harvestCrop);
   const [msg, setMsg] = useState<string | null>(null);
-
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // 按稀有度分组供购买
   const plantsByRarity = PLANTS_CATALOG.reduce<Record<number, typeof PLANTS_CATALOG>>((acc, p) => {
@@ -42,7 +47,6 @@ export const FarmTab: React.FC = () => {
     if (!plot.plantId) return { status: 'empty', text: '空地', pct: 0 };
     const plant = PLANTS_CATALOG.find(p => p.id === plot.plantId);
     if (!plant) return { status: 'unknown', text: '未知', pct: 0 };
-    const now = Date.now();
     const growDone = (plot.plantedAt ?? 0) + plant.growTimeS * 1000;
     if (now < growDone) {
       const pct = Math.min(100, ((now - (plot.plantedAt ?? 0)) / (plant.growTimeS * 1000)) * 100);

@@ -23,7 +23,7 @@ export const FactoryTab: React.FC = () => {
 
   // 刷新当前时间（用于倒计时）
   React.useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 60000);
+    const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
 

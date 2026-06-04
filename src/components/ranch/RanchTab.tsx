@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useGameStore } from '../../store/useGameStore';
 import { useRanchStore } from '../../store/useRanchStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
@@ -21,6 +21,12 @@ export const RanchTab: React.FC = () => {
   const [buySlotIdx, setBuySlotIdx] = useState<number | null>(null);
   const [filterRarity, setFilterRarity] = useState<number | 'all'>('all');
   const [msg, setMsg] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const ranchGold = hero.gold ?? 0;
 
@@ -92,7 +98,6 @@ export const RanchTab: React.FC = () => {
   // 收获倒计时
   const getHarvestStatus = (slot: typeof slots[0]): { ready: boolean; text: string } => {
     if (!slot || !slot.creatureId) return { ready: false, text: '' };
-    const now = Date.now();
     const fedAgo = now - slot.fedAt;
     if (fedAgo > FEED_INTERVAL_MS) return { ready: false, text: '需喂食' };
     const intervals = Math.floor((now - slot.boughtAt) / FEED_INTERVAL_MS) - slot.harvestCount;
