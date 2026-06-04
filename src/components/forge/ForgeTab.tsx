@@ -27,22 +27,25 @@ export const ForgeTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-amber-300 font-bold text-lg">🔨 锻造</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-amber-300 font-bold text-lg">🔨 锻造</h2>
+        <span className="text-yellow-400 text-sm">💰 {formatNumber(hero.gold)}</span>
+      </div>
 
       {/* Mode switch */}
       <div className="flex gap-2">
         <button
           onClick={() => setMode('fortify')}
-          className={`px-4 py-2 rounded text-sm font-bold ${
-            mode === 'fortify' ? 'bg-amber-700 text-amber-100' : 'bg-slate-800 text-amber-200/50'
+          className={`px-4 py-2 rounded text-sm font-bold transition-colors ${
+            mode === 'fortify' ? 'bg-amber-700 text-amber-100' : 'bg-slate-800 text-amber-200/50 hover:bg-slate-700'
           }`}
         >
           ⚡ 强化
         </button>
         <button
           onClick={() => setMode('craft')}
-          className={`px-4 py-2 rounded text-sm font-bold ${
-            mode === 'craft' ? 'bg-amber-700 text-amber-100' : 'bg-slate-800 text-amber-200/50'
+          className={`px-4 py-2 rounded text-sm font-bold transition-colors ${
+            mode === 'craft' ? 'bg-amber-700 text-amber-100' : 'bg-slate-800 text-amber-200/50 hover:bg-slate-700'
           }`}
         >
           🔨 专属锻造
@@ -83,6 +86,39 @@ export const ForgeTab: React.FC = () => {
             )}
           </div>
 
+          {/* Fortify progress bar (+1 to +10) */}
+          {selectedEquip && (
+            <div className="border border-amber-900/30 rounded-lg p-3 bg-slate-900/60">
+              <h4 className="text-amber-200/60 text-xs mb-2">强化进度</h4>
+              <div className="flex gap-0.5">
+                {FORTIFY_CONFIG.map((cfg) => {
+                  const reached = cfg.level <= fortifyLevel;
+                  const isCurrent = cfg.level === fortifyLevel;
+                  const successPct = cfg.successRate * 100;
+                  return (
+                    <div
+                      key={cfg.level}
+                      className={`flex-1 rounded-sm py-1 text-center text-xs transition-colors ${
+                        reached
+                          ? 'bg-yellow-600/80 text-yellow-100'
+                          : isCurrent
+                          ? 'bg-amber-700/50 text-amber-200'
+                          : 'bg-slate-800 text-amber-200/30'
+                      }`}
+                      title={`+${cfg.level}: +${cfg.bonusPct}% 成功率${successPct.toFixed(0)}%`}
+                    >
+                      +{cfg.level}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex justify-between mt-1 text-xs text-amber-200/30">
+                <span>+1</span>
+                <span>+10</span>
+              </div>
+            </div>
+          )}
+
           {/* Fortify panel */}
           {selectedEquip && (
             <div className="border border-amber-700/40 rounded-lg p-4 bg-slate-900/60">
@@ -96,38 +132,62 @@ export const ForgeTab: React.FC = () => {
               {currentFortifyInfo ? (
                 <>
                   <div className="text-sm text-amber-200/80 mb-2">
-                    强化至 +{nextLevel}：属性 +{currentFortifyInfo.bonusPct}%
+                    强化至 <span className="text-yellow-400 font-bold">+{nextLevel}</span>：属性 +{currentFortifyInfo.bonusPct}%
                   </div>
                   <div className="text-xs text-amber-200/50 space-y-1 mb-3">
                     <div>铁矿: {currentFortifyInfo.ironCost}（拥有: {materials['铁矿'] ?? 0}）</div>
                     <div>金币: {currentFortifyInfo.goldCost}（拥有: {formatNumber(hero.gold)}）</div>
-                    <div>成功率: <span className={currentFortifyInfo.successRate >= 0.5 ? 'text-green-400' : 'text-red-400'}>
-                      {(currentFortifyInfo.successRate * 100).toFixed(0)}%
-                    </span></div>
+                    <div>
+                      成率:{' '}
+                      <span className={currentFortifyInfo.successRate >= 0.5 ? 'text-green-400' : 'text-red-400'}>
+                        {(currentFortifyInfo.successRate * 100).toFixed(0)}%
+                      </span>
+                    </div>
                   </div>
 
+                  {/* Success rate visual bar */}
+                  <div className="mb-3">
+                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          currentFortifyInfo.successRate >= 0.7
+                            ? 'bg-green-500'
+                            : currentFortifyInfo.successRate >= 0.4
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }`}
+                        style={{ width: `${currentFortifyInfo.successRate * 100}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 护锻符 option */}
                   <div className="flex items-center gap-2 mb-3">
-                    <label className="flex items-center gap-1 text-xs text-amber-200/60">
+                    <label className="flex items-center gap-2 text-xs text-amber-200/60 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={useCharm}
                         onChange={() => useForgeStore.getState().toggleCharm()}
+                        className="accent-yellow-500"
                       />
-                      护锻符（失败不降级，额外铁矿×50 金币×500）
+                      <span>🛡️ 护锻符</span>
                     </label>
+                    <span className="text-xs text-amber-200/30">（失败不降级，额外铁矿×50 金币×500）</span>
                   </div>
 
-                  <button className="w-full py-2 rounded bg-red-800 hover:bg-red-700 text-white font-bold">
+                  <button className="w-full py-2 rounded bg-red-800 hover:bg-red-700 text-white font-bold transition-colors">
                     ⚡ 强化 +{nextLevel}
                   </button>
                 </>
               ) : (
-                <div className="text-amber-200/50 text-sm">已达最高强化等级</div>
+                <div className="text-amber-200/50 text-sm text-center py-2">
+                  ✨ 已达最高强化等级 +10
+                </div>
               )}
             </div>
           )}
 
-          {/* Fortify config reference */}
+          {/* Fortify config reference table */}
           <div>
             <h3 className="text-amber-400/80 font-bold text-sm mb-2 border-b border-amber-900/30 pb-1">
               强化概率表
@@ -146,7 +206,9 @@ export const ForgeTab: React.FC = () => {
                 <tbody>
                   {FORTIFY_CONFIG.map((c) => (
                     <tr key={c.level} className="border-b border-amber-900/10">
-                      <td className="py-1 text-amber-200">+{c.level}</td>
+                      <td className={`py-1 ${c.level <= fortifyLevel ? 'text-yellow-400' : 'text-amber-200'}`}>
+                        +{c.level}
+                      </td>
                       <td className="py-1 text-right text-amber-200/60">+{c.bonusPct}%</td>
                       <td className="py-1 text-right text-amber-200/60">{c.ironCost}</td>
                       <td className="py-1 text-right text-amber-200/60">{formatNumber(c.goldCost)}</td>
@@ -195,7 +257,7 @@ export const ForgeTab: React.FC = () => {
                           </div>
                           <button
                             disabled={!canForge}
-                            className={`px-3 py-1 rounded text-xs font-bold ${
+                            className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
                               canForge
                                 ? 'bg-amber-700 hover:bg-amber-600 text-amber-100'
                                 : 'bg-slate-800 text-amber-200/30 cursor-not-allowed'
