@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { TopBar } from './TopBar';
 import { TabBar } from './TabBar';
 import { MainCityPanel } from '../city/MainCityPanel';
-import { CombatPanel } from '../combat/CombatPanel';
 import { WeaponTab } from '../equipment/WeaponTab';
 import { ArmorTab } from '../equipment/ArmorTab';
 import { NoveltyTab } from '../equipment/NoveltyTab';
