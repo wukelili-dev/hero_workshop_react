@@ -1,5 +1,3 @@
-import type { Equipment } from '../types';
-
 // 强化配置（+1~+10）
 export interface FortifyConfig {
   level: number;

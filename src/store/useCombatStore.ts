@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import type { Monster } from '../types';
-import { MONSTERS } from '../data/maps';
 
 interface CombatState {
   currentEnemy: Monster | null;

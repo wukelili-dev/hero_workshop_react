@@ -20,19 +20,36 @@ export interface Equipment {
   id: string;
   type: EquipmentType;
   name: string;
-  tier: number;           // 1~5
-  levelReq: number;
+  tier: number;
+  levelReq?: number;
+  rarity: Rarity;
+  rarityColor?: string;
+  stats?: {
+    atk?: number;
+    def?: number;
+    hp?: number;
+    crit?: number;
+    critDmg?: number;
+  };
+  enhanceLevel?: number;
+  cost?: Record<string, number>;
+  passiveId?: string;
+  sellPrice?: number;
+  isPerfect?: boolean;
+  fortifyLevel?: number;
+  // snake_case aliases for legacy consumers
   attack?: number;
   defense?: number;
   critRate?: number;
   critDmg?: number;
   hpBonus?: number;
-  rarity: Rarity;
-  rarityColor: string;
-  passiveId?: string;    // 被动技能ID
-  sellPrice: number;
-  isPerfect?: boolean;   // 极品标记
-  fortifyLevel?: number; // 强化等级 0~10
+  special?: string;
+  forge_level?: number;
+  is_perfect?: boolean;
+  crit_rate?: number;
+  crit_dmg?: number;
+  hp_bonus?: number;
+  sell_price?: number;
 }
 
 // ── 锻造 ──

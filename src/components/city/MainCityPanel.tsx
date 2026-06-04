@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { useGameStore } from '../../store/useGameStore';
-import { BUILDING_CONFIGS, WONDERS, BUILDING_OUTPUTS, getAllBuildingNames, getWonderNames } from '../../data/buildings';
+import { BUILDING_CONFIGS, WONDERS, getAllBuildingNames, getWonderNames } from '../../data/buildings';
 import { formatNumber } from '../../data/constants';
 
 export const MainCityPanel: React.FC = () => {

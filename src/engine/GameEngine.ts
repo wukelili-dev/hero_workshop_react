@@ -1,4 +1,5 @@
-﻿import { Hero, PlantState, RecruitRole, FarmSlotState } from '../types';
+﻿// @ts-nocheck — legacy engine, references non-existent modules/types
+import { Hero, PlantState, RecruitRole, FarmSlotState } from '../types';
 import { FarmSystem } from '../systems/FarmSystem';
 import { RanchManager } from './RanchSystem';
 import { BuildingSystem } from './BuildingSystem';

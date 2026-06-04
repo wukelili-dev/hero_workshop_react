@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { FarmPlotState } from '../types';
-import { SEASON_ORDER, type Season } from '../systems/FarmSystem';
+import type { Season } from '../systems/FarmSystem';
 
 interface FarmState {
   plots: FarmPlotState[];

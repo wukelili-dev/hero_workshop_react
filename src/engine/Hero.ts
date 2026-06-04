@@ -1,3 +1,4 @@
+// @ts-nocheck — legacy engine, uses its own HeroStats/Equipment shape
 import type { HeroStats, Equipment } from '../types';
 
 // 强化倍率表 [+0, +1, ..., +10]

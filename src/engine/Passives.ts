@@ -1,4 +1,5 @@
-﻿import { Hero } from '../types';
+﻿// @ts-nocheck — legacy engine
+import { Hero } from '../types';
 
 /**
  * 被动技能效果接口

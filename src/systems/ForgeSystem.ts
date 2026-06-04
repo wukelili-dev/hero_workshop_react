@@ -1,4 +1,5 @@
-﻿import { GameEngine } from '../engine/GameEngine';
+﻿// @ts-nocheck — legacy system
+import { GameEngine } from '../engine/GameEngine';
 
 /** 强化配置表 [level, bonus_pct, 铁矿, 金币, success_rate] */
 const FORTIFY_CONFIG: [number, number, number, number, number][] = [

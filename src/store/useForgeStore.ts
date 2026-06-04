@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import type { Equipment } from '../types';
-import { FORTIFY_CONFIG } from '../data/forge';
 
 interface ForgeState {
   selectedEquip: Equipment | null;

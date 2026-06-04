@@ -1,4 +1,4 @@
-import type { Equipment, Rarity } from '../types';
+import type { Equipment } from '../types';
 
 // 武器数据（20把，Tier1-5）
 export const WEAPONS: Record<string, Equipment> = {

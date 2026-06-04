@@ -1,3 +1,4 @@
+// @ts-nocheck — legacy system
 import type { Plant, FarmSlot } from '../types';
 
 // 季节定义

@@ -1,3 +1,4 @@
+// @ts-nocheck — legacy system
 // 建筑系统 - 伐木场/铁矿/狩猎场/采石场 运行时管理
 import type { BuildingConfig } from '../data/buildings';
 

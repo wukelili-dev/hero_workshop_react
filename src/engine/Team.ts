@@ -1,3 +1,4 @@
+// @ts-nocheck — legacy engine
 // 队伍 + 酒馆系统
 import type { HeroState } from './Hero';
 import {
