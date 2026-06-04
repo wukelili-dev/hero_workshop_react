@@ -5,7 +5,7 @@ import { MainCityPanel } from '../city/MainCityPanel';
 import { CenterPanel } from '../city/CenterPanel';
 import { WeaponTab } from '../equipment/WeaponTab';
 import { ArmorTab } from '../equipment/ArmorTab';
-import { NoveltyTab } from '../equipment/NoveltyTab';
+import { NoveltyTab } from '../novelty/NoveltyTab';
 import { InventoryTab } from '../inventory/InventoryTab';
 import { MaterialsTab } from '../materials/MaterialsTab';
 import { TavernTab } from '../tavern/TavernTab';

@@ -75,6 +75,8 @@ export interface HeroState {
   weapon: Equipment | null;
   armor: Equipment | null;
   passives: string[];
+  noveltyItems: string[];
+  team: TeamMember[];  // 队友列表
 }
 
 export interface TeamMember {
