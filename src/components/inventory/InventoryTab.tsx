@@ -1,138 +1,208 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useInventoryStore } from '../../store/useInventoryStore';
-import { useGameStore } from '../../store/useGameStore';
 import { RarityBadge } from '../shared/RarityBadge';
-import { RARITY_COLORS, formatNumber } from '../../data/constants';
+import { NOVELTY_RARITY_NAMES } from '../../data/inventory';
+import type { Equipment } from '../../types';
 
-export const InventoryTab: React.FC = () => {
-  const weapons = useInventoryStore((s) => s.weapons);
-  const armors = useInventoryStore((s) => s.armors);
-  const novelties = useInventoryStore((s) => s.novelties);
-  const hero = useGameStore((s) => s.hero);
+type FilterCategory = 'all' | 'weapon' | 'armor' | 'material' | 'novelty';
+
+const FILTER_LABELS: Record<FilterCategory, string> = {
+  all: '全部',
+  weapon: '武器',
+  armor: '护甲',
+  material: '材料',
+  novelty: '杂货',
+};
+
+const FILTER_ICONS: Record<FilterCategory, string> = {
+  all: '📦',
+  weapon: '⚔️',
+  armor: '🛡️',
+  material: '🪨',
+  novelty: '✨',
+};
+
+interface InventoryItemCardProps {
+  name: string;
+  icon?: string;
+  count?: number;
+  rarity?: number;
+  type?: string;
+  onClick?: () => void;
+}
+
+const InventoryItemCard: React.FC<InventoryItemCardProps> = ({
+  name,
+  icon = '📦',
+  count = 1,
+  rarity,
+  type,
+  onClick,
+}) => {
+  const getBgGradient = () => {
+    switch (rarity) {
+      case 0: return 'from-gray-800 to-gray-900';
+      case 1: return 'from-green-900 to-green-950';
+      case 2: return 'from-blue-900 to-blue-950';
+      case 3: return 'from-purple-900 to-purple-950';
+      case 4: return 'from-orange-900 to-orange-950';
+      default: return 'from-slate-800 to-slate-900';
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-amber-300 font-bold text-lg">🎒 背包</h2>
-
-      {/* Equipped */}
-      <div>
-        <h3 className="text-amber-400/80 font-bold text-sm mb-2 border-b border-amber-900/30 pb-1">
-          已装备
-        </h3>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="border border-amber-700/30 rounded p-3 bg-amber-950/20">
-            <div className="text-xs text-amber-200/40 mb-1">🗡 武器</div>
-            {hero.weapon ? (
-              <div>
-                <span className="font-bold text-sm" style={{ color: hero.weapon.rarityColor }}>
-                  {hero.weapon.name}
-                </span>
-                {hero.weapon.fortifyLevel ? <span className="text-yellow-400 text-xs ml-1">+{hero.weapon.fortifyLevel}</span> : null}
-                {hero.weapon.attack && <div className="text-xs text-amber-200/60">ATK +{hero.weapon.attack}</div>}
-              </div>
-            ) : (
-              <div className="text-amber-200/30 text-sm">空</div>
-            )}
-          </div>
-          <div className="border border-amber-700/30 rounded p-3 bg-amber-950/20">
-            <div className="text-xs text-amber-200/40 mb-1">🛡 护甲</div>
-            {hero.armor ? (
-              <div>
-                <span className="font-bold text-sm" style={{ color: hero.armor.rarityColor }}>
-                  {hero.armor.name}
-                </span>
-                {hero.armor.fortifyLevel ? <span className="text-yellow-400 text-xs ml-1">+{hero.armor.fortifyLevel}</span> : null}
-                {hero.armor.defense && <div className="text-xs text-amber-200/60">DEF +{hero.armor.defense}</div>}
-              </div>
-            ) : (
-              <div className="text-amber-200/30 text-sm">空</div>
-            )}
-          </div>
+    <div
+      onClick={onClick}
+      className={`bg-gradient-to-br ${getBgGradient()} border border-slate-600/50 rounded-lg p-2 hover:border-amber-500/50 transition-all cursor-pointer aspect-square flex flex-col items-center justify-center relative`}
+    >
+      {/* 数量角标 */}
+      {count > 1 && (
+        <div className="absolute top-1 right-1 bg-amber-600 text-white text-xs font-bold px-1.5 rounded">
+          {count}
         </div>
+      )}
+      
+      {/* 图标 */}
+      <div className="text-2xl mb-1">{icon}</div>
+      
+      {/* 名称 */}
+      <div className="text-xs text-center text-slate-200 truncate w-full px-1">
+        {name}
       </div>
 
-      {/* Weapons */}
-      {weapons.length > 0 && (
-        <div>
-          <h3 className="text-amber-400/80 font-bold text-sm mb-2 border-b border-amber-900/30 pb-1">
-            🗡 武器 ({weapons.length})
-          </h3>
-          <div className="grid grid-cols-2 gap-2">
-            {weapons.map((w, i) => (
-              <div key={`${w.id}-${i}`} className="border border-amber-900/30 rounded p-2 bg-slate-900/60">
-                <div className="flex items-center gap-1 mb-1">
-                  <span className="font-bold text-sm" style={{ color: w.rarityColor || RARITY_COLORS[w.rarity] }}>
-                    {w.name}
-                  </span>
-                  {w.fortifyLevel ? <span className="text-yellow-400 text-xs">+{w.fortifyLevel}</span> : null}
-                  <RarityBadge rarity={w.rarity} />
-                </div>
-                <div className="text-xs text-amber-200/60">
-                  {w.attack ? `ATK +${w.attack}` : ''} {w.defense ? `DEF +${w.defense}` : ''}
-                </div>
-                <div className="flex gap-1 mt-1">
-                  <button className="px-2 py-0.5 rounded text-xs bg-blue-900/60 text-amber-200/70 hover:bg-blue-800/60">装备</button>
-                  <button className="px-2 py-0.5 rounded text-xs bg-red-900/40 text-amber-200/50 hover:bg-red-800/40">
-                    出售 {w.sellPrice}G
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* 稀有度指示器 */}
+      {rarity !== undefined && rarity > 0 && (
+        <div className="absolute bottom-1 left-1">
+          <RarityBadge rarity={rarity} size="sm" />
         </div>
-      )}
-
-      {/* Armors */}
-      {armors.length > 0 && (
-        <div>
-          <h3 className="text-amber-400/80 font-bold text-sm mb-2 border-b border-amber-900/30 pb-1">
-            🛡 护甲 ({armors.length})
-          </h3>
-          <div className="grid grid-cols-2 gap-2">
-            {armors.map((a, i) => (
-              <div key={`${a.id}-${i}`} className="border border-amber-900/30 rounded p-2 bg-slate-900/60">
-                <div className="flex items-center gap-1 mb-1">
-                  <span className="font-bold text-sm" style={{ color: a.rarityColor || RARITY_COLORS[a.rarity] }}>
-                    {a.name}
-                  </span>
-                  {a.fortifyLevel ? <span className="text-yellow-400 text-xs">+{a.fortifyLevel}</span> : null}
-                  <RarityBadge rarity={a.rarity} />
-                </div>
-                <div className="text-xs text-amber-200/60">
-                  {a.defense ? `DEF +${a.defense}` : ''} {a.hpBonus ? `HP +${a.hpBonus}` : ''}
-                </div>
-                <div className="flex gap-1 mt-1">
-                  <button className="px-2 py-0.5 rounded text-xs bg-blue-900/60 text-amber-200/70 hover:bg-blue-800/60">装备</button>
-                  <button className="px-2 py-0.5 rounded text-xs bg-red-900/40 text-amber-200/50 hover:bg-red-800/40">
-                    出售 {a.sellPrice}G
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Novelties */}
-      {Object.keys(novelties).length > 0 && (
-        <div>
-          <h3 className="text-amber-400/80 font-bold text-sm mb-2 border-b border-amber-900/30 pb-1">
-            🎁 杂物
-          </h3>
-          <div className="grid grid-cols-3 gap-1">
-            {Object.entries(novelties).map(([name, count]) => (
-              <div key={name} className="border border-amber-900/20 rounded p-1.5 bg-slate-900/40 text-xs">
-                <span className="text-amber-200/80">{name}</span>
-                <span className="text-amber-400 ml-1">×{count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {weapons.length === 0 && armors.length === 0 && Object.keys(novelties).length === 0 && (
-        <div className="text-center text-amber-200/30 py-8">背包空空如也</div>
       )}
     </div>
   );
 };
+
+const WeaponCard: React.FC<{ weapon: Equipment }> = ({ weapon }) => (
+  <InventoryItemCard
+    name={weapon.name}
+    icon="⚔️"
+    rarity={weapon.rarity}
+    type="weapon"
+  />
+);
+
+const ArmorCard: React.FC<{ armor: Equipment }> = ({ armor }) => (
+  <InventoryItemCard
+    name={armor.name}
+    icon="🛡️"
+    rarity={armor.rarity}
+    type="armor"
+  />
+);
+
+const MaterialCard: React.FC<{ name: string; count: number }> = ({ name, count }) => {
+  const iconMap: Record<string, string> = {
+    '金币': '💰',
+    '木材': '🪵',
+    '铁矿': '⛰️',
+    '皮革': '🧤',
+    '草药': '🌿',
+  };
+  return (
+    <InventoryItemCard
+      name={name}
+      icon={iconMap[name] || '📦'}
+      count={count}
+      type="material"
+    />
+  );
+};
+
+const NoveltyCard: React.FC<{ name: string; count: number; rarity: number }> = ({ name, count, rarity }) => (
+  <InventoryItemCard
+    name={name.split(' ').pop() || name}
+    icon={name.split(' ')[0] || '✨'}
+    count={count}
+    rarity={rarity}
+    type="novelty"
+  />
+);
+
+export const InventoryTab: React.FC = () => {
+  const [filter, setFilter] = useState<FilterCategory>('all');
+  const { weapons, armors, materials, novelties } = useInventoryStore();
+
+  return (
+    <div className="p-4 bg-slate-950 min-h-full">
+      {/* 标题 */}
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold text-amber-300 mb-1">🎒 背包</h1>
+        <p className="text-slate-400 text-sm">存放物品，随身携带</p>
+      </div>
+
+      {/* 筛选按钮 */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {(Object.keys(FILTER_LABELS) as FilterCategory[]).map((key) => (
+          <button
+            key={key}
+            onClick={() => setFilter(key)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+              filter === key
+                ? 'bg-amber-600 text-white border border-amber-400'
+                : 'bg-slate-800 text-slate-300 border border-slate-600 hover:bg-slate-700'
+            }`}
+          >
+            <span>{FILTER_ICONS[key]}</span>
+            <span>{FILTER_LABELS[key]}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* 物品网格 */}
+      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+        {/* 武器 */}
+        {(filter === 'all' || filter === 'weapon') &&
+          weapons.map((weapon, idx) => (
+            <WeaponCard key={`weapon-${idx}-${weapon.id}`} weapon={weapon} />
+          ))}
+
+        {/* 护甲 */}
+        {(filter === 'all' || filter === 'armor') &&
+          armors.map((armor, idx) => (
+            <ArmorCard key={`armor-${idx}-${armor.id}`} armor={armor} />
+          ))}
+
+        {/* 材料 */}
+        {(filter === 'all' || filter === 'material') &&
+          Object.entries(materials).map(([name, count]) => (
+            <MaterialCard key={`material-${name}`} name={name} count={count} />
+          ))}
+
+        {/* 杂货 */}
+        {(filter === 'all' || filter === 'novelty') &&
+          Object.entries(novelties).map(([name, count]) => (
+            <NoveltyCard
+              key={`novelty-${name}`}
+              name={name}
+              count={count}
+              rarity={Object.keys(NOVELTY_RARITY_NAMES).findIndex(
+                (r) => NOVELTY_RARITY_NAMES[parseInt(r)] === name.split(' ').pop()
+              )}
+            />
+          ))}
+      </div>
+
+      {/* 空状态 */}
+      {weapons.length === 0 &&
+        armors.length === 0 &&
+        Object.keys(materials).length === 0 &&
+        Object.keys(novelties).length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-slate-500">
+            <div className="text-4xl mb-2">📦</div>
+            <p className="text-sm">背包空空如也</p>
+            <p className="text-xs text-slate-600 mt-1">去商店逛逛吧</p>
+          </div>
+        )}
+    </div>
+  );
+};
+
+export default InventoryTab;
