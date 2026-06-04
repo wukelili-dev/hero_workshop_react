@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TopBar } from './TopBar';
 import { TabBar } from './TabBar';
 import { MainCityPanel } from '../city/MainCityPanel';
+import { CenterPanel } from '../city/CenterPanel';
 import { WeaponTab } from '../equipment/WeaponTab';
 import { ArmorTab } from '../equipment/ArmorTab';
 import { NoveltyTab } from '../equipment/NoveltyTab';
@@ -30,7 +31,6 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
 
 export const AppShell: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('weapon');
-  const [leftWidth, setLeftWidth] = useState(260);
 
   const renderTab = () => {
     switch (activeTab) {
@@ -48,38 +48,21 @@ export const AppShell: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-950 text-amber-100 overflow-hidden">
+    <div className="flex flex-col h-screen bg-white text-gray-800 overflow-hidden">
       {/* Top bar */}
       <TopBar />
 
-      {/* Main content: left panel + right tab area */}
+      {/* Main content: left + center + right */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left panel — Main City (resources, buildings, wonders, combat) */}
-        <div
-          className="flex-shrink-0 overflow-y-auto border-r border-amber-900/30"
-          style={{ width: leftWidth }}
-        >
+        {/* Left panel — Resources + Buildings */}
+        <div className="w-60 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-gray-50">
           <MainCityPanel />
         </div>
 
-        {/* Draggable divider */}
-        <div
-          className="w-1 cursor-col-resize bg-amber-900/20 hover:bg-amber-700/40 transition-colors"
-          onMouseDown={(e) => {
-            const startX = e.clientX;
-            const startWidth = leftWidth;
-            const onMove = (ev: MouseEvent) => {
-              const delta = ev.clientX - startX;
-              setLeftWidth(Math.max(200, Math.min(450, startWidth + delta)));
-            };
-            const onUp = () => {
-              window.removeEventListener('mousemove', onMove);
-              window.removeEventListener('mouseup', onUp);
-            };
-            window.addEventListener('mousemove', onMove);
-            window.addEventListener('mouseup', onUp);
-          }}
-        />
+        {/* Center panel — Hero + Map */}
+        <div className="w-72 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-white">
+          <CenterPanel />
+        </div>
 
         {/* Right panel — Tab bar + content */}
         <div className="flex flex-col flex-1 overflow-hidden">
