@@ -3,6 +3,7 @@ import { TopBar } from './TopBar';
 import { TabBar } from './TabBar';
 import { MainCityPanel } from '../city/MainCityPanel';
 import { CenterPanel } from '../city/CenterPanel';
+import { LogPanel } from '../city/LogPanel';
 import { WeaponTab } from '../equipment/WeaponTab';
 import { ArmorTab } from '../equipment/ArmorTab';
 import { NoveltyTab } from '../novelty/NoveltyTab';
@@ -13,9 +14,10 @@ import { FarmTab } from '../farm/FarmTab';
 import { FactoryTab } from '../factory/FactoryTab';
 import { RanchTab } from '../ranch/RanchTab';
 import { ForgeTab } from '../forge/ForgeTab';
+import { BestiaryTab } from '../bestiary/BestiaryTab';
 import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils';
 
-export type TabId = 'weapon' | 'armor' | 'novelty' | 'inventory' | 'materials' | 'tavern' | 'farm' | 'factory' | 'ranch' | 'forge';
+export type TabId = 'weapon' | 'armor' | 'novelty' | 'inventory' | 'materials' | 'tavern' | 'farm' | 'factory' | 'ranch' | 'forge' | 'bestiary';
 type MobileView = 'city' | 'combat' | TabId;
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
@@ -29,6 +31,7 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'factory', label: '工厂', icon: '🏭' },
   { id: 'ranch', label: '牧场', icon: '🐾' },
   { id: 'forge', label: '锻造', icon: '🔨' },
+  { id: 'bestiary', label: '图鉴', icon: '📖' },
 ];
 
 const MOBILE_NAV: { id: MobileView; label: string; icon: string }[] = [
@@ -79,6 +82,7 @@ export const AppShell: React.FC = () => {
       case 'factory': return <FactoryTab />;
       case 'ranch': return <RanchTab />;
       case 'forge': return <ForgeTab />;
+      case 'bestiary': return <BestiaryTab />;
     }
   };
 
@@ -97,13 +101,14 @@ export const AppShell: React.FC = () => {
 
       {/* === 桌面端：三栏布局 === */}
       <div className="hidden md:flex flex-1 overflow-hidden">
-        <div className="w-56 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-gray-50/50">
+        <div className="w-72 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-gray-50/50">
           <MainCityPanel />
         </div>
-        <div className="w-80 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-white">
-          <CenterPanel />
+        <div className="w-80 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-white flex flex-col">
+          <div className="flex-1 overflow-y-auto"><CenterPanel /></div>
+          <LogPanel />
         </div>
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex flex-col flex-1 max-w-5xl overflow-hidden">
           <TabBar tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
           <div className="flex-1 overflow-y-auto p-4">
             {renderTab()}
@@ -156,7 +161,10 @@ export const AppShell: React.FC = () => {
         >
           📂 读档
         </button>
-        <button className="px-3 md:px-4 py-1 md:py-1.5 bg-blue-400 text-white rounded-full text-xs md:text-sm font-medium shadow-sm cursor-not-allowed opacity-60 hidden md:block">
+        <button
+          onClick={() => setActiveTab('bestiary')}
+          className="px-3 md:px-4 py-1 md:py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm hidden md:block"
+        >
           📖 图鉴
         </button>
         <button className="px-3 md:px-4 py-1 md:py-1.5 bg-red-500 text-white rounded-full text-xs md:text-sm font-medium shadow-sm cursor-not-allowed opacity-60 hidden md:block">
