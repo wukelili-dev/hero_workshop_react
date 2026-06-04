@@ -16,6 +16,7 @@ import { ForgeTab } from '../forge/ForgeTab';
 import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils';
 
 export type TabId = 'weapon' | 'armor' | 'novelty' | 'inventory' | 'materials' | 'tavern' | 'farm' | 'factory' | 'ranch' | 'forge';
+type MobileView = 'city' | 'combat' | TabId;
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'weapon', label: '武器', icon: '⚔' },
@@ -30,8 +31,17 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'forge', label: '锻造', icon: '🔨' },
 ];
 
+const MOBILE_NAV: { id: MobileView; label: string; icon: string }[] = [
+  { id: 'city', label: '主城', icon: '🏰' },
+  { id: 'combat', label: '战斗', icon: '⚔' },
+  { id: 'inventory', label: '背包', icon: '🎒' },
+  { id: 'forge', label: '锻造', icon: '🔨' },
+  { id: 'ranch', label: '牧场', icon: '🐾' },
+];
+
 export const AppShell: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('weapon');
+  const [mobileView, setMobileView] = useState<MobileView>('city');
   const [toast, setToast] = useState<string | null>(null);
 
   const showToast = useCallback((msg: string) => {
@@ -72,24 +82,27 @@ export const AppShell: React.FC = () => {
     }
   };
 
+  const renderMobileContent = () => {
+    switch (mobileView) {
+      case 'city': return <MainCityPanel />;
+      case 'combat': return <CenterPanel />;
+      default: return renderTab();
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-white text-gray-800 overflow-hidden">
       {/* Top bar */}
       <TopBar />
 
-      {/* Main content: left + center + right */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left panel — Resources + Buildings */}
+      {/* === 桌面端：三栏布局 === */}
+      <div className="hidden md:flex flex-1 overflow-hidden">
         <div className="w-56 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-gray-50/50">
           <MainCityPanel />
         </div>
-
-        {/* Center panel — Hero + Map + Combat */}
         <div className="w-80 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-white">
           <CenterPanel />
         </div>
-
-        {/* Right panel — Tab bar + content */}
         <div className="flex flex-col flex-1 overflow-hidden">
           <TabBar tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
           <div className="flex-1 overflow-y-auto p-4">
@@ -98,31 +111,55 @@ export const AppShell: React.FC = () => {
         </div>
       </div>
 
-      {/* Toast notification */}
+      {/* === 移动端：底部导航切换 === */}
+      <div className="flex md:hidden flex-1 overflow-hidden flex-col">
+        <div className="flex-1 overflow-y-auto p-2">
+          {renderMobileContent()}
+        </div>
+        {/* 移动端底部导航 */}
+        <div className="flex items-center justify-around px-1 py-1.5 bg-white border-t border-gray-200 flex-shrink-0">
+          {MOBILE_NAV.map((nav) => (
+            <button
+              key={nav.id}
+              onClick={() => setMobileView(nav.id)}
+              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg text-xs transition-colors min-w-0 ${
+                mobileView === nav.id
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <span className="text-lg">{nav.icon}</span>
+              <span className="truncate">{nav.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Toast */}
       {toast && (
-        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 px-5 py-2 bg-gray-900 text-white text-sm rounded-full shadow-lg animate-pulse">
+        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 px-5 py-2 bg-gray-900 text-white text-sm rounded-full shadow-lg">
           {toast}
         </div>
       )}
 
       {/* Bottom action bar */}
-      <div className="flex items-center justify-center gap-3 px-4 py-2 bg-white border-t border-gray-200">
+      <div className="flex items-center justify-center gap-2 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 bg-white border-t border-gray-200 flex-shrink-0">
         <button
           onClick={handleSave}
-          className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-sm font-medium transition-colors shadow-sm"
+          className="px-3 md:px-4 py-1 md:py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm"
         >
           💾 存档
         </button>
         <button
           onClick={handleLoad}
-          className="px-4 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full text-sm font-medium transition-colors shadow-sm"
+          className="px-3 md:px-4 py-1 md:py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm"
         >
           📂 读档
         </button>
-        <button className="px-4 py-1.5 bg-blue-400 hover:bg-blue-500 text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-not-allowed opacity-60">
+        <button className="px-3 md:px-4 py-1 md:py-1.5 bg-blue-400 text-white rounded-full text-xs md:text-sm font-medium shadow-sm cursor-not-allowed opacity-60 hidden md:block">
           📖 图鉴
         </button>
-        <button className="px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-not-allowed opacity-60">
+        <button className="px-3 md:px-4 py-1 md:py-1.5 bg-red-500 text-white rounded-full text-xs md:text-sm font-medium shadow-sm cursor-not-allowed opacity-60 hidden md:block">
           ❓ 帮助
         </button>
       </div>
