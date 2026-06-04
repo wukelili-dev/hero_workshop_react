@@ -1,156 +1,247 @@
-// 稀有度: 0=白(普通), 1=绿(优秀), 2=蓝(精良), 3=紫(史诗), 4=橙(传说)
-export type Rarity = 0 | 1 | 2 | 3 | 4;
+// ============================================================
+// 勇者工坊 - 全局类型定义
+// ============================================================
 
-// 稀有度颜色
-export const RARITY_COLORS: Record<Rarity, string> = {
-  0: '#9d9d9d', // 白
-  1: '#1eff00', // 绿
-  2: '#0070dd', // 蓝
-  3: '#a335ee', // 紫
-  4: '#ff8000', // 橙
+// ── 稀有度 ──
+export type Rarity = 0 | 1 | 2 | 3 | 4;  // 白/绿/蓝/紫/橙
+
+export const RARITY_NAME: Record<Rarity, string> = {
+  0: '普通', 1: '稀有', 2: '珍稀', 3: '史诗', 4: '传说',
 };
 
-// 稀有度名称
-export const RARITY_NAMES: Record<Rarity, string> = {
-  0: '普通',
-  1: '优秀',
-  2: '精良',
-  3: '史诗',
-  4: '传说',
+export const RARITY_COLOR: Record<Rarity, string> = {
+  0: '#C0C0C0', 1: '#4CAF50', 2: '#2196F3', 3: '#9370DB', 4: '#FF9800',
 };
 
-// 英雄基础属性
-export interface HeroStats {
-  level: number;
-  exp: number;
-  expToNext: number;
-  hp: number;
-  atk: number;
-  def: number;
-  spd: number;
-  crit: number; // 暴击率 0-1
-  critDmg: number; // 暴击伤害倍率，默认1.5
-}
+// ── 装备 ──
+export type EquipmentType = 'weapon' | 'armor';
 
-// 掉落物品
-export interface Drop {
-  itemId: string;
-  chance: number; // 0-1
-  quantity: [number, number]; // [min, max]
-}
-
-// 怪物
-export interface Monster {
-  id: string;
-  name: string;
-  level: number;
-  hp: number;
-  atk: number;
-  def: number;
-  rarity: Rarity;
-  drops: Drop[];
-  expReward: number;
-  goldReward: number;
-  isBoss?: boolean;
-}
-
-// 地图
-export interface GameMap {
-  id: string;
-  name: string;
-  minLevel: number;
-  unlockCost: number;
-  monsters: Monster[];
-  boss?: Monster;
-}
-
-// 装备
 export interface Equipment {
   id: string;
+  type: EquipmentType;
   name: string;
-  type: 'weapon' | 'armor';
+  tier: number;           // 1~5
+  levelReq: number;
+  attack?: number;
+  defense?: number;
+  critRate?: number;
+  critDmg?: number;
+  hpBonus?: number;
   rarity: Rarity;
-  tier: number; // 1-5
-  stats: Partial<HeroStats>;
-  passiveId?: string; // 关联被动技能ID
-  enhanceLevel: number; // 强化等级 +0~+10
+  rarityColor: string;
+  passiveId?: string;    // 被动技能ID
+  sellPrice: number;
+  isPerfect?: boolean;   // 极品标记
+  fortifyLevel?: number; // 强化等级 0~10
 }
 
-// 牧场生物
+// ── 锻造 ──
+export interface FortifyConfig {
+  level: number;
+  costGold: number;
+  successRate: number;
+  materials: Record<string, number>;
+}
+
+// ── 英雄/队友 ──
+export interface HeroState {
+  name: string;
+  level: number;
+  exp: number;
+  hp: number;
+  maxHp: number;
+  atk: number;
+  def: number;
+  critRate: number;
+  critDmg: number;
+  gold: number;
+  weapon: Equipment | null;
+  armor: Equipment | null;
+  passives: string[];
+}
+
+export interface TeamMember {
+  roleName: string;
+  level: number;
+  maxHp: number;
+  hp: number;
+  atk: number;
+  def: number;
+  isElite: boolean;
+}
+
+// ── 牧场 ──
 export interface RanchCreature {
   id: string;
   name: string;
+  icon: string;
+  desc: string;
   rarity: Rarity;
-  produceInterval: number; // 秒
-  produceItem: string;
-  produceQuantity: number;
-  personality: '乖巧' | '活泼' | '幸运' | '睿智' | '忠诚' | '暴躁' | '高傲' | '懒惰';
-  feedCost: number; // 饲料消耗/次
+  price: number;
+  feedCost: number;
+  personality: string;
+  outputType: string;
+  outputDesc: string;
+  growthStages: string[];
+  special: string;
 }
 
-// 植物
-export interface Plant {
+export interface RanchSlotState {
+  creatureId: string | null;
+  boughtAt: number;
+  fedAt: number;
+  harvestCount: number;
+}
+
+// ── 农场 ──
+export interface PlantData {
   id: string;
   name: string;
-  growTime: number; // 秒
-  seasons: ('spring' | 'summer' | 'autumn' | 'winter')[];
-  coinOutput: number;
-  feedOutput: number;
+  icon: string;
+  desc: string;
+  rarity: Rarity;
   seedCost: number;
+  growTime: number;      // 秒
+  harvestInterval: number; // 秒
+  seedYield: number;
+  matureLifespan: number; // 秒，0=永久
+  seasons: string[];
+  outputDesc: string;
 }
 
-// 背包物品
-export interface InventoryItem {
-  itemId: string;
-  quantity: number;
+export interface FarmPlotState {
+  plantId: string | null;
+  plantedAt: number | null;
+  lastHarvest: number | null;
+  fertilizerCount: number;
 }
 
-// 战斗日志
-export interface BattleLog {
-  round: number;
-  attacker: string;
-  defender: string;
-  damage: number;
-  isCrit: boolean;
-  description: string;
-}
-
-// 战斗结果
-export interface BattleResult {
-  victory: boolean;
-  logs: BattleLog[];
-  expGained: number;
-  goldGained: number;
-  drops: InventoryItem[];
-}
-
-export interface HeroPersonality {
+// ── 工厂 ──
+export interface DepartmentConfig {
   id: string;
   name: string;
-  description: string;
-  produceMultiplier: number;
-  feedIntervalMultiplier: number;
+  costGold: number;
+  costResources: Record<string, number>;
+  bonusFactor: number;
+  desc: string;
+  built?: boolean;
 }
 
-export interface ForgeRecipe {
+export interface WorkerConfig {
+  hireCost: Record<string, number>;
+  outputBonus: number;
+  wage: number;
+  wageInterval: number;
+  maxWorkersPerLevel: Record<number, number>;
+}
+
+export interface FactoryDepartmentState {
+  departmentId: string;
+  level: number;
+  workerCount: number;
+  built: boolean;
+  lastProduceAt: number;
+}
+
+// ── 建筑 ──
+export interface BuildingConfig {
+  name: string;
+  desc: string;
+  buildCost: { gold: number; resources: Record<string, number> };
+  upgradeCost: { gold: number; resources: Record<string, number> };
+  isWonder: boolean;
+}
+
+export interface BuildingState {
+  id: string;
+  level: number;
+  lastCollectAt: number;
+  workers: number;
+}
+
+// ── 地图 & 战斗 ──
+export interface Drops {
+  [key: string]: number;
+}
+
+export interface Monster {
   id: string;
   name: string;
-  materialCost: Record<string, number>; // itemId: quantity
-  resultEquipmentId: string;
-  passiveId?: string;
-  setName?: string; // 套装名称
-}
-
-export interface GameState {
-  hero: HeroStats;
-  team: string[]; // 队伍英雄ID列表
-  inventory: InventoryItem[];
-  equipment: Equipment[];
+  hp: number;
+  atk: number;
+  def: number;
+  exp: number;
   gold: number;
-  materials: Record<string, number>;
+  drops: Drops;
+  level?: number;
+  rarity?: Rarity;
+  isBoss?: boolean;
+  icon?: string;
+}
+
+export interface GameMap {
+  id: string;
+  name: string;
+  description: string;
+  minLevel: number;
+  enemies: string[];
+  bosses: string[];
+  unlockCost: number;
+  bgColor?: string;
+}
+
+// ── 酒馆 ──
+export interface EquipmentItem {
+  type: EquipmentType;
+  name: string;
+  attack?: number;
+  defense?: number;
+  hpBonus?: number;
+  critRate?: number;
+  critDmg?: number;
+  rarity: string;
+  rarityColor: string;
+  sellPrice: number;
+  levelReq: number;
+  isPerfect: boolean;
+}
+
+export interface TavernRecruit {
+  roleName: string;
+  level: number;
+  isElite: boolean;
+  cost: number;
+  gear: EquipmentItem[];
+}
+
+export interface TeamState {
+  members: TeamMember[];
+  currentIdx: number;
+  tavernRoster: TavernRecruit[];
+  tavernLastRefresh: number;
+}
+
+// ── 资源 ──
+export interface Resources {
+  wood?: number;
+  iron?: number;
+  hide?: number;
+  stone?: number;
+  herb?: number;
+  [key: string]: number | undefined;
+}
+
+// ── 游戏存档 ──
+export interface GameSave {
+  version: string;
+  timestamp: number;
+  hero: HeroState;
+  team: TeamState;
+  ranch: RanchSlotState[];
+  farm: FarmPlotState[];
+  factory: FactoryDepartmentState[];
+  buildings: BuildingState[];
+  resources: Resources;
   currentMapId: string;
-  unlockedMapIds: string[];
-  ranchCreatures: (RanchCreature & { instanceId: string })[];
-  farmSlots: (Plant & { plantedAt: number; fertilizerCount: number })[];
-  lastSave: number; // Date.now()
+  log: string[];
 }
