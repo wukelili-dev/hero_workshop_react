@@ -23,6 +23,8 @@ interface FactoryActions {
   collectProfit: () => { gold: number };
   setAutoRunning: (v: boolean) => void;
   resetFactory: () => void;
+  setDepts: (depts: FactoryDeptState[]) => void;
+  setTotalWorkers: (n: number) => void;
 }
 
 const initDepts: FactoryDeptState[] = DEPARTMENTS.map(d => ({
@@ -83,4 +85,8 @@ export const useFactoryStore = create<FactoryState & FactoryActions>((set, get) 
   setAutoRunning: (v) => set({ autoRunning: v }),
 
   resetFactory: () => set({ depts: initDepts, totalWorkers: 0, autoRunning: false }),
+
+  setDepts: (depts) => set({ depts }),
+
+  setTotalWorkers: (n) => set({ totalWorkers: n }),
 }));

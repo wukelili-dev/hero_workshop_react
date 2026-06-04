@@ -10,6 +10,7 @@ interface RanchActions {
   feed: (slotIdx: number) => void;
   harvest: (slotIdx: number) => void;
   resetSlots: () => void;
+  setSlots: (slots: RanchSlotState[]) => void;
 }
 
 const MAX_SLOTS = 12;
@@ -54,4 +55,6 @@ export const useRanchStore = create<RanchState & RanchActions>((set) => ({
 
   resetSlots: () =>
     set({ slots: Array.from({ length: MAX_SLOTS }, () => emptySlot()) }),
+
+  setSlots: (slots) => set({ slots }),
 }));

@@ -16,6 +16,9 @@ interface InventoryActions {
   addNovelty: (name: string, count: number) => void;
   removeNovelty: (name: string, count: number) => boolean;
   setMaterials: (materials: Record<string, number>) => void;
+  setWeapons: (weapons: Equipment[]) => void;
+  setArmors: (armors: Equipment[]) => void;
+  setNovelties: (novelties: Record<string, number>) => void;
 }
 
 export const useInventoryStore = create<InventoryState & InventoryActions>((set, get) => ({
@@ -79,4 +82,10 @@ export const useInventoryStore = create<InventoryState & InventoryActions>((set,
   },
 
   setMaterials: (materials) => set({ materials }),
+
+  setWeapons: (weapons) => set({ weapons }),
+
+  setArmors: (armors) => set({ armors }),
+
+  setNovelties: (novelties) => set({ novelties }),
 }));

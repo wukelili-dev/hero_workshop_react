@@ -38,6 +38,7 @@ interface GameActions {
   harvestCrop: (plotIdx: number) => boolean;
   refreshTavern: () => void;
   recruitMember: (recruit: TavernRecruit) => boolean;
+  setFarmPlots: (plots: typeof initState.farmPlots) => void;
 }
 
 const BASE_ATK = (lv: number) => 5 + lv * 2;
@@ -254,4 +255,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     }));
     return true;
   },
+
+  setFarmPlots: (plots) => set({ farmPlots: plots }),
 }));
