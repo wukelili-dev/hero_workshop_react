@@ -77,6 +77,7 @@ export interface HeroState {
   passives: string[];
   noveltyItems: string[];
   team: TeamMember[];  // 队友列表
+  discoveredMonsters: string[];  // 已发现的怪物ID列表
 }
 
 export interface TeamMember {

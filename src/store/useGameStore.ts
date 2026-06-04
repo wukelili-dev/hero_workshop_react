@@ -15,6 +15,9 @@ interface GameState {
   farmPlots: { plantId: string | null; plantedAt: number | null; lastHarvest: number | null }[];
   tavernRoster: TavernRecruit[];
   tavernLastRefresh: number;
+  battleLogs: { timestamp: number; message: string }[];
+  gameLogs: { timestamp: number; message: string }[];
+  discoveredMonsters: string[];
 }
 
 interface GameActions {
@@ -39,6 +42,9 @@ interface GameActions {
   refreshTavern: () => void;
   recruitMember: (recruit: TavernRecruit) => boolean;
   setFarmPlots: (plots: typeof initState.farmPlots) => void;
+  addBattleLog: (message: string) => void;
+  addGameLog: (message: string) => void;
+  addDiscoveredMonster: (id: string) => void;
 }
 
 const BASE_ATK = (lv: number) => 5 + lv * 2;
@@ -115,11 +121,20 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
   fightMonster: (monster) => {
     const { hero } = get();
-    return executeBattle(
+    const result = executeBattle(
       { hp: hero.hp, atk: hero.atk, def: hero.def, crit: hero.critRate },
       [],
       monster
     );
+    const now = Date.now();
+    const hhmm = new Date(now).toTimeString().slice(0, 5);
+    if (result.victory) {
+      get().addBattleLog(`[${hhmm}] 战胜${monster.name}！获得 ${result.rewards.exp} EXP，${result.rewards.gold} 金币`);
+      get().addDiscoveredMonster(monster.id);
+    } else {
+      get().addBattleLog(`[${hhmm}] 战斗失败...被 ${monster.name} 击败`);
+    }
+    return result;
   },
 
   equipWeapon: (w) => {
@@ -257,4 +272,19 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   },
 
   setFarmPlots: (plots) => set({ farmPlots: plots }),
+
+  addBattleLog: (message) => set((s) => {
+    const logs = [{ timestamp: Date.now(), message }, ...s.battleLogs];
+    return { battleLogs: logs.slice(0, 50) };
+  }),
+
+  addGameLog: (message) => set((s) => {
+    const logs = [{ timestamp: Date.now(), message }, ...s.gameLogs];
+    return { gameLogs: logs.slice(0, 50) };
+  }),
+
+  addDiscoveredMonster: (id) => set((s) => {
+    if (s.discoveredMonsters.includes(id)) return {};
+    return { discoveredMonsters: [...s.discoveredMonsters, id] };
+  }),
 }));
