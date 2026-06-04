@@ -1,5 +1,5 @@
 import React from 'react';
-import { RARITY_NAMES, RARITY_COLORS } from '../data/constants';
+import { RARITY_NAMES, RARITY_COLORS } from '../../data/constants';
 
 interface RarityBadgeProps {
   rarity: number;
