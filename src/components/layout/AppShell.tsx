@@ -108,7 +108,7 @@ export const AppShell: React.FC = () => {
           <div className="flex-1 overflow-y-auto"><CenterPanel /></div>
           <LogPanel />
         </div>
-        <div className="flex flex-col flex-1 max-w-5xl overflow-hidden">
+        <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <TabBar tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
           <div className="flex-1 overflow-y-auto p-4">
             {renderTab()}
