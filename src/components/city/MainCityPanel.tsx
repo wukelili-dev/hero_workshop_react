@@ -8,6 +8,7 @@ import { AnimatedNumber } from '../../hooks/useCountUp';
 import { useGameStore } from '../../store/useGameStore';
 import { BUILDING_CONFIGS, WONDERS, getAllBuildingNames, getWonderNames } from '../../data/buildings';
 import { formatNumber } from '../../data/constants';
+import { FaTree, FaMagnet, FaPaw, FaMountain } from 'react-icons/fa6';
 
 export const MainCityPanel: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
@@ -20,10 +21,10 @@ export const MainCityPanel: React.FC = () => {
   const [builtWonders, setBuiltWonders] = useState<Set<string>>(new Set());
 
   const MATERIALS_DATA = [
-    { name: '木材', icon: '🪵', key: 'wood' as const, sellPrice: 8, buyPrice: 10 },
-    { name: '铁矿', icon: '⛏', key: 'iron' as const, sellPrice: 12, buyPrice: 15 },
-    { name: '皮革', icon: '🧤', key: 'hide' as const, sellPrice: 10, buyPrice: 12 },
-    { name: '石头', icon: '⛰', key: 'stone' as const, sellPrice: 15, buyPrice: 20 },
+    { name: '木材', icon: <FaTree className="text-amber-600" />, key: 'wood' as const, sellPrice: 8, buyPrice: 10 },
+    { name: '铁矿', icon: <FaMagnet className="text-gray-500" />, key: 'iron' as const, sellPrice: 12, buyPrice: 15 },
+    { name: '皮革', icon: <FaPaw className="text-orange-700" />, key: 'hide' as const, sellPrice: 10, buyPrice: 12 },
+    { name: '石头', icon: <FaMountain className="text-stone-400" />, key: 'stone' as const, sellPrice: 15, buyPrice: 20 },
   ];
 
   const handleBuyMaterial = (key: string, price: number) => {

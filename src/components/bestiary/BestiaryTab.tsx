@@ -125,25 +125,28 @@ export const BestiaryTab: React.FC = () => {
               {discovered ? (
                 <>
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-lg w-7 h-7 flex items-center justify-center">
+                    <span
+                      className="text-xl w-8 h-8 flex items-center justify-center shrink-0"
+                    >
                       {icon}
                     </span>
-                    <span
-                      className="text-xs px-1.5 py-0.5 rounded text-white font-medium"
-                      style={{
-                        backgroundColor:
-                          RARITY_COLOR[monster.rarity ?? 0] || '#C0C0C0',
-                      }}
-                    >
-                      {RARITY_NAME[monster.rarity ?? 0] || '普通'}
-                    </span>
-                    <span className="font-bold text-sm text-gray-800">
-                      {monster.name}
-                    </span>
-                    {monster.isBoss && (
-                      <span className="text-xs text-red-500 font-bold">BOSS</span>
-                    )}
-                  </div>
+                    <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                      <span className="font-bold text-sm text-gray-800">
+                        {icon} {monster.name}
+                      </span>
+                      <span
+                        className="text-xs px-1.5 py-0.5 rounded text-white font-medium"
+                        style={{
+                          backgroundColor:
+                            RARITY_COLOR[monster.rarity ?? 0] || '#C0C0C0',
+                        }}
+                      >
+                        {RARITY_NAME[monster.rarity ?? 0] || '普通'}
+                      </span>
+                      {monster.isBoss && (
+                        <span className="text-xs text-red-500 font-bold">BOSS</span>
+                      )}
+                    </div>
                   <div className="text-xs text-gray-600 space-y-0.5">
                     <div>等级：Lv.{monster.level ?? '?'}</div>
                     <div>HP：{monster.hp}</div>
