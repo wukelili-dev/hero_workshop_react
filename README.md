@@ -50,7 +50,7 @@ Tab 图标映射（`AppShell.tsx` → `TABS` 数组）：
 | 武器 | `FaSword` | fa6 |
 | 护甲 | `FaShieldHalved` | fa6 |
 | 杂货 | `FaGift` | fa |
-| 背包 | `FaBackpack` | fa6 |
+| 背包 | `FaBagShopping` | fa6 |
 | 材料 | `FaCube` | fa |
 | 酒馆 | `FaBeerMugEmpty` | fa6 |
 | 农场 | `FaWheatAwn` | fa6 |
@@ -65,7 +65,7 @@ Tab 图标映射（`AppShell.tsx` → `TABS` 数组）：
 |------|-----------|------|
 | 主城 | `FaCastle` | fa6 |
 | 战斗 | `FaSkullCrossbones` | fa |
-| 背包 | `FaBackpack` | fa6 |
+| 背包 | `FaBagShopping` | fa6 |
 | 锻造 | `FaHammer` | fa |
 | 牧场 | `FaPaw` | fa6 |
 
