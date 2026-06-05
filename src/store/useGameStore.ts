@@ -4,6 +4,7 @@ import { MAPS } from '../data/maps';
 import { executeBattle, type BattleLog, type Rewards } from '../engine/Combat';
 import { PLANTS_CATALOG } from '../data/plants';
 import { generateTavernRoster, type TavernRecruit } from '../data/tavern';
+import { BUILDING_CONFIGS, getAllBuildingNames } from '../data/buildings';
 
 interface GameState {
   hero: HeroState;
