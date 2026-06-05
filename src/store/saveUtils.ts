@@ -42,6 +42,7 @@ export function saveGame(): boolean {
       },
       ranch: { slots: ranchState.slots },
       factory: {
+        factoryBuilt: factoryState.factoryBuilt,
         depts: factoryState.depts,
         totalWorkers: factoryState.totalWorkers,
         autoRunning: factoryState.autoRunning,
@@ -93,6 +94,7 @@ export function loadGame(): boolean {
     if (data.ranch?.slots) ranchStore.setSlots(data.ranch.slots);
 
     if (data.factory) {
+      if (data.factory.factoryBuilt !== undefined) factoryStore.setFactoryBuilt(data.factory.factoryBuilt);
       if (data.factory.depts) factoryStore.setDepts(data.factory.depts);
       if (data.factory.totalWorkers !== undefined) factoryStore.setTotalWorkers(data.factory.totalWorkers);
       if (data.factory.autoRunning !== undefined) factoryStore.setAutoRunning(data.factory.autoRunning);
