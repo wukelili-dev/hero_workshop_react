@@ -6,7 +6,7 @@ import type { TabId } from './AppShell';
 interface TabConfig {
   id: TabId;
   label: string;
-  icon: string;
+  icon: React.ReactNode;
   description?: string;
 }
 

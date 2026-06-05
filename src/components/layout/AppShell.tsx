@@ -20,29 +20,37 @@ import { ForgeTab } from '../forge/ForgeTab';
 import { BestiaryTab } from '../bestiary/BestiaryTab';
 import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils';
 
+// Icon imports
+import {
+  FaSword, FaShieldHalved, FaBackpack,
+  FaBeerMugEmpty, FaWheatAwn, FaIndustry, FaPaw,
+  FaBookOpen, FaCastle, FaFloppyDisk, FaFolderOpen, FaQuestionCircle,
+} from 'react-icons/fa6';
+import { FaGift, FaCube, FaHammer, FaSkullCrossbones } from 'react-icons/fa';
+
 export type TabId = 'weapon' | 'armor' | 'novelty' | 'inventory' | 'materials' | 'tavern' | 'farm' | 'factory' | 'ranch' | 'forge' | 'bestiary';
 type MobileView = 'city' | 'combat' | TabId;
 
-const TABS: { id: TabId; label: string; icon: string; description: string }[] = [
-  { id: 'weapon', label: '武器', icon: '⚔', description: '购买和装备武器' },
-  { id: 'armor', label: '护甲', icon: '🛡', description: '购买和装备护甲' },
-  { id: 'novelty', label: '杂货', icon: '🎁', description: '购买各类杂货道具' },
-  { id: 'inventory', label: '背包', icon: '🎒', description: '查看和管理背包物品' },
-  { id: 'materials', label: '材料', icon: '⭐', description: '查看材料库存' },
-  { id: 'tavern', label: '酒馆', icon: '🍺', description: '招募英雄和刷新英雄' },
-  { id: 'farm', label: '农场', icon: '🌱', description: '种植作物获取金币' },
-  { id: 'factory', label: '工厂', icon: '🏭', description: '雇佣工人自动生产' },
-  { id: 'ranch', label: '牧场', icon: '🐾', description: '养殖生物获取资源' },
-  { id: 'forge', label: '锻造', icon: '🔨', description: '合成高级装备' },
-  { id: 'bestiary', label: '图鉴', icon: '📖', description: '查看已击败的怪物' },
+const TABS: { id: TabId; label: string; icon: React.ReactNode; description: string }[] = [
+  { id: 'weapon', label: '武器', icon: <FaSword />, description: '购买和装备武器' },
+  { id: 'armor', label: '护甲', icon: <FaShieldHalved />, description: '购买和装备护甲' },
+  { id: 'novelty', label: '杂货', icon: <FaGift />, description: '购买各类杂货道具' },
+  { id: 'inventory', label: '背包', icon: <FaBackpack />, description: '查看和管理背包物品' },
+  { id: 'materials', label: '材料', icon: <FaCube />, description: '查看材料库存' },
+  { id: 'tavern', label: '酒馆', icon: <FaBeerMugEmpty />, description: '招募英雄和刷新英雄' },
+  { id: 'farm', label: '农场', icon: <FaWheatAwn />, description: '种植作物获取金币' },
+  { id: 'factory', label: '工厂', icon: <FaIndustry />, description: '雇佣工人自动生产' },
+  { id: 'ranch', label: '牧场', icon: <FaPaw />, description: '养殖生物获取资源' },
+  { id: 'forge', label: '锻造', icon: <FaHammer />, description: '合成高级装备' },
+  { id: 'bestiary', label: '图鉴', icon: <FaBookOpen />, description: '查看已击败的怪物' },
 ];
 
-const MOBILE_NAV: { id: MobileView; label: string; icon: string }[] = [
-  { id: 'city', label: '主城', icon: '🏰' },
-  { id: 'combat', label: '战斗', icon: '⚔' },
-  { id: 'inventory', label: '背包', icon: '🎒' },
-  { id: 'forge', label: '锻造', icon: '🔨' },
-  { id: 'ranch', label: '牧场', icon: '🐾' },
+const MOBILE_NAV: { id: MobileView; label: string; icon: React.ReactNode }[] = [
+  { id: 'city', label: '主城', icon: <FaCastle /> },
+  { id: 'combat', label: '战斗', icon: <FaSkullCrossbones /> },
+  { id: 'inventory', label: '背包', icon: <FaBackpack /> },
+  { id: 'forge', label: '锻造', icon: <FaHammer /> },
+  { id: 'ranch', label: '牧场', icon: <FaPaw /> },
 ];
 
 export const AppShell: React.FC = () => {
@@ -157,17 +165,17 @@ export const AppShell: React.FC = () => {
       <div className="flex items-center justify-center gap-2 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 bg-white border-t border-gray-200 flex-shrink-0">
         <button
           onClick={handleSave}
-          className="px-3 md:px-4 py-1 md:py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm"
+          className="px-3 md:px-4 py-1 md:py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm flex items-center gap-1"
         >
-          💾 存档
+          <FaFloppyDisk /> 存档
         </button>
         <Dialog.Root open={loadDialogOpen} onOpenChange={setLoadDialogOpen}>
           <Dialog.Trigger asChild>
             <button
               onClick={handleLoadClick}
-              className="px-3 md:px-4 py-1 md:py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm"
+              className="px-3 md:px-4 py-1 md:py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm flex items-center gap-1"
             >
-              📂 读档
+              <FaFolderOpen /> 读档
             </button>
           </Dialog.Trigger>
           <Dialog.Portal>
@@ -199,12 +207,12 @@ export const AppShell: React.FC = () => {
         </Dialog.Root>
         <button
           onClick={() => setActiveTab('bestiary')}
-          className="px-3 md:px-4 py-1 md:py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm hidden md:block"
+          className="px-3 md:px-4 py-1 md:py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm hidden md:block flex items-center gap-1"
         >
-          📖 图鉴
+          <FaBookOpen /> 图鉴
         </button>
-        <button className="px-3 md:px-4 py-1 md:py-1.5 bg-red-500 text-white rounded-full text-xs md:text-sm font-medium shadow-sm cursor-not-allowed opacity-60 hidden md:block">
-          ❓ 帮助
+        <button className="px-3 md:px-4 py-1 md:py-1.5 bg-red-500 text-white rounded-full text-xs md:text-sm font-medium shadow-sm cursor-not-allowed opacity-60 hidden md:block flex items-center gap-1">
+          <FaQuestionCircle /> 帮助
         </button>
       </div>
     </div>
