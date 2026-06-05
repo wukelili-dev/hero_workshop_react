@@ -12,7 +12,7 @@ export const LogPanel: React.FC = () => {
 
   const formatTime = (ts: number) => {
     const d = new Date(ts);
-    return d.toTimeString().slice(0, 5); // HH:mm
+    return d.toTimeString().slice(0, 8); // HH:mm:ss
   };
 
   return (
