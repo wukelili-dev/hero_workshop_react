@@ -15,7 +15,7 @@ export const MainCityPanel: React.FC = () => {
   const addGold = useGameStore((s) => s.addGold);
   const addResource = useGameStore((s) => s.addResource);
 
-  const [buildingCounts, setBuildingCounts] = useState<Record<string, number>>({});
+  const addBuilding = useGameStore((s) => s.addBuilding);
   const [builtWonders, setBuiltWonders] = useState<Set<string>>(new Set());
 
   const MATERIALS_DATA = [
@@ -56,7 +56,7 @@ export const MainCityPanel: React.FC = () => {
       if (resourceKey === 'gold') addGold(-amount);
       else if (resourceKey) addResource(resourceKey, -amount);
     }
-    setBuildingCounts(prev => ({ ...prev, [name]: (prev[name] || 0) + 1 }));
+    addBuilding(name);
   };
 
   const handleBuildWonder = (name: string) => {
@@ -114,7 +114,7 @@ export const MainCityPanel: React.FC = () => {
         <div className="space-y-2">
           {getAllBuildingNames().map((name) => {
             const config = BUILDING_CONFIGS[name];
-            const count = buildingCounts[name] || 0;
+            const count = hero.buildings[name] || 0;
             return (
               <div key={name}>
                 <div className="flex items-center justify-between">

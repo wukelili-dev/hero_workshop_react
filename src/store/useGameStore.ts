@@ -19,6 +19,8 @@ interface GameState {
   gameLogs: { timestamp: number; message: string }[];
   discoveredMonsters: string[];
   autoPotionThreshold: number;
+  buildings: Record<string, number>;   // { "伐木场": 2, "铁矿": 1 }
+  buildings: Record<string, number>;   // { "伐木场": 2, "铁矿": 1 }
 }
 
 interface GameActions {
@@ -46,6 +48,8 @@ interface GameActions {
   addBattleLog: (message: string) => void;
   addGameLog: (message: string) => void;
   addDiscoveredMonster: (id: string) => void;
+  addBuilding: (name: string) => void;
+  addBuilding: (name: string) => void;
   buyPotion: () => boolean;
   usePotion: () => boolean;
   setAutoPotionThreshold: (val: number) => void;
@@ -85,6 +89,49 @@ function getEnemies(mapId: string): Monster[] {
   return out;
 }
 
+// 启动建筑定时器（每 1 秒检查一次）
+function startBuildingTimer() {
+  if (_buildingTimer) return;
+  _buildingTimer = setInterval(tickBuildings, 1000);
+}
+
+function tickBuildings() {
+  const { buildings } = useGameStore.getState();
+  if (!buildings || Object.keys(buildings).length === 0) return;
+  const now = Date.now();
+  for (const [bName, count] of Object.entries(buildings)) {
+    if (!count) continue;
+    const cfg = BUILDING_CONFIGS[bName];
+    if (!cfg) continue;
+    const resourceKey = BUILDING_OUTPUT_MAP[bName];
+    if (!resourceKey) continue;
+    const lastTick = (_lastBuildingTick[bName] ?? (now - cfg.baseInterval * 1000));
+    if ((now - lastTick) / 1000 >= cfg.baseInterval) {
+      useGameStore.getState().addResource(resourceKey, cfg.baseOutput * count);
+      _lastBuildingTick[bName] = now;
+    }
+  }
+}
+
+// 中文建筑名 → 产出资源 key
+const BUILDING_OUTPUT_MAP: Record<string, string> = {
+  '伐木场': 'wood', '铁矿': 'iron', '狩猎场': 'hide', '采石场': 'stone',
+};
+
+// 建筑自动产出定时器引用
+let _buildingTimer: ReturnType<typeof setInterval> | null = null;
+
+// ── 监听 buildings 变化自动启停定时器 ──
+let _prevBuildings: string | null = null;
+function syncBuildingTimer() {
+  const { buildings } = useGameStore.getState();
+  const hasAny = buildings && Object.keys(buildings).some(k => (buildings as any)[k] > 0);
+  const currentKey = JSON.stringify(buildings);
+  if (currentKey === _prevBuildings) return;
+  _prevBuildings = currentKey;
+  if (hasAny) startBuildingTimer();
+}
+
 export const useGameStore = create<GameState & GameActions>((set, get) => ({
   hero: { ...initHero },
   resources: { ...initRes },
@@ -99,6 +146,11 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   gameLogs: [],
   discoveredMonsters: [],
   autoPotionThreshold: 0,
+  buildings: {},   // 建筑数量统计，key=建筑名，value=数量
+
+  // ── 建筑自动产出定时器（模块级，不受 React 重渲染影响）
+  // 记录每个建筑上次产出时间
+  _lastBuildingTick: {} as Record<string, number>,
 
   setHero: (p) => set((s) => ({ hero: { ...s.hero, ...p } })),
   setResources: (p) => set((s) => ({ resources: { ...s.resources, ...p } })),
@@ -123,6 +175,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     gameLogs: [],
     discoveredMonsters: [],
     autoPotionThreshold: 0,
+    buildings: {},
   }),
 
   addExp: (amt) => set((s) => {
@@ -189,6 +242,19 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   },
 
   setAutoPotionThreshold: (val) => set({ autoPotionThreshold: val }),
+
+  addBuilding: (name) => set((s) => {
+    const newCount = (s.buildings[name] ?? 0) + 1;
+    const updated = { ...s.buildings, [name]: newCount };
+    // 有建筑时确保定时器运行
+    if (!_buildingTimer) startBuildingTimer();
+    // 初始化该建筑的产出时间（减去 interval 让首次立即触发）
+    const cfg = BUILDING_CONFIGS[name];
+    if (cfg && !_lastBuildingTick[name]) {
+      _lastBuildingTick[name] = Date.now() - cfg.baseInterval * 1000;
+    }
+    return { buildings: updated };
+  }),
 
   equipWeapon: (w) => {
     const { hero, resources } = get();
