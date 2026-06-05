@@ -121,6 +121,7 @@ const BUILDING_OUTPUT_MAP: Record<string, string> = {
 
 // 建筑自动产出定时器引用
 let _buildingTimer: ReturnType<typeof setInterval> | null = null;
+const _lastBuildingTick: Record<string, number> = {};
 
 // ── 监听 buildings 变化自动启停定时器 ──
 let _prevBuildings: string | null = null;
@@ -149,9 +150,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   autoPotionThreshold: 0,
   buildings: {},   // 建筑数量统计，key=建筑名，value=数量
 
-  // ── 建筑自动产出定时器（模块级，不受 React 重渲染影响）
-  // 记录每个建筑上次产出时间
-  _lastBuildingTick: {} as Record<string, number>,
 
   setHero: (p) => set((s) => ({ hero: { ...s.hero, ...p } })),
   setResources: (p) => set((s) => ({ resources: { ...s.resources, ...p } })),
