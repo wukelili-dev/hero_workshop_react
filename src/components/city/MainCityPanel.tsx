@@ -16,6 +16,7 @@ export const MainCityPanel: React.FC = () => {
   const addResource = useGameStore((s) => s.addResource);
 
   const addBuilding = useGameStore((s) => s.addBuilding);
+  const buildings = useGameStore((s) => s.buildings);
   const [builtWonders, setBuiltWonders] = useState<Set<string>>(new Set());
 
   const MATERIALS_DATA = [
@@ -114,7 +115,7 @@ export const MainCityPanel: React.FC = () => {
         <div className="space-y-2">
           {getAllBuildingNames().map((name) => {
             const config = BUILDING_CONFIGS[name];
-            const count = hero.buildings[name] || 0;
+            const count = buildings[name] || 0;
             return (
               <div key={name}>
                 <div className="flex items-center justify-between">
