@@ -78,10 +78,13 @@ export const CenterPanel: React.FC = () => {
   };
 
   const handleUnlockMap = (map: typeof MAPS[number]) => {
-    if (hero.gold >= map.unlockCost && !unlockedMaps.includes(map.id)) {
-      useGameStore.getState().addGold(-map.unlockCost);
-      useGameStore.getState().unlockMap(map.id);
+    if (unlockedMaps.includes(map.id)) return;
+    if (hero.gold < map.unlockCost) {
+      useGameStore.getState().addGameLog(`金币不足! 解锁${map.name}需要 ${map.unlockCost}G`);
+      return;
     }
+    useGameStore.getState().addGold(-map.unlockCost);
+    useGameStore.getState().unlockMap(map.id);
   };
 
   const handleRefreshEnemies = () => {

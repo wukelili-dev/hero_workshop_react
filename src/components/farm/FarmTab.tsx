@@ -29,6 +29,7 @@ export const FarmTab: React.FC = () => {
       setSelectedPlant(null);
     } else {
       toast.error('金币不足或地块已被占用');
+      useGameStore.getState().addGameLog(`种植失败: 地块${plotIdx + 1} 金币不足或已占用`);
     }
   };
 

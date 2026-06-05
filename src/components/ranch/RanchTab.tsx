@@ -37,7 +37,7 @@ export const RanchTab: React.FC = () => {
 
   // 购买生物
   const handleBuy = useCallback((slotIdx: number, creature: RanchCreature) => {
-    if (ranchGold < creature.price) { showMsg(`⚠️ 金币不足（需要 ${creature.price}）`); return; }
+    if (ranchGold < creature.price) { showMsg(`⚠️ 金币不足（需要 ${creature.price}）`); useGameStore.getState().addGameLog(`牧场购买失败: ${creature.name} 金币不足(需要${creature.price}G)`); return; }
     addGold(-creature.price);
     buyCreature(slotIdx, creature.id);
     showMsg(`✅ ${creature.icon} ${creature.name} 入圈！`);
@@ -51,7 +51,7 @@ export const RanchTab: React.FC = () => {
     if (!slot || !slot.creatureId) return;
     const creature = RANCH_CATALOG.find(c => c.id === slot.creatureId);
     if (!creature) return;
-    if (ranchGold < creature.feedCost) { showMsg(`⚠️ 金币不足（需要 ${creature.feedCost}）`); return; }
+    if (ranchGold < creature.feedCost) { showMsg(`⚠️ 金币不足（需要 ${creature.feedCost}）`); useGameStore.getState().addGameLog(`牧场喂食失败: ${creature.name} 金币不足(需要${creature.feedCost}G)`); return; }
     addGold(-creature.feedCost);
     feed(slotIdx);
     showMsg(`✅ 喂食成功！${creature.name} 很开心`);

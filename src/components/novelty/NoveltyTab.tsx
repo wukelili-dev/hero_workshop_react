@@ -10,11 +10,13 @@ export const NoveltyTab: React.FC = () => {
   const handleBuy = (item: { name: string; price: number }) => {
     if (hero.gold < item.price) {
       setMsg('❌ 金币不足');
+      useGameStore.getState().addGameLog(`购买杂货失败: ${item.name} 金币不足(需要${item.price}G)`);
       setTimeout(() => setMsg(null), 2000);
       return;
     }
     if (hero.noveltyItems.includes(item.name)) {
       setMsg('❌ 已拥有');
+      useGameStore.getState().addGameLog(`购买杂货失败: ${item.name} 已拥有`);
       setTimeout(() => setMsg(null), 2000);
       return;
     }

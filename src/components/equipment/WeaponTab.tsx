@@ -45,10 +45,12 @@ export const WeaponTab: React.FC = () => {
   const handleBuy = (weapon: Equipment) => {
     if (!canAfford(weapon)) {
       toast.error('资源不足');
+      useGameStore.getState().addGameLog(`购买武器失败: ${weapon.name} 资源不足`);
       return;
     }
     if (hero.level < (weapon.levelReq ?? 0)) {
       toast.error('等级不足');
+      useGameStore.getState().addGameLog(`购买武器失败: ${weapon.name} 等级不足(Lv.${weapon.levelReq})`);
       return;
     }
     const ok = equipWeapon(weapon);

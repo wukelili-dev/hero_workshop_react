@@ -45,11 +45,13 @@ export const ArmorTab: React.FC = () => {
   const handleBuy = (armor: Equipment) => {
     if (!canAfford(armor)) {
       setMsg('❌ 资源不足');
+      useGameStore.getState().addGameLog(`购买护甲失败: ${armor.name} 资源不足`);
       setTimeout(() => setMsg(null), 2000);
       return;
     }
     if (hero.level < (armor.levelReq ?? 0)) {
       setMsg('❌ 等级不足');
+      useGameStore.getState().addGameLog(`购买护甲失败: ${armor.name} 等级不足(Lv.${armor.levelReq})`);
       setTimeout(() => setMsg(null), 2000);
       return;
     }

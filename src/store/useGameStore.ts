@@ -154,7 +154,11 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   setHero: (p) => set((s) => ({ hero: { ...s.hero, ...p } })),
   setResources: (p) => set((s) => ({ resources: { ...s.resources, ...p } })),
   setCurrentMap: (id) => set({ currentMapId: id, currentEnemies: getEnemies(id) }),
-  unlockMap: (id) => set((s) => (s.unlockedMaps.includes(id) ? {} : { unlockedMaps: [...s.unlockedMaps, id] })),
+  unlockMap: (id) => set((s) => {
+    if (s.unlockedMaps.includes(id)) return {};
+    get().addGameLog(`解锁地图: ${id}`);
+    return { unlockedMaps: [...s.unlockedMaps, id] };
+  }),
   addGold: (amt) => set((s) => ({ hero: { ...s.hero, gold: Math.max(0, s.hero.gold + amt) } })),
   addResource: (key, amt) => set((s) => ({ resources: { ...s.resources, [key]: Math.max(0, (s.resources[key] ?? 0) + amt) } })),
   setRunning: (r) => set({ isRunning: r }),

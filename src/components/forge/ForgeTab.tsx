@@ -41,8 +41,8 @@ export const ForgeTab: React.FC = () => {
     const totalIron = ironCost + charmIron;
     const totalGold = goldCost + charmGold;
 
-    if ((hero.gold ?? 0) < totalGold) { setMsg('⚠️ 金币不足'); setTimeout(() => setMsg(null), 2000); return; }
-    if ((materials['铁矿'] ?? 0) < totalIron) { setMsg('⚠️ 铁矿不足'); setTimeout(() => setMsg(null), 2000); return; }
+    if ((hero.gold ?? 0) < totalGold) { setMsg('⚠️ 金币不足'); useGameStore.getState().addGameLog(`锻造失败: 金币不足(需要${totalGold}G)`); setTimeout(() => setMsg(null), 2000); return; }
+    if ((materials['铁矿'] ?? 0) < totalIron) { setMsg('⚠️ 铁矿不足'); useGameStore.getState().addGameLog(`锻造失败: 铁矿不足(需要${totalIron})`); setTimeout(() => setMsg(null), 2000); return; }
 
     setForging(true);
     // 扣费

@@ -19,11 +19,13 @@ export const TavernTab: React.FC = () => {
   const handleRecruit = (recruit: TavernRecruit) => {
     if (hero.gold < recruit.cost) {
       setMsg('❌ 金币不足');
+      useGameStore.getState().addGameLog(`招募失败: ${recruit.roleName} 金币不足(需要${recruit.cost}G)`);
       setTimeout(() => setMsg(null), 2000);
       return;
     }
     if (hero.team.length >= 3) {
       setMsg('❌ 队伍已满（最多3人）');
+      useGameStore.getState().addGameLog(`招募失败: ${recruit.roleName} 队伍已满`);
       setTimeout(() => setMsg(null), 2000);
       return;
     }
