@@ -222,6 +222,36 @@ export const CenterPanel: React.FC = () => {
         </div>
       </div>
 
+      {/* 药水栏 */}
+      <div className="p-2 border border-amber-200 rounded-lg bg-amber-50">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-xs font-medium text-amber-700">💊 药水</span>
+          <span className="text-xs font-bold text-amber-800">x{hero.potions ?? 0}</span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { if (!useGameStore.getState().buyPotion()) alert('金币不足！'); }}
+            className="flex-1 py-1 bg-amber-400 hover:bg-amber-500 text-white rounded text-[11px] font-medium transition-colors"
+          >购买 (25G)</button>
+          <button
+            onClick={() => { if (!useGameStore.getState().usePotion()) alert((hero.potions ?? 0) <= 0 ? '没有药水！' : 'HP已满！'); }}
+            disabled={(hero.potions ?? 0) <= 0 || hero.hp >= hero.maxHp}
+            className={`flex-1 py-1 rounded text-[11px] font-medium transition-colors ${(hero.potions ?? 0) <= 0 || hero.hp >= hero.maxHp ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+          >使用 +20HP</button>
+        </div>
+        {/* 自动喝药阈值 */}
+        <div className="flex items-center gap-1.5 mt-1.5">
+          <span className="text-[10px] text-amber-600">自动喝药：</span>
+          {[0, 30, 50, 80].map((v) => (
+            <button
+              key={v}
+              onClick={() => useGameStore.getState().setAutoPotionThreshold(v)}
+              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${useGameStore.getState().autoPotionThreshold === v ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'}`}
+            >{v === 0 ? '关' : `${v}%`}</button>
+          ))}
+        </div>
+      </div>
+
       {/* 地图区域 */}
       <div>
         <div className="flex items-center gap-1 mb-2">
