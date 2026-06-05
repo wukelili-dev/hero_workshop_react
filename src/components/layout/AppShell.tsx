@@ -22,7 +22,7 @@ import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils'
 
 // Icon imports
 import {
-  FaSword, FaShieldHalved, FaBackpack,
+  FaSword, FaShieldHalved, FaBagShopping,
   FaBeerMugEmpty, FaWheatAwn, FaIndustry, FaPaw,
   FaBookOpen, FaCastle, FaFloppyDisk, FaFolderOpen, FaQuestionCircle,
 } from 'react-icons/fa6';
@@ -35,7 +35,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode; description: stri
   { id: 'weapon', label: '武器', icon: <FaSword />, description: '购买和装备武器' },
   { id: 'armor', label: '护甲', icon: <FaShieldHalved />, description: '购买和装备护甲' },
   { id: 'novelty', label: '杂货', icon: <FaGift />, description: '购买各类杂货道具' },
-  { id: 'inventory', label: '背包', icon: <FaBackpack />, description: '查看和管理背包物品' },
+  { id: 'inventory', label: '背包', icon: <FaBagShopping />, description: '查看和管理背包物品' },
   { id: 'materials', label: '材料', icon: <FaCube />, description: '查看材料库存' },
   { id: 'tavern', label: '酒馆', icon: <FaBeerMugEmpty />, description: '招募英雄和刷新英雄' },
   { id: 'farm', label: '农场', icon: <FaWheatAwn />, description: '种植作物获取金币' },
@@ -48,7 +48,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode; description: stri
 const MOBILE_NAV: { id: MobileView; label: string; icon: React.ReactNode }[] = [
   { id: 'city', label: '主城', icon: <FaCastle /> },
   { id: 'combat', label: '战斗', icon: <FaSkullCrossbones /> },
-  { id: 'inventory', label: '背包', icon: <FaBackpack /> },
+  { id: 'inventory', label: '背包', icon: <FaBagShopping /> },
   { id: 'forge', label: '锻造', icon: <FaHammer /> },
   { id: 'ranch', label: '牧场', icon: <FaPaw /> },
 ];
