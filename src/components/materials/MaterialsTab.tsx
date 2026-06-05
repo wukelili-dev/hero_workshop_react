@@ -1,12 +1,13 @@
 import React from 'react';
 import { useGameStore } from '../../store/useGameStore';
+import { FaTree, FaMagnet, FaPaw, FaMountain, FaLeaf } from 'react-icons/fa6';
 
-const RESOURCE_ICONS: Record<string, string> = {
-  wood: '🪵',
-  iron: '⚙️',
-  hide: '🦌',
-  stone: '🪨',
-  herb: '🌿',
+const RESOURCE_ICONS: Record<string, React.ReactNode> = {
+  wood: <FaTree />,
+  iron: <FaMagnet />,
+  hide: <FaPaw />,
+  stone: <FaMountain />,
+  herb: <FaLeaf />,
 };
 
 const RESOURCE_NAMES: Record<string, string> = {
@@ -39,7 +40,9 @@ export const MaterialsTab: React.FC = () => {
               key={key}
               className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg"
             >
-              <span className="text-lg">{RESOURCE_ICONS[key] || '📦'}</span>
+              <span className="text-lg flex items-center justify-center w-6 h-6">
+                {RESOURCE_ICONS[key] || <FaLeaf />}
+              </span>
               <div className="flex-1">
                 <div className="text-xs text-gray-500">{RESOURCE_NAMES[key] || key}</div>
                 <div className="font-bold text-sm">{value}</div>
