@@ -22,9 +22,9 @@ import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils'
 
 // Icon imports
 import {
-  FaSword, FaShieldHalved, FaBagShopping,
+  FaBomb, FaShieldHalved, FaBagShopping,
   FaBeerMugEmpty, FaWheatAwn, FaIndustry, FaPaw,
-  FaBookOpen, FaCity, FaFloppyDisk, FaFolderOpen, FaQuestionCircle,
+  FaBookOpen, FaCity, FaFloppyDisk, FaFolderOpen, FaCircleQuestion,
 } from 'react-icons/fa6';
 import { FaGift, FaCube, FaHammer, FaSkullCrossbones } from 'react-icons/fa';
 
@@ -32,7 +32,7 @@ export type TabId = 'weapon' | 'armor' | 'novelty' | 'inventory' | 'materials' |
 type MobileView = 'city' | 'combat' | TabId;
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode; description: string }[] = [
-  { id: 'weapon', label: '武器', icon: <FaSword />, description: '购买和装备武器' },
+  { id: 'weapon', label: '武器', icon: <FaBomb />, description: '购买和装备武器' },
   { id: 'armor', label: '护甲', icon: <FaShieldHalved />, description: '购买和装备护甲' },
   { id: 'novelty', label: '杂货', icon: <FaGift />, description: '购买各类杂货道具' },
   { id: 'inventory', label: '背包', icon: <FaBagShopping />, description: '查看和管理背包物品' },
@@ -212,7 +212,7 @@ export const AppShell: React.FC = () => {
           <FaBookOpen /> 图鉴
         </button>
         <button className="px-3 md:px-4 py-1 md:py-1.5 bg-red-500 text-white rounded-full text-xs md:text-sm font-medium shadow-sm cursor-not-allowed opacity-60 hidden md:block flex items-center gap-1">
-          <FaQuestionCircle /> 帮助
+          <FaCircleQuestion /> 帮助
         </button>
       </div>
     </div>
