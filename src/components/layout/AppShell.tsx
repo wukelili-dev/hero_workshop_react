@@ -24,7 +24,7 @@ import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils'
 import {
   FaSword, FaShieldHalved, FaBagShopping,
   FaBeerMugEmpty, FaWheatAwn, FaIndustry, FaPaw,
-  FaBookOpen, FaCastle, FaFloppyDisk, FaFolderOpen, FaQuestionCircle,
+  FaBookOpen, FaCity, FaFloppyDisk, FaFolderOpen, FaQuestionCircle,
 } from 'react-icons/fa6';
 import { FaGift, FaCube, FaHammer, FaSkullCrossbones } from 'react-icons/fa';
 
@@ -46,7 +46,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode; description: stri
 ];
 
 const MOBILE_NAV: { id: MobileView; label: string; icon: React.ReactNode }[] = [
-  { id: 'city', label: '主城', icon: <FaCastle /> },
+  { id: 'city', label: '主城', icon: <FaCity /> },
   { id: 'combat', label: '战斗', icon: <FaSkullCrossbones /> },
   { id: 'inventory', label: '背包', icon: <FaBagShopping /> },
   { id: 'forge', label: '锻造', icon: <FaHammer /> },
