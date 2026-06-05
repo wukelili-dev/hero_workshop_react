@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { CountUp } from 'react-countup';
+import { AnimatedNumber } from '../../hooks/useCountUp';
 import { useGameStore } from '../../store/useGameStore';
 import { BUILDING_CONFIGS, WONDERS, getAllBuildingNames, getWonderNames } from '../../data/buildings';
 import { formatNumber } from '../../data/constants';
@@ -91,7 +91,7 @@ export const MainCityPanel: React.FC = () => {
               <span>{mat.icon}</span>
               <span className="text-sm text-gray-700 w-8">{mat.name}:</span>
               <span className="font-bold text-sm w-10 text-right">
-                <CountUp end={resources[mat.key] ?? 0} duration={0.5} />
+                <AnimatedNumber value={resources[mat.key] ?? 0} />
               </span>
               <button
                 onClick={() => handleSellMaterial(mat.key, mat.sellPrice)}
