@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { toast } from 'sonner';
 import { WEAPONS } from '../../data/equipment';
 import { RARITY_COLORS } from '../../data/constants';
 import { useGameStore } from '../../store/useGameStore';
@@ -25,7 +26,6 @@ export const WeaponTab: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
   const resources = useGameStore((s) => s.resources);
   const equipWeapon = useGameStore((s) => s.equipWeapon);
-  const [msg, setMsg] = useState<string | null>(null);
 
   const canAfford = (w: Equipment) => {
     if (hero.level < (w.levelReq ?? 0)) return false;
@@ -44,19 +44,16 @@ export const WeaponTab: React.FC = () => {
 
   const handleBuy = (weapon: Equipment) => {
     if (!canAfford(weapon)) {
-      setMsg('❌ 资源不足');
-      setTimeout(() => setMsg(null), 2000);
+      toast.error('资源不足');
       return;
     }
     if (hero.level < (weapon.levelReq ?? 0)) {
-      setMsg('❌ 等级不足');
-      setTimeout(() => setMsg(null), 2000);
+      toast.error('等级不足');
       return;
     }
     const ok = equipWeapon(weapon);
     if (ok) {
-      setMsg(`✅ 购买 ${weapon.name} 成功！`);
-      setTimeout(() => setMsg(null), 2000);
+      toast.success(`购买 ${weapon.name} 成功！`);
     }
   };
 
@@ -85,9 +82,7 @@ export const WeaponTab: React.FC = () => {
       </div>
 
       {/* 提示消息 */}
-      {msg && (
-        <div className="px-3 py-1.5 bg-gray-100 rounded text-sm text-center">{msg}</div>
-      )}
+
 
       {TIERS.map(({ tier, name, level }) => {
         const items = Object.values(WEAPONS).filter((w: any) => w.tier === tier);

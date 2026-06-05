@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useGameStore } from '../../store/useGameStore';
 import { PLANTS_CATALOG, PLANT_RARITY_COLORS, PLANT_RARITY_NAMES } from '../../data/plants';
 
@@ -7,7 +8,6 @@ export const FarmTab: React.FC = () => {
   const farmPlots = useGameStore((s) => s.farmPlots);
   const plantCrop = useGameStore((s) => s.plantCrop);
   const harvestCrop = useGameStore((s) => s.harvestCrop);
-  const [msg, setMsg] = useState<string | null>(null);
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
 
@@ -25,22 +25,20 @@ export const FarmTab: React.FC = () => {
   const handlePlant = (plotIdx: number, plantId: string) => {
     const ok = plantCrop(plotIdx, plantId);
     if (ok) {
-      setMsg(`✅ 种植成功！`);
+      toast.success('种植成功！');
       setSelectedPlant(null);
     } else {
-      setMsg(`❌ 金币不足或地块已被占用`);
+      toast.error('金币不足或地块已被占用');
     }
-    setTimeout(() => setMsg(null), 2000);
   };
 
   const handleHarvest = (plotIdx: number) => {
     const ok = harvestCrop(plotIdx);
     if (ok) {
-      setMsg(`✅ 收获成功！`);
+      toast.success('收获成功！');
     } else {
-      setMsg(`❌ 作物尚未成熟`);
+      toast.error('作物尚未成熟');
     }
-    setTimeout(() => setMsg(null), 2000);
   };
 
   const getPlotStatus = (plot: { plantId: string | null; plantedAt: number | null; lastHarvest: number | null }, idx: number) => {
@@ -62,8 +60,6 @@ export const FarmTab: React.FC = () => {
         <h2 className="text-sm font-bold text-gray-700">🌱 农场</h2>
         <span className="text-xs text-yellow-600 font-medium">💰 {hero.gold}</span>
       </div>
-
-      {msg && (<div className="px-3 py-1.5 bg-gray-100 rounded text-sm text-center">{msg}</div>)}
 
       <p className="text-xs text-gray-400">种植作物，成熟后收获金币。6块地，每块独立。</p>
 
@@ -128,7 +124,7 @@ export const FarmTab: React.FC = () => {
                       <button
                         onClick={() => {
                           const idx = farmPlots.findIndex(p => !p.plantId);
-                          if (idx === -1) { setMsg('❌ 没有空地了'); setTimeout(() => setMsg(null), 2000); return; }
+                          if (idx === -1) { toast.error('没有空地了'); return; }
                           handlePlant(idx, plant.id);
                         }}
                         disabled={!afford}

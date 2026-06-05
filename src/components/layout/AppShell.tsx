@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
+import { Toaster, toast } from 'sonner';
 import { TopBar } from './TopBar';
 import { TabBar } from './TabBar';
 import { MainCityPanel } from '../city/MainCityPanel';
@@ -45,21 +46,14 @@ const MOBILE_NAV: { id: MobileView; label: string; icon: string }[] = [
 export const AppShell: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('weapon');
   const [mobileView, setMobileView] = useState<MobileView>('city');
-  const [toast, setToast] = useState<string | null>(null);
-
-  const showToast = useCallback((msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
-  }, []);
-
   const handleSave = () => {
     const ok = saveGame();
-    showToast(ok ? '✅ 存档成功' : '❌ 存档失败');
+    toast.success(ok ? '存档成功' : '存档失败', { icon: ok ? '✅' : '❌' });
   };
 
   const handleLoad = () => {
     if (!hasSave()) {
-      showToast('📭 没有存档记录');
+      toast.info('没有存档记录', { icon: '📭' });
       return;
     }
     const meta = getSaveMeta();
@@ -67,7 +61,7 @@ export const AppShell: React.FC = () => {
       `确认读档？\n\n${meta.heroName} Lv.${meta.heroLevel}\n金币: ${meta.gold}\n${new Date(meta.timestamp).toLocaleString()}`
     )) return;
     const ok = loadGame();
-    showToast(ok ? '✅ 读档成功' : '❌ 读档失败');
+    toast.success(ok ? '读档成功' : '读档失败', { icon: ok ? '✅' : '❌' });
   };
 
   const renderTab = () => {
@@ -96,6 +90,7 @@ export const AppShell: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-white text-gray-800 overflow-hidden">
+      <Toaster />
       {/* Top bar */}
       <TopBar />
 
@@ -139,13 +134,6 @@ export const AppShell: React.FC = () => {
           ))}
         </div>
       </div>
-
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 px-5 py-2 bg-gray-900 text-white text-sm rounded-full shadow-lg">
-          {toast}
-        </div>
-      )}
 
       {/* Bottom action bar */}
       <div className="flex items-center justify-center gap-2 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 bg-white border-t border-gray-200 flex-shrink-0">
