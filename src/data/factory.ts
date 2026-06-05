@@ -27,8 +27,8 @@ export const DEPARTMENTS: DepartmentConfig[] = [
     name: "基础车间",
     costGold: 0,
     costResources: {},
-    bonusFactor: 1.0,
-    desc: "工厂原始部门",
+    bonusFactor: 0.2,
+    desc: "工厂原始部门（+20%利润）",
     built: true,      // 建造工厂时自带
   },
   {

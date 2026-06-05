@@ -2,6 +2,11 @@ import { create } from 'zustand';
 import { DEPARTMENTS, MAX_FACTORY_WORKERS, FACTORY_WORKER_COST_GOLD, FACTORY_WORKER_BONUS, FACTORY_BASE_PROFIT, FACTORY_BASE_INTERVAL_S, FACTORY_BUILD_COST, getDeptById } from '../data/factory';
 import { useGameStore } from './useGameStore';
 
+// 中文材料名 → store resources key（与 useGameStore 中的 RES_KEY_MAP 保持一致）
+const CHINESE_TO_ENGLISH: Record<string, string> = {
+  '木材': 'wood', '铁矿': 'iron', '皮革': 'hide', '石头': 'stone', '药草': 'herb',
+};
+
 export interface FactoryDeptState {
   id: string;
   built: boolean;
@@ -30,6 +35,9 @@ interface FactoryActions {
   setFactoryBuilt: (v: boolean) => void;
 }
 
+// 自动产出定时器引用（模块级，不受 React 重渲染影响）
+let _autoTimer: ReturnType<typeof setInterval> | null = null;
+
 const initDepts: FactoryDeptState[] = DEPARTMENTS.map(d => ({
   id: d.id,
   built: false,   // 全部未建造，factoryBuilt=true 时 basic 由 buildFactory 解锁
@@ -49,24 +57,18 @@ export const useFactoryStore = create<FactoryState & FactoryActions>((set, get) 
     const resources = useGameStore.getState().resources;
     const hero = useGameStore.getState().hero;
     const buildCost = FACTORY_BUILD_COST;
-    // 检查金币
-    if (hero.gold < (buildCost['金币'] ?? 0)) {
-      useGameStore.getState().addGameLog(`建造工厂：金币不足（需要 ${buildCost['金币'] ?? 0}）`);
-      return false;
-    }
-    // 检查材料
-    for (const [res, amt] of Object.entries(buildCost)) {
-      if (res === '金币') continue;
-      if ((resources[res] ?? 0) < amt) {
-        useGameStore.getState().addGameLog(`建造工厂：${res} 不足（需要 ${amt}）`);
+    // 检查材料（ FACTORY_BUILD_COST 用中文 key，resources 用英文 key，需要映射）
+    for (const [cnKey, amt] of Object.entries(buildCost)) {
+      const enKey = CHINESE_TO_ENGLISH[cnKey] ?? cnKey;
+      if ((resources[enKey] ?? 0) < amt) {
+        useGameStore.getState().addGameLog(`建造工厂：${cnKey} 不足（持有 0，需要 ${amt}）`);
         return false;
       }
     }
-    // 扣资源
-    useGameStore.getState().addGold(-(buildCost['金币'] ?? 0));
-    for (const [res, amt] of Object.entries(buildCost)) {
-      if (res === '金币') continue;
-      useGameStore.getState().addResource(res, -amt);
+    // 扣材料
+    for (const [cnKey, amt] of Object.entries(buildCost)) {
+      const enKey = CHINESE_TO_ENGLISH[cnKey] ?? cnKey;
+      useGameStore.getState().addResource(enKey, -amt);
     }
     // 建造工厂，解锁基础车间
     set((s) => ({
@@ -91,15 +93,17 @@ export const useFactoryStore = create<FactoryState & FactoryActions>((set, get) 
       useGameStore.getState().addGameLog(`购买部门：金币不足（需要 ${cfg.costGold}）`);
       return;
     }
-    for (const [res, amt] of Object.entries(cfg.costResources)) {
-      if ((resources[res] ?? 0) < amt) {
-        useGameStore.getState().addGameLog(`购买部门：${res} 不足（需要 ${amt}）`);
+    for (const [cnKey, amt] of Object.entries(cfg.costResources)) {
+      const enKey = CHINESE_TO_ENGLISH[cnKey] ?? cnKey;
+      if ((resources[enKey] ?? 0) < amt) {
+        useGameStore.getState().addGameLog(`购买部门：${cnKey} 不足（持有 0，需要 ${amt}）`);
         return;
       }
     }
     useGameStore.getState().addGold(-cfg.costGold);
-    for (const [res, amt] of Object.entries(cfg.costResources)) {
-      useGameStore.getState().addResource(res, -amt);
+    for (const [cnKey, amt] of Object.entries(cfg.costResources)) {
+      const enKey = CHINESE_TO_ENGLISH[cnKey] ?? cnKey;
+      useGameStore.getState().addResource(enKey, -amt);
     }
     set((s) => ({
       depts: s.depts.map(d => d.id === deptId ? { ...d, built: true, lastProduceAt: Date.now() } : d),
@@ -150,7 +154,7 @@ export const useFactoryStore = create<FactoryState & FactoryActions>((set, get) 
     }
     bonus += totalWorkers * FACTORY_WORKER_BONUS;
     const profit = Math.floor(FACTORY_BASE_PROFIT * bonus);
-    // 收取后重置冷却（basic 不动）
+    // 收取后重置冷却（basic 不动；basic 在首次建造时已设 lastProduceAt，之后不再变）
     set((s) => ({
       depts: s.depts.map(d => {
         if (!d.built) return d;
@@ -163,7 +167,31 @@ export const useFactoryStore = create<FactoryState & FactoryActions>((set, get) 
     return { gold: profit };
   },
 
-  setAutoRunning: (v) => set({ autoRunning: v }),
+  setAutoRunning: (v) => {
+    if (v) {
+      // 启动自动产出定时器：每 60 秒检查一次是否可收取
+      if (!_autoTimer) {
+        _autoTimer = setInterval(() => {
+          const state = useFactoryStore.getState();
+          if (!state.autoRunning) return;
+          const { depts } = state;
+          const now = Date.now();
+          const cooled = depts.filter(d => {
+            if (!d.built) return false;
+            if (d.id === 'basic') return true;
+            return (now - d.lastProduceAt) / 1000 >= FACTORY_BASE_INTERVAL_S;
+          });
+          if (cooled.length > 0) {
+            useFactoryStore.getState().collectProfit();
+          }
+        }, 60_000);
+      }
+      set({ autoRunning: true });
+    } else {
+      if (_autoTimer) { clearInterval(_autoTimer); _autoTimer = null; }
+      set({ autoRunning: false });
+    }
+  },
 
   resetFactory: () => set({ factoryBuilt: false, depts: initDepts, totalWorkers: 0, autoRunning: false }),
 
