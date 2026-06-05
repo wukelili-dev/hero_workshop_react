@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import CountUp from 'react-countup';
 import { useGameStore } from '../../store/useGameStore';
 import { BUILDING_CONFIGS, WONDERS, getAllBuildingNames, getWonderNames } from '../../data/buildings';
 import { formatNumber } from '../../data/constants';
@@ -89,7 +90,9 @@ export const MainCityPanel: React.FC = () => {
             <div key={mat.key} className="flex items-center gap-2 py-1">
               <span>{mat.icon}</span>
               <span className="text-sm text-gray-700 w-8">{mat.name}:</span>
-              <span className="font-bold text-sm w-10 text-right">{formatNumber(resources[mat.key] ?? 0)}</span>
+              <span className="font-bold text-sm w-10 text-right">
+                <CountUp end={resources[mat.key] ?? 0} duration={0.5} />
+              </span>
               <button
                 onClick={() => handleSellMaterial(mat.key, mat.sellPrice)}
                 className="w-6 h-6 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-gray-600 transition-colors text-xs font-bold"

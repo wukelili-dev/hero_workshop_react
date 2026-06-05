@@ -1,4 +1,5 @@
 import React from 'react';
+import CountUp from 'react-countup';
 import { useGameStore } from '../../store/useGameStore';
 import { formatNumber } from '../../data/constants';
 
@@ -17,7 +18,7 @@ export const TopBar: React.FC = () => {
       <div className="flex items-center gap-4">
         <span className="text-sm text-blue-200">击杀: 0</span>
         <div className="px-3 py-0.5 bg-yellow-400 text-gray-900 rounded-full font-bold text-sm">
-          💰{formatNumber(hero.gold)}
+          💰<CountUp end={hero.gold} duration={0.5} separator="," />
         </div>
         <button className="text-white/80 hover:text-white text-lg">☰</button>
       </div>
