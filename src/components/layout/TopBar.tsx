@@ -1,5 +1,5 @@
 import React from 'react';
-import CountUp from 'react-countup';
+import { CountUp } from 'react-countup';
 import { useGameStore } from '../../store/useGameStore';
 import { formatNumber } from '../../data/constants';
 

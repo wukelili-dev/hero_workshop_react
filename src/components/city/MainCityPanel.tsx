@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import CountUp from 'react-countup';
+import { CountUp } from 'react-countup';
 import { useGameStore } from '../../store/useGameStore';
 import { BUILDING_CONFIGS, WONDERS, getAllBuildingNames, getWonderNames } from '../../data/buildings';
 import { formatNumber } from '../../data/constants';
