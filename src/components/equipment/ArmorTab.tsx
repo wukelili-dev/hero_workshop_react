@@ -12,15 +12,44 @@ const TIERS = [
   { tier: 5, name: '五阶', level: 'Lv.21~25' },
 ];
 
+const RES_LABELS: Record<string, string> = {
+  '金币': '💰', '木材': '🪵', '铁矿': '⛏', '皮革': '🧶', '石头': '🪨', '药草': '🌿',
+};
+
+// 中文材料名 → store resources key 映射
+const RES_KEY_MAP: Record<string, string> = {
+  '木材': 'wood', '铁矿': 'iron', '皮革': 'hide', '石头': 'stone', '药草': 'herb',
+};
+
 export const ArmorTab: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
+  const resources = useGameStore((s) => s.resources);
   const equipArmor = useGameStore((s) => s.equipArmor);
   const [msg, setMsg] = useState<string | null>(null);
 
+  const canAfford = (a: Equipment) => {
+    if (hero.level < (a.levelReq ?? 0)) return false;
+    const cost = a.cost ?? {};
+    for (const [res, amt] of Object.entries(cost)) {
+      const numAmt = Number(amt);
+      if (res === '金币') {
+        if (hero.gold < numAmt) return false;
+      } else {
+        const rKey = RES_KEY_MAP[res] ?? res;
+        if ((resources as any)[rKey] < numAmt) return false;
+      }
+    }
+    return true;
+  };
+
   const handleBuy = (armor: Equipment) => {
-    const cost = armor.cost?.['金币'] ?? 0;
-    if (hero.gold < cost) {
-      setMsg('❌ 金币不足');
+    if (!canAfford(armor)) {
+      setMsg('❌ 资源不足');
+      setTimeout(() => setMsg(null), 2000);
+      return;
+    }
+    if (hero.level < (armor.levelReq ?? 0)) {
+      setMsg('❌ 等级不足');
       setTimeout(() => setMsg(null), 2000);
       return;
     }
@@ -30,6 +59,23 @@ export const ArmorTab: React.FC = () => {
       setTimeout(() => setMsg(null), 2000);
     }
   };
+
+  const CostDisplay = ({ cost }: { cost: Record<string, number | string> }) => (
+    <span className="flex items-center gap-1 flex-wrap">
+      {Object.entries(cost).map(([res, amt]) => {
+        const numAmt = Number(amt);
+        const icon = RES_LABELS[res] ?? res;
+        const current = res === '金币' ? hero.gold : (resources as any)[RES_KEY_MAP[res] ?? res] ?? 0;
+        const enough = current >= numAmt;
+        return (
+          <span key={res} className={`text-xs ${enough ? 'text-yellow-600' : 'text-red-500'}`}>
+            {icon}{numAmt}
+            <span className="text-gray-400">({current})</span>
+          </span>
+        );
+      })}
+    </span>
+  );
 
   return (
     <div className="space-y-5">
@@ -54,8 +100,7 @@ export const ArmorTab: React.FC = () => {
             </div>
             <div className="space-y-1">
               {items.map((a: any) => {
-                const cost = a.cost?.['金币'] ?? 0;
-                const canAfford = hero.gold >= cost;
+                const affordable = canAfford(a);
                 const isEquipped = hero.armor?.id === a.id;
 
                 return (
@@ -78,14 +123,14 @@ export const ArmorTab: React.FC = () => {
                       {a.stats?.def && <span className="text-xs text-blue-500">🛡{a.stats.def}</span>}
                       {a.stats?.hp && <span className="text-xs text-red-400">❤{a.stats.hp}</span>}
                       {a.stats?.crit && <span className="text-xs text-orange-500">CRIT {(a.stats.crit * 100).toFixed(0)}%</span>}
-                      <span className="text-xs text-yellow-600 font-medium">💰{cost}</span>
+                      <CostDisplay cost={a.cost ?? {}} />
                       <button
                         onClick={() => handleBuy(a)}
-                        disabled={!canAfford || isEquipped}
+                        disabled={!affordable || isEquipped}
                         className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                           isEquipped
                             ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                            : canAfford
+                            : affordable
                             ? 'bg-blue-500 hover:bg-blue-600 text-white'
                             : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                         }`}

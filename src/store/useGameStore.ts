@@ -47,6 +47,11 @@ interface GameActions {
   addDiscoveredMonster: (id: string) => void;
 }
 
+// 中文材料名 → store resources key 映射
+const RES_KEY_MAP: Record<string, string> = {
+  '木材': 'wood', '铁矿': 'iron', '皮革': 'hide', '石头': 'stone', '药草': 'herb',
+};
+
 const BASE_ATK = (lv: number) => 5 + lv * 2;
 const BASE_DEF = (lv: number) => 2 + lv;
 const BASE_HP = (lv: number) => Math.floor(80 + lv * 18 + Math.floor(lv / 5) * 5);
@@ -144,9 +149,27 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   },
 
   equipWeapon: (w) => {
-    const { hero } = get();
-    const cost = w.cost?.['金币'] ?? 0;
-    if (hero.gold < cost) return false;
+    const { hero, resources } = get();
+    if (hero.level < (w.levelReq ?? 0)) return false;
+    const cost = w.cost ?? {};
+    // 检查所有资源是否足够
+    for (const [res, amt] of Object.entries(cost)) {
+      const numAmt = Number(amt);
+      if (res === '金币') {
+        if (hero.gold < numAmt) return false;
+      } else {
+        const rKey = RES_KEY_MAP[res] ?? res;
+        if ((resources as any)[rKey] < numAmt) return false;
+      }
+    }
+    // 扣减所有资源
+    const goldCost = cost['金币'] ? Number(cost['金币']) : 0;
+    const newRes = { ...resources };
+    for (const [res, amt] of Object.entries(cost)) {
+      if (res === '金币') continue;
+      const rKey = RES_KEY_MAP[res] ?? res;
+      newRes[rKey] = Math.max(0, (newRes as any)[rKey] - Number(amt));
+    }
     const oldAtk = hero.weapon?.stats?.atk ?? 0;
     const newAtk = w.stats?.atk ?? 0;
     const oldCrit = hero.weapon?.stats?.crit ?? 0;
@@ -154,30 +177,50 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     set((s) => ({
       hero: {
         ...s.hero,
-        gold: s.hero.gold - cost,
+        gold: s.hero.gold - goldCost,
         weapon: w,
         atk: BASE_ATK(s.hero.level) + newAtk,
         critRate: Math.max(0, Math.min(1, s.hero.critRate - oldCrit + newCrit)),
       },
+      resources: newRes,
     }));
     return true;
   },
 
   equipArmor: (a) => {
-    const { hero } = get();
-    const cost = a.cost?.['金币'] ?? 0;
-    if (hero.gold < cost) return false;
+    const { hero, resources } = get();
+    if (hero.level < (a.levelReq ?? 0)) return false;
+    const cost = a.cost ?? {};
+    // 检查所有资源是否足够
+    for (const [res, amt] of Object.entries(cost)) {
+      const numAmt = Number(amt);
+      if (res === '金币') {
+        if (hero.gold < numAmt) return false;
+      } else {
+        const rKey = RES_KEY_MAP[res] ?? res;
+        if ((resources as any)[rKey] < numAmt) return false;
+      }
+    }
+    // 扣减所有资源
+    const goldCost = cost['金币'] ? Number(cost['金币']) : 0;
+    const newRes = { ...resources };
+    for (const [res, amt] of Object.entries(cost)) {
+      if (res === '金币') continue;
+      const rKey = RES_KEY_MAP[res] ?? res;
+      newRes[rKey] = Math.max(0, (newRes as any)[rKey] - Number(amt));
+    }
     const newHp = (a.stats?.hp ?? 0);
     const mhp = BASE_HP(hero.level) + newHp;
     set((s) => ({
       hero: {
         ...s.hero,
-        gold: s.hero.gold - cost,
+        gold: s.hero.gold - goldCost,
         armor: a,
         def: BASE_DEF(s.hero.level) + (a.stats?.def ?? 0),
         maxHp: mhp,
         hp: Math.min(s.hero.hp, mhp),
       },
+      resources: newRes,
     }));
     return true;
   },
