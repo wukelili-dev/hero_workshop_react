@@ -147,6 +147,7 @@ export const BestiaryTab: React.FC = () => {
                         <span className="text-xs text-red-500 font-bold">BOSS</span>
                       )}
                     </div>
+                  </div>
                   <div className="text-xs text-gray-600 space-y-0.5">
                     <div>等级：Lv.{monster.level ?? '?'}</div>
                     <div>HP：{monster.hp}</div>
