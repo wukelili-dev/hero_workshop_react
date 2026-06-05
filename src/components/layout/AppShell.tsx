@@ -101,14 +101,14 @@ export const AppShell: React.FC = () => {
 
       {/* === 桌面端：三栏布局 === */}
       <div className="hidden md:flex flex-1 overflow-hidden">
-        <div className="w-72 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-gray-50/50">
+        <div className="flex-[2_0_0] min-w-0 overflow-y-auto border-r border-gray-200 bg-gray-50/50">
           <MainCityPanel />
         </div>
-        <div className="w-96 flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-white flex flex-col">
+        <div className="flex-[3_0_0] min-w-0 overflow-y-auto border-r border-gray-200 bg-white flex flex-col">
           <div className="flex-1 overflow-y-auto"><CenterPanel /></div>
           <LogPanel />
         </div>
-        <div className="flex flex-col flex-1 min-w-0 max-w-3xl overflow-hidden">
+        <div className="flex-[4_0_0] min-w-0 flex flex-col overflow-hidden">
           <TabBar tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
           <div className="flex-1 overflow-y-auto p-4">
             {renderTab()}
