@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import type { RanchSlotState } from '../types';
+import { RANCH_CATALOG } from '../data/ranch';
+import { useGameStore } from './useGameStore';
 
 interface RanchState {
   slots: RanchSlotState[];
@@ -32,6 +34,8 @@ export const useRanchStore = create<RanchState & RanchActions>((set) => ({
       const now = Date.now();
       const newSlots = [...s.slots];
       newSlots[slotIdx] = { creatureId, boughtAt: now, fedAt: now, harvestCount: 0 };
+      const creature = RANCH_CATALOG.find(c => c.id === creatureId);
+      useGameStore.getState().addGameLog(`购买牧场生物 ${creature?.name ?? creatureId}（槽位${slotIdx + 1}）`);
       return { slots: newSlots };
     }),
 
@@ -41,6 +45,8 @@ export const useRanchStore = create<RanchState & RanchActions>((set) => ({
       if (!slot || !slot.creatureId) return s;
       const newSlots = [...s.slots];
       newSlots[slotIdx] = { ...slot, fedAt: Date.now() };
+      const creature = RANCH_CATALOG.find(c => c.id === slot.creatureId);
+      useGameStore.getState().addGameLog(`喂养 ${creature?.name ?? slot.creatureId}（槽位${slotIdx + 1}）`);
       return { slots: newSlots };
     }),
 
@@ -50,6 +56,8 @@ export const useRanchStore = create<RanchState & RanchActions>((set) => ({
       if (!slot || !slot.creatureId) return s;
       const newSlots = [...s.slots];
       newSlots[slotIdx] = { ...slot, harvestCount: slot.harvestCount + 1 };
+      const creature = RANCH_CATALOG.find(c => c.id === slot.creatureId);
+      useGameStore.getState().addGameLog(`收获 ${creature?.name ?? slot.creatureId} 产品（槽位${slotIdx + 1}），第${slot.harvestCount + 1}次收获`);
       return { slots: newSlots };
     }),
 

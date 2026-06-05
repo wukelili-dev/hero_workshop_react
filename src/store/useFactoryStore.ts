@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { DEPARTMENTS, MAX_FACTORY_WORKERS, FACTORY_WORKER_COST_GOLD, FACTORY_WORKER_BONUS, FACTORY_BASE_PROFIT, FACTORY_BASE_INTERVAL_S } from '../data/factory';
+import { useGameStore } from './useGameStore';
 
 export interface FactoryDeptState {
   id: string;
@@ -40,14 +41,19 @@ export const useFactoryStore = create<FactoryState & FactoryActions>((set, get) 
   totalWorkers: 0,
   autoRunning: false,
 
-  buildDept: (deptId) =>
+  buildDept: (deptId) => {
+    const dept = DEPARTMENTS.find(c => c.id === deptId);
     set((s) => ({
       depts: s.depts.map(d => d.id === deptId ? { ...d, built: true } : d),
-    })),
+    }));
+    useGameStore.getState().addGameLog(`建造工厂部门：${dept?.name ?? deptId}`);
+  },
 
   hireWorker: (deptId) =>
     set((s) => {
       if (s.totalWorkers >= MAX_FACTORY_WORKERS) return s;
+      const dept = DEPARTMENTS.find(c => c.id === deptId);
+      useGameStore.getState().addGameLog(`雇佣工人：${dept?.name ?? deptId}（当前总工人：${s.totalWorkers + 1}）`);
       return {
         depts: s.depts.map(d => d.id === deptId ? { ...d, workerCount: d.workerCount + 1 } : d),
         totalWorkers: s.totalWorkers + 1,
@@ -79,6 +85,7 @@ export const useFactoryStore = create<FactoryState & FactoryActions>((set, get) 
     }
     bonus += totalWorkers * FACTORY_WORKER_BONUS;
     const profit = Math.floor(FACTORY_BASE_PROFIT * bonus);
+    useGameStore.getState().addGameLog(`工厂收货：获得 ${profit} 金币（加成 x${bonus.toFixed(1)}）`);
     return { gold: profit };
   },
 

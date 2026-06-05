@@ -184,6 +184,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       },
       resources: newRes,
     }));
+    get().addGameLog(`购买武器 ${w.name}`);
     return true;
   },
 
@@ -222,6 +223,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       },
       resources: newRes,
     }));
+    get().addGameLog(`购买护甲 ${a.name}`);
     return true;
   },
 
@@ -235,6 +237,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         noveltyItems: [...s.hero.noveltyItems, itemName],
       },
     }));
+    get().addGameLog(`购买杂货 ${itemName}，花费 ${price} 金币`);
     return true;
   },
 
@@ -248,6 +251,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         noveltyItems: s.hero.noveltyItems.filter((x) => x !== itemName),
       },
     }));
+    get().addGameLog(`出售杂货 ${itemName}，获得 ${sellPrice} 金币`);
     return true;
   },
 
@@ -262,6 +266,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         farmPlots: plots,
       };
     });
+    get().addGameLog(`种植 ${plantId}（地块${plotIdx + 1}）`);
     return true;
   },
 
@@ -285,6 +290,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         farmPlots: plots,
       };
     });
+    get().addGameLog(`收获 ${plot.plantId}（地块${plotIdx + 1}），获得 ${plant.harvestGold ?? 0} 金币`);
     return true;
   },
 
@@ -294,6 +300,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       tavernRoster: generateTavernRoster(hero.level),
       tavernLastRefresh: Date.now(),
     });
+    get().addGameLog('刷新酒馆阵容');
   },
 
   recruitMember: (recruit) => {
@@ -317,6 +324,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         ],
       },
     }));
+    get().addGameLog(`招募 ${recruit.roleName}（精英${recruit.isElite ? '是' : '否'}），花费 ${recruit.cost} 金币`);
     return true;
   },
 
