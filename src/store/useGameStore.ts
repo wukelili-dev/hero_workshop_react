@@ -4,7 +4,7 @@ import { MAPS } from '../data/maps';
 import { executeBattle, type BattleLog, type Rewards } from '../engine/Combat';
 import { PLANTS_CATALOG } from '../data/plants';
 import { generateTavernRoster, type TavernRecruit } from '../data/tavern';
-import { BUILDING_CONFIGS, getAllBuildingNames } from '../data/buildings';
+import { BUILDING_CONFIGS, getAllBuildingNames, BUILDING_OUTPUTS } from '../data/buildings';
 
 interface GameState {
   hero: HeroState;
@@ -252,6 +252,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     if (cfg && !_lastBuildingTick[name]) {
       _lastBuildingTick[name] = Date.now() - cfg.baseInterval * 1000;
     }
+    // 建造日志
+    const outputRes = BUILDING_OUTPUTS[name] || name;
+    const outputPerTick = cfg ? cfg.baseOutput * newCount : 0;
+    get().addGameLog(`建造${name}x${newCount}完成，当前产量：${outputRes}X${outputPerTick}/tick`);
     return { buildings: updated };
   }),
 
