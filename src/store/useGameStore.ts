@@ -18,6 +18,7 @@ interface GameState {
   battleLogs: { timestamp: number; message: string }[];
   gameLogs: { timestamp: number; message: string }[];
   discoveredMonsters: string[];
+  autoPotionThreshold: number;
 }
 
 interface GameActions {
@@ -45,6 +46,9 @@ interface GameActions {
   addBattleLog: (message: string) => void;
   addGameLog: (message: string) => void;
   addDiscoveredMonster: (id: string) => void;
+  buyPotion: () => boolean;
+  usePotion: () => boolean;
+  setAutoPotionThreshold: (val: number) => void;
 }
 
 // 中文材料名 → store resources key 映射
@@ -63,6 +67,7 @@ const initHero: HeroState = {
   critRate: 0.05, critDmg: 1.5,
   gold: 100, weapon: null, armor: null,
   passives: [], noveltyItems: [], team: [],
+  potions: 0,
 };
 
 const initRes: Resources = { wood: 0, iron: 0, hide: 0, stone: 0, herb: 0 };
@@ -93,6 +98,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   battleLogs: [],
   gameLogs: [],
   discoveredMonsters: [],
+  autoPotionThreshold: 0,
 
   setHero: (p) => set((s) => ({ hero: { ...s.hero, ...p } })),
   setResources: (p) => set((s) => ({ resources: { ...s.resources, ...p } })),
@@ -116,6 +122,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     battleLogs: [],
     gameLogs: [],
     discoveredMonsters: [],
+    autoPotionThreshold: 0,
   }),
 
   addExp: (amt) => set((s) => {
@@ -143,10 +150,45 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       get().addBattleLog(`[${hhmm}] 战胜${monster.name}！获得 ${result.rewards.exp} EXP，${result.rewards.gold} 金币`);
       get().addDiscoveredMonster(monster.id);
     } else {
-      get().addBattleLog(`[${hhmm}] 战斗失败...被 ${monster.name} 击败`);
+      // 死亡：自动复活到50% HP
+      get().addBattleLog(`[${hhmm}] 被 ${monster.name} 击败！自动复活至 50% HP`);
+      const reviveHp = Math.floor(hero.maxHp * 0.5);
+      set((s) => ({ hero: { ...s.hero, hp: reviveHp } }));
+      // 尝试自动药水（复活后如果血量仍低）
+      const { autoPotionThreshold } = get();
+      if (autoPotionThreshold > 0 && hero.potions > 0) {
+        const hpPct = reviveHp / hero.maxHp;
+        if (hpPct * 100 < autoPotionThreshold) {
+          const heal = Math.min(20, hero.maxHp - reviveHp);
+          if (heal > 0) {
+            set((s) => ({ hero: { ...s.hero, potions: s.hero.potions - 1, hp: s.hero.hp + heal } }));
+            get().addBattleLog(`[${hhmm}] 💊 自动药水！+${heal} HP（剩余 ${hero.potions - 1} 瓶）`);
+          }
+        }
+      }
     }
     return result;
   },
+
+  buyPotion: () => {
+    const { hero } = get();
+    if (hero.gold < 25) return false;
+    set((s) => ({ hero: { ...s.hero, gold: s.hero.gold - 25, potions: s.hero.potions + 1 } }));
+    get().addGameLog(`购买药水 x1（剩余 ${get().hero.potions} 瓶）`);
+    return true;
+  },
+
+  usePotion: () => {
+    const { hero } = get();
+    if (hero.potions <= 0) return false;
+    const heal = Math.min(20, hero.maxHp - hero.hp);
+    if (heal <= 0) return false;
+    set((s) => ({ hero: { ...s.hero, potions: s.hero.potions - 1, hp: s.hero.hp + heal } }));
+    get().addGameLog(`使用药水 +${heal} HP（剩余 ${get().hero.potions} 瓶）`);
+    return true;
+  },
+
+  setAutoPotionThreshold: (val) => set({ autoPotionThreshold: val }),
 
   equipWeapon: (w) => {
     const { hero, resources } = get();

@@ -10,6 +10,14 @@ export const CombatPanel: React.FC = () => {
   const addExp = useGameStore((s) => s.addExp);
   const addGold = useGameStore((s) => s.addGold);
   const setHp = useGameStore((s) => s.setHp);
+  const buyPotion = useGameStore((s) => s.buyPotion);
+  const usePotion = useGameStore((s) => s.usePotion);
+  const potions = useGameStore((s) => s.hero.potions);
+  const autoPotionThreshold = useGameStore((s) => s.autoPotionThreshold);
+  const setAutoPotionThreshold = useGameStore((s) => s.setAutoPotionThreshold);
+
+  const handleBuyPotion = () => { if (!buyPotion()) alert('金币不足！'); };
+  const handleUsePotion = () => { if (!usePotion()) alert(hero.potions <= 0 ? '没有药水！' : 'HP已满！'); };
 
   const [battleLogs, setBattleLogs] = useState<BattleLog[]>([]);
   const [visibleCount, setVisibleCount] = useState(0);
@@ -102,6 +110,36 @@ export const CombatPanel: React.FC = () => {
             </div>
           );
         })}
+      </div>
+
+      {/* 药水栏 */}
+      <div className="p-2 border border-amber-200 rounded-lg bg-amber-50">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-amber-700">💊 药水</span>
+          <span className="text-xs font-bold text-amber-800">x{potions}</span>
+        </div>
+        <div className="flex gap-2 mb-2">
+          <button
+            onClick={handleBuyPotion}
+            className="flex-1 py-1 bg-amber-400 hover:bg-amber-500 text-white rounded text-xs font-medium transition-colors"
+          >购买 (25G)</button>
+          <button
+            onClick={handleUsePotion}
+            disabled={potions <= 0 || hero.hp >= hero.maxHp}
+            className={`flex-1 py-1 rounded text-xs font-medium transition-colors ${potions <= 0 || hero.hp >= hero.maxHp ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+          >使用 +20HP</button>
+        </div>
+        {/* 自动药水阈值 */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-amber-600">自动喝药：</span>
+          {[0, 30, 50, 80].map((v) => (
+            <button
+              key={v}
+              onClick={() => setAutoPotionThreshold(v)}
+              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${autoPotionThreshold === v ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'}`}
+            >{v === 0 ? '关' : `${v}%`}</button>
+          ))}
+        </div>
       </div>
 
       {/* 勇者 HP */}
