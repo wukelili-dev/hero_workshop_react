@@ -8,6 +8,10 @@
 - Vite
 - Zustand（状态管理）
 - Tailwind CSS
+- Radix UI（Dialog / Tabs / Tooltip / Switch / Collapsible / DropdownMenu / Select / Progress / Separator）
+- framer-motion（动画）
+- react-countup（数字滚动）
+- sonner（Toast 通知）
 
 ## 功能模块
 
