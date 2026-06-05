@@ -5,8 +5,6 @@ import { formatNumber } from '../../data/constants';
 
 export const TopBar: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
-  const displayGold = useCountUp(hero.gold, 500);
-
   return (
     <div className="flex items-center justify-between px-4 py-2 bg-blue-600 text-white">
       {/* Left: Title */}
