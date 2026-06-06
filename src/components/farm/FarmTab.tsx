@@ -37,17 +37,18 @@ export const FarmTab: React.FC = () => {
     }
   };
 
-  const getPlotStatus = (plot: { plantId: string | null; plantedAt: number | null; lastHarvest: number | null }, idx: number) => {
-    if (!plot.plantId) return { status: 'empty', text: '空地', pct: 0 };
+  const getPlotStatus = (plot: { plantId: string | null; plantedAt: number | null; lastHarvest: number | null; accumulatedGold?: number }, idx: number) => {
+    if (!plot.plantId) return { status: 'empty', text: '空地', pct: 0, accGold: 0 };
     const plant = PLANTS_CATALOG.find(p => p.id === plot.plantId);
-    if (!plant) return { status: 'unknown', text: '未知', pct: 0 };
+    if (!plant) return { status: 'unknown', text: '未知', pct: 0, accGold: 0 };
     const growDone = (plot.plantedAt ?? 0) + plant.growTimeS * 1000;
     if (now < growDone) {
       const pct = Math.min(100, ((now - (plot.plantedAt ?? 0)) / (plant.growTimeS * 1000)) * 100);
       const remain = Math.ceil((growDone - now) / 1000);
-      return { status: 'growing', text: `生长中 ${remain}s`, pct };
+      return { status: 'growing', text: `生长中 ${remain}s`, pct, accGold: 0 };
     }
-    return { status: 'ready', text: '可收获', pct: 100 };
+    const accGold = plot.accumulatedGold ?? 0;
+    return { status: 'ready', text: accGold > 0 ? `💰${accGold}` : '积累中...', pct: 100, accGold };
   };
 
   return (
@@ -83,11 +84,14 @@ export const FarmTab: React.FC = () => {
                     className="px-2 py-0.5 bg-green-100 hover:bg-green-200 rounded text-[10px] text-green-800 transition-colors"
                   >种植</button>
                 )}
-                {status === 'ready' && (
+                {status === 'ready' && accGold > 0 && (
                   <button
                     onClick={() => handleHarvest(idx)}
                     className="px-2 py-0.5 bg-yellow-100 hover:bg-yellow-200 rounded text-[10px] text-yellow-800 transition-colors"
-                  >收获</button>
+                  >收获 +{accGold}G</button>
+                )}
+                {status === 'ready' && accGold <= 0 && (
+                  <span className="text-[10px] text-gray-400">⏳ 积累中</span>
                 )}
                 {status === 'growing' && (
                   <span className="text-[10px] text-gray-300">🕐</span>
