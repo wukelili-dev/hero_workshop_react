@@ -363,15 +363,35 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             }
           }
           // 自动喝药（用最新状态）
-          const h2 = get().hero;
-          if (h2.potions <= 0 && h2.gold >= 50) get().buyPotion();
-          if (h2.hp < h2.maxHp * (get().autoPotionThreshold / 100) && h2.potions > 0) get().usePotion();
+          const th = get().autoPotionThreshold;
+          if (th > 0) {
+            let h = get().hero;
+            if (h.potions <= 0 && h.gold >= 50) {
+              get().buyPotion();
+              h = get().hero; // 买完后刷新状态
+            }
+            if (h.potions > 0 && h.hp < h.maxHp * (th / 100)) {
+              get().usePotion();
+            }
+          }
           get().refreshEnemies();
           // 清理自动战斗日志，防止刷屏
           set((s) => ({ battleLogs: s.battleLogs.slice(-5) }));
         } else {
           // 失败：刷新敌人避免死循环
           get().refreshEnemies();
+          // 失败复活后也检查自动喝药
+          const th2 = get().autoPotionThreshold;
+          if (th2 > 0) {
+            let hd = get().hero;
+            if (hd.potions <= 0 && hd.gold >= 50) {
+              get().buyPotion();
+              hd = get().hero;
+            }
+            if (hd.potions > 0 && hd.hp < hd.maxHp * (th2 / 100)) {
+              get().usePotion();
+            }
+          }
         }
       }, 600);
     } else if (!v && _autoBattleTimer) {
