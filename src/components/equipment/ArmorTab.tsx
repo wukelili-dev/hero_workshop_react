@@ -3,6 +3,7 @@ import { ARMORS } from '../../data/equipment';
 import { RARITY_COLORS } from '../../data/constants';
 import { useGameStore } from '../../store/useGameStore';
 import type { Equipment } from '../../types';
+import { FaShield, FaTree, FaMagnet, FaPaw, FaMountain, FaLeaf, FaCoins } from 'react-icons/fa6';
 
 const TIERS = [
   { tier: 1, name: '初阶', level: 'Lv.1~5' },
@@ -14,6 +15,15 @@ const TIERS = [
 
 const RES_LABELS: Record<string, string> = {
   '金币': '💰', '木材': '🪵', '铁矿': '⛏', '皮革': '🧶', '石头': '🪨', '药草': '🌿',
+};
+
+const RES_ICONS: Record<string, React.ReactNode> = {
+  '金币': <FaCoins className="inline text-yellow-500" />,
+  '木材': <FaTree className="inline text-green-600" />,
+  '铁矿': <FaMagnet className="inline text-gray-400" />,
+  '皮革': <FaPaw className="inline text-orange-600" />,
+  '石头': <FaMountain className="inline text-gray-500" />,
+  '药草': <FaLeaf className="inline text-green-500" />,
 };
 
 // 中文材料名 → store resources key 映射
@@ -66,7 +76,7 @@ export const ArmorTab: React.FC = () => {
     <span className="flex items-center gap-1 flex-wrap">
       {Object.entries(cost).map(([res, amt]) => {
         const numAmt = Number(amt);
-        const icon = RES_LABELS[res] ?? res;
+        const icon = RES_ICONS[res] ?? res;
         const current = res === '金币' ? hero.gold : (resources as any)[RES_KEY_MAP[res] ?? res] ?? 0;
         const enough = current >= numAmt;
         return (
@@ -81,8 +91,8 @@ export const ArmorTab: React.FC = () => {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-gray-700">🛡 护甲</h2>
+      <div className="flex items-center justify-between items-center">
+        <h2 className="text-sm font-bold text-gray-700 flex items-center gap-1"><FaShield className="text-blue-500" /> 护甲</h2>
         <span className="text-xs text-yellow-600 font-medium">💰 {hero.gold}</span>
       </div>
 
