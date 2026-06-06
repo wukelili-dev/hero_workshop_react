@@ -113,7 +113,7 @@ export const WeaponTab: React.FC = () => {
                 return (
                   <div
                     key={w.id}
-                    className="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                    className="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200"
                   >
                     <div className="flex items-center gap-2">
                       <span
