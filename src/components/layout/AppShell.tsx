@@ -58,6 +58,12 @@ export const AppShell: React.FC = () => {
   const [mobileView, setMobileView] = useState<MobileView>('city');
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [saveMeta, setSaveMeta] = useState<ReturnType<typeof getSaveMeta>>(null);
+  const [showApp, setShowApp] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowApp(true), 30);
+    return () => clearTimeout(t);
+  }, []);
 
   const handleSave = () => {
     const ok = saveGame();
@@ -105,36 +111,51 @@ export const AppShell: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white text-gray-800 overflow-hidden">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 text-gray-800 overflow-hidden">
       <Toaster />
       {/* Top bar */}
       <TopBar />
 
       {/* === 桌面端：三栏布局 === */}
       <div className="hidden md:flex flex-1 overflow-hidden">
-        <div className="flex-[2_0_0] min-w-0 overflow-y-auto border-r border-gray-200 bg-gray-50/50">
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={showApp ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="flex-[2_0_0] min-w-0 overflow-y-auto border-r border-gray-200/70 bg-gradient-to-b from-gray-50/80 to-gray-100/40"
+        >
           <MainCityPanel />
-        </div>
-        <div className="flex-[3_0_0] min-w-0 overflow-y-auto border-r border-gray-200 bg-white flex flex-col">
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={showApp ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.4, delay: 0.25 }}
+          className="flex-[3_0_0] min-w-0 overflow-y-auto border-r border-gray-200/70 bg-white/90 flex flex-col"
+        >
           <div className="flex-1 overflow-y-auto"><CenterPanel /></div>
           <LogPanel />
-        </div>
-        <div className="flex-[4_0_0] min-w-0 flex flex-col overflow-hidden">
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          animate={showApp ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.4, delay: 0.4 }}
+          className="flex-[4_0_0] min-w-0 flex flex-col overflow-hidden"
+        >
           <TabBar tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
           <div className="flex-1 overflow-y-auto p-4">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
               >
                 {renderTab()}
               </motion.div>
             </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* === 移动端：底部导航切换 === */}
@@ -180,7 +201,7 @@ export const AppShell: React.FC = () => {
           </Dialog.Trigger>
           <Dialog.Portal>
             <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-            <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-80 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+            <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl p-6 w-80 z-50 border border-gray-100 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
               <Dialog.Title className="text-lg font-bold text-gray-900 mb-2">确认读档？</Dialog.Title>
               {saveMeta && (
                 <div className="text-sm text-gray-600 mb-4 space-y-1">

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, type Variants } from 'framer-motion';
 import { ARMORS } from '../../data/equipment';
 import { RARITY_COLORS } from '../../data/constants';
 import { useGameStore } from '../../store/useGameStore';
@@ -13,10 +14,6 @@ const TIERS = [
   { tier: 5, name: '五阶', level: 'Lv.21~25' },
 ];
 
-const RES_LABELS: Record<string, string> = {
-  '金币': '💰', '木材': '🪵', '铁矿': '⛏', '皮革': '🧶', '石头': '🪨', '药草': '🌿',
-};
-
 const RES_ICONS: Record<string, React.ReactNode> = {
   '金币': <FaCoins className="inline text-yellow-500" />,
   '木材': <FaTree className="inline text-green-600" />,
@@ -26,9 +23,17 @@ const RES_ICONS: Record<string, React.ReactNode> = {
   '药草': <FaLeaf className="inline text-green-500" />,
 };
 
-// 中文材料名 → store resources key 映射
 const RES_KEY_MAP: Record<string, string> = {
   '木材': 'wood', '铁矿': 'iron', '皮革': 'hide', '石头': 'stone', '药草': 'herb',
+};
+
+const listVariants: Variants = {
+  hidden: { opacity: 0, x: -16 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: { delay: i * 0.05, duration: 0.3, ease: 'easeOut' },
+  }),
 };
 
 export const ArmorTab: React.FC = () => {
@@ -96,9 +101,14 @@ export const ArmorTab: React.FC = () => {
         <span className="text-xs text-yellow-600 font-medium">💰 {hero.gold}</span>
       </div>
 
-      {/* 提示消息 */}
       {msg && (
-        <div className="px-3 py-1.5 bg-gray-100 rounded text-sm text-center">{msg}</div>
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="px-3 py-1.5 bg-gray-100 rounded text-sm text-center"
+        >
+          {msg}
+        </motion.div>
       )}
 
       {TIERS.map(({ tier, name, level }) => {
@@ -110,15 +120,20 @@ export const ArmorTab: React.FC = () => {
               <span className="text-sm font-bold text-gray-700">{name}</span>
               <span className="text-xs text-gray-400">{level}</span>
             </div>
-            <div className="space-y-1">
-              {items.map((a: any) => {
+            <div className="space-y-1.5">
+              {items.map((a: any, i: number) => {
                 const affordable = canAfford(a);
                 const isEquipped = hero.armor?.id === a.id;
 
                 return (
-                  <div
+                  <motion.div
                     key={a.id}
-                    className="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200"
+                    custom={i}
+                    variants={listVariants}
+                    initial="hidden"
+                    animate="visible"
+                    whileHover={{ scale: 1.012, boxShadow: '0 2px 12px rgba(59,130,246,0.10)' }}
+                    className="flex items-center justify-between px-3 py-2 bg-white border border-gray-200/80 rounded-xl hover:border-blue-200/80 transition-colors duration-200 cursor-default"
                   >
                     <div className="flex items-center gap-2">
                       <span
@@ -136,21 +151,22 @@ export const ArmorTab: React.FC = () => {
                       {a.stats?.hp && <span className="text-xs text-red-400">❤{a.stats.hp}</span>}
                       {a.stats?.crit && <span className="text-xs text-orange-500">CRIT {(a.stats.crit * 100).toFixed(0)}%</span>}
                       <CostDisplay cost={a.cost ?? {}} />
-                      <button
+                      <motion.button
+                        whileTap={{ scale: 0.88 }}
                         onClick={() => handleBuy(a)}
                         disabled={!affordable || isEquipped}
                         className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                           isEquipped
                             ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                             : affordable
-                            ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                            ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-sm hover:shadow'
                             : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                         }`}
                       >
                         {isEquipped ? '已装备' : '购买'}
-                      </button>
+                      </motion.button>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>

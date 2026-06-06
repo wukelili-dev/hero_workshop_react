@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { motion, type Variants } from 'framer-motion';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 import { useGameStore } from '../../store/useGameStore';
 import { BUILDING_CONFIGS, WONDERS, getAllBuildingNames, getWonderNames } from '../../data/buildings';
@@ -35,6 +36,25 @@ function formatCost(cost: Record<string, number>): React.ReactNode[] {
   }
   return nodes;
 }
+
+// ── framer-motion 动画变体 ──
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.06, duration: 0.35, ease: 'easeOut' },
+  }),
+};
+
+const resourceVariants: Variants = {
+  hidden: { opacity: 0, x: -10 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: { delay: i * 0.05, duration: 0.3, ease: 'easeOut' },
+  }),
+};
 
 export const MainCityPanel: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
@@ -114,24 +134,33 @@ export const MainCityPanel: React.FC = () => {
       <div>
         <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5"><FaBoxOpen className="text-amber-600" /> 资源</h3>
         <div className="space-y-1">
-          {MATERIALS_DATA.map((mat) => (
-            <div key={mat.key} className="flex items-center gap-2 py-1">
+          {MATERIALS_DATA.map((mat, i) => (
+            <motion.div
+              key={mat.key}
+              custom={i}
+              variants={resourceVariants}
+              initial="hidden"
+              animate="visible"
+              className="flex items-center gap-2 py-1"
+            >
               <span>{mat.icon}</span>
               <span className="text-sm text-gray-700 w-8">{mat.name}:</span>
               <span className="font-bold text-sm w-10 text-right">
                 <AnimatedNumber value={resources[mat.key] ?? 0} />
               </span>
-              <button
+              <motion.button
+                whileTap={{ scale: 0.85 }}
                 onClick={() => handleSellMaterial(mat.key, mat.sellPrice)}
-                className="w-6 h-6 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-gray-600 transition-colors text-xs font-bold"
+                className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-500 transition-colors text-xs font-bold"
                 title={`卖出 (+${mat.sellPrice}G)`}
-              >−</button>
-              <button
+              >−</motion.button>
+              <motion.button
+                whileTap={{ scale: 0.85 }}
                 onClick={() => handleBuyMaterial(mat.key, mat.buyPrice)}
-                className="w-6 h-6 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-gray-600 transition-colors text-xs font-bold"
+                className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 hover:bg-green-100 text-gray-500 hover:text-green-500 transition-colors text-xs font-bold"
                 title={`购买 (-${mat.buyPrice}G)`}
-              >+</button>
-            </div>
+              >+</motion.button>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -140,11 +169,19 @@ export const MainCityPanel: React.FC = () => {
       <div>
         <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5"><FaBuilding className="text-blue-600" /> 建筑</h3>
         <div className="space-y-2">
-          {getAllBuildingNames().map((name) => {
+          {getAllBuildingNames().map((name, i) => {
             const config = BUILDING_CONFIGS[name];
             const count = buildings[name] || 0;
             return (
-              <div key={name} className="bg-white rounded-lg border border-gray-200 p-2.5 hover:shadow-md transition-shadow">
+              <motion.div
+                key={name}
+                custom={i}
+                variants={cardVariants}
+                initial="hidden"
+                animate="visible"
+                whileHover={{ scale: 1.015, boxShadow: '0 4px 20px rgba(59,130,246,0.12)' }}
+                className="bg-white rounded-xl border border-gray-200/80 p-2.5 cursor-default shadow-sm hover:border-blue-200/80 transition-colors duration-200"
+              >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-800">{name}</span>
                   <span className="text-xs text-gray-500">x{count}</span>
@@ -153,12 +190,13 @@ export const MainCityPanel: React.FC = () => {
                   <span className="text-xs text-gray-400">
                     {formatCost(config.buildCost)}
                   </span>
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => handleBuildBuilding(name)}
-                    className="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded text-xs text-blue-700 transition-colors"
-                  >建造 +1</button>
+                    className="px-2.5 py-0.5 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 border border-blue-200 rounded-full text-xs text-blue-700 transition-all duration-150 shadow-sm hover:shadow"
+                  >建造 +1</motion.button>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>
@@ -168,11 +206,23 @@ export const MainCityPanel: React.FC = () => {
       <div>
         <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5"><FaStar className="text-yellow-500" /> 奇观</h3>
         <div className="space-y-2">
-          {getWonderNames().map((name) => {
+          {getWonderNames().map((name, i) => {
             const config = WONDERS[name];
             const isBuilt = builtWonders.has(name);
             return (
-              <div key={name} className={`bg-white rounded-lg border p-2.5 hover:shadow-md transition-shadow ${isBuilt ? 'border-green-200 bg-green-50/30' : 'border-gray-200'}`}>
+              <motion.div
+                key={name}
+                custom={i}
+                variants={cardVariants}
+                initial="hidden"
+                animate="visible"
+                whileHover={isBuilt ? {} : { scale: 1.015, boxShadow: '0 4px 20px rgba(251,146,60,0.15)' }}
+                className={`rounded-xl border p-2.5 shadow-sm transition-colors duration-200 ${
+                  isBuilt
+                    ? 'border-green-300 bg-gradient-to-r from-green-50/60 to-emerald-50/40 shadow-green-100/50'
+                    : 'border-orange-200/80 bg-white hover:border-orange-300/80'
+                }`}
+              >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-800">{name}</span>
                   <span className={`text-xs ${isBuilt ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
@@ -184,13 +234,14 @@ export const MainCityPanel: React.FC = () => {
                     <span className="text-xs text-gray-400">
                       {formatCost(config.buildCost)}
                     </span>
-                    <button
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => handleBuildWonder(name)}
-                      className="px-2 py-0.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded text-xs text-orange-700 transition-colors"
-                    >建造</button>
+                      className="px-2.5 py-0.5 bg-orange-50 hover:bg-orange-100 active:bg-orange-200 border border-orange-200 rounded-full text-xs text-orange-700 transition-all duration-150 shadow-sm hover:shadow"
+                    >建造</motion.button>
                   </div>
                 )}
-              </div>
+              </motion.div>
             );
           })}
         </div>
