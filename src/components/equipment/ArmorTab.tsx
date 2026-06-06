@@ -7,11 +7,11 @@ import type { Equipment } from '../../types';
 import { FaShield, FaTree, FaMagnet, FaPaw, FaMountain, FaLeaf, FaCoins } from 'react-icons/fa6';
 
 const TIERS = [
-  { tier: 1, name: '初阶', level: 'Lv.1~5', hoverClass: 'hover:border-green-300/80 hover:shadow-sm hover:shadow-green-100/50' },
-  { tier: 2, name: '二阶', level: 'Lv.6~10', hoverClass: 'hover:border-blue-300/80 hover:shadow-sm hover:shadow-blue-100/50' },
-  { tier: 3, name: '三阶', level: 'Lv.11~15', hoverClass: 'hover:border-purple-300/80 hover:shadow-sm hover:shadow-purple-100/50' },
-  { tier: 4, name: '四阶', level: 'Lv.16~20', hoverClass: 'hover:border-yellow-300/80 hover:shadow-sm hover:shadow-yellow-100/50' },
-  { tier: 5, name: '五阶', level: 'Lv.21~25', hoverClass: 'hover:border-orange-300/80 hover:shadow-sm hover:shadow-orange-100/50' },
+  { tier: 1, name: '初阶', level: 'Lv.1~5', hoverClass: 'hover:border-green-300/80 hover:shadow-sm hover:shadow-green-100/50', borderClass: 'border-green-200/80' },
+  { tier: 2, name: '二阶', level: 'Lv.6~10', hoverClass: 'hover:border-blue-300/80 hover:shadow-sm hover:shadow-blue-100/50', borderClass: 'border-blue-200/80' },
+  { tier: 3, name: '三阶', level: 'Lv.11~15', hoverClass: 'hover:border-purple-300/80 hover:shadow-sm hover:shadow-purple-100/50', borderClass: 'border-purple-200/80' },
+  { tier: 4, name: '四阶', level: 'Lv.16~20', hoverClass: 'hover:border-yellow-300/80 hover:shadow-sm hover:shadow-yellow-100/50', borderClass: 'border-yellow-200/80' },
+  { tier: 5, name: '五阶', level: 'Lv.21~25', hoverClass: 'hover:border-orange-300/80 hover:shadow-sm hover:shadow-orange-100/50', borderClass: 'border-orange-200/80' },
 ];
 
 const RES_ICONS: Record<string, React.ReactNode> = {
@@ -111,7 +111,7 @@ export const ArmorTab: React.FC = () => {
         </motion.div>
       )}
 
-      {TIERS.map(({ tier, name, level, hoverClass }) => {
+      {TIERS.map(({ tier, name, level, hoverClass, borderClass }) => {
         const items = Object.values(ARMORS).filter((a: any) => a.tier === tier);
         if (!items.length) return null;
         return (
@@ -133,7 +133,7 @@ export const ArmorTab: React.FC = () => {
                     initial="hidden"
                     animate="visible"
                     whileHover={{ scale: 1.012 }}
-                    className={`flex items-center justify-between px-3 py-2 bg-white border border-gray-200/80 rounded-xl transition-all duration-200 cursor-default shadow-sm ${hoverClass}`}
+                    className={`flex items-center justify-between px-3 py-2 bg-white border ${borderClass} rounded-xl transition-all duration-200 cursor-default shadow-sm ${hoverClass}`}
                   >
                     <div className="flex items-center gap-2">
                       <span
