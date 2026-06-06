@@ -118,12 +118,12 @@ export const MainCityPanel: React.FC = () => {
             const config = BUILDING_CONFIGS[name];
             const count = buildings[name] || 0;
             return (
-              <div key={name}>
+              <div key={name} className="bg-white rounded-lg border border-gray-200 p-2.5 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">{name}</span>
-                  <span className="text-xs text-gray-400">x{count}</span>
+                  <span className="text-sm font-medium text-gray-800">{name}</span>
+                  <span className="text-xs text-gray-500">x{count}</span>
                 </div>
-                <div className="flex items-center justify-between mt-1">
+                <div className="flex items-center justify-between mt-1.5">
                   <span className="text-xs text-gray-400">
                     建造: {Object.entries(config.buildCost).map(([m, v]) => `${m}×${v}`).join(' ')}
                   </span>
@@ -146,15 +146,15 @@ export const MainCityPanel: React.FC = () => {
             const config = WONDERS[name];
             const isBuilt = builtWonders.has(name);
             return (
-              <div key={name}>
+              <div key={name} className={`bg-white rounded-lg border p-2.5 hover:shadow-md transition-shadow ${isBuilt ? 'border-green-200 bg-green-50/30' : 'border-gray-200'}`}>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">{name}</span>
-                  <span className={`text-xs ${isBuilt ? 'text-green-600' : 'text-gray-400'}`}>
+                  <span className="text-sm font-medium text-gray-800">{name}</span>
+                  <span className={`text-xs ${isBuilt ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
                     x{isBuilt ? 1 : 0}
                   </span>
                 </div>
                 {!isBuilt && (
-                  <div className="flex items-center justify-between mt-1">
+                  <div className="flex items-center justify-between mt-1.5">
                     <span className="text-xs text-gray-400">
                       需要: {Object.entries(config.buildCost).map(([m, v]) => `${m}×${v}`).join(' ')}
                     </span>
