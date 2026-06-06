@@ -9,7 +9,7 @@ import { NOVELTY_ITEMS, NOVELTY_RARITY_COLORS, NOVELTY_RARITY_NAMES } from '../.
 import { PLANTS_CATALOG, PLANT_RARITY_COLORS, PLANT_RARITY_NAMES } from '../../data/plants';
 import { RANCH_CATALOG } from '../../data/ranch';
 
-const ALL_MONSTERS: Monster[] = MAPS.flatMap((m) => m.monsters);
+const ALL_MONSTERS: Monster[] = MAPS.flatMap((m) => m.monsters ?? []);
 
 const RARITY_COLOR: Record<number, string> = {
   0: '#C0C0C0', 1: '#4CAF50', 2: '#2196F3', 3: '#9370DB', 4: '#FF9800',
@@ -55,13 +55,18 @@ const TABS = [
 
 export const BestiaryTab: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('monster');
-  const discoveredMonsters = useGameStore((s) => s.discoveredMonsters);
-  const discoveredNovelties = useGameStore((s) => s.discoveredNovelties);
-  const discoveredPlants = useGameStore((s) => s.discoveredPlants);
-  const discoveredCreatures = useGameStore((s) => s.discoveredCreatures);
-  const novelties = useInventoryStore((s) => s.novelties);
 
-  const discoveredMonsterSet = useMemo(() => new Set(discoveredMonsters), [discoveredMonsters]);
+  // 全部用 || [] 兜底，防止旧存档缺少这些字段
+  const discoveredMonsters = useGameStore((s) => s.discoveredMonsters) || [];
+  const discoveredNovelties = useGameStore((s) => s.discoveredNovelties) || [];
+  const discoveredPlants = useGameStore((s) => s.discoveredPlants) || [];
+  const discoveredCreatures = useGameStore((s) => s.discoveredCreatures) || [];
+  const novelties = useInventoryStore((s) => s.novelties) || {};
+
+  const discoveredMonsterSet = useMemo(
+    () => new Set(discoveredMonsters),
+    [discoveredMonsters],
+  );
 
   return (
     <Tooltip.Provider delayDuration={100}>
@@ -102,6 +107,7 @@ export const BestiaryTab: React.FC = () => {
             {ALL_MONSTERS.map((monster) => {
               const discovered = discoveredMonsterSet.has(monster.id);
               const icon = MONSTER_ICON_MAP[monster.name] || DEFAULT_MONSTER_ICON;
+              const drops = monster.drops || [];
               return (
                 <div
                   key={monster.id}
@@ -141,9 +147,9 @@ export const BestiaryTab: React.FC = () => {
                             <div className="font-bold">{monster.name}</div>
                             <div>等级：Lv.{monster.level ?? '?'}</div>
                             <div>HP：{monster.hp}　ATK：{monster.atk}　DEF：{monster.def}</div>
-                            {monster.drops && monster.drops.length > 0 && (
+                            {drops.length > 0 && (
                               <div className="text-[11px] text-gray-300">
-                                掉落：{monster.drops.map((d, i) => (
+                                掉落：{drops.map((d, i) => (
                                   <span key={i}>
                                     {i > 0 && '、'}
                                     {d.itemId} ×{d.quantity[0]}

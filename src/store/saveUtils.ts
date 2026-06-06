@@ -100,6 +100,19 @@ export function loadGame(): boolean {
       if (data.factory.autoRunning !== undefined) factoryStore.setAutoRunning(data.factory.autoRunning);
     }
 
+    // ── 迁移：补全 v2 存档中没有的新增字段 ──
+    const g = useGameStore.getState();
+    const missing: Partial<typeof g> = {};
+    if (!g.discoveredMonsters) missing.discoveredMonsters = [];
+    if (!g.discoveredNovelties) missing.discoveredNovelties = [];
+    if (!g.discoveredPlants) missing.discoveredPlants = [];
+    if (!g.discoveredCreatures) missing.discoveredCreatures = [];
+    if (!g.battleLogs) missing.battleLogs = [];
+    if (!g.gameLogs) missing.gameLogs = [];
+    if (Object.keys(missing).length > 0) {
+      useGameStore.setState(missing);
+    }
+
     return true;
   } catch (e) {
     console.error('读档失败:', e);

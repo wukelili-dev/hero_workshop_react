@@ -3,6 +3,7 @@ import type { HeroState, Resources, Monster, Equipment } from '../types';
 import { MAPS } from '../data/maps';
 import { executeBattle, type BattleLog, type Rewards } from '../engine/Combat';
 import { PLANTS_CATALOG } from '../data/plants';
+import { RANCH_CATALOG } from '../data/ranch';
 import { generateTavernRoster, type TavernRecruit } from '../data/tavern';
 import { BUILDING_CONFIGS, getAllBuildingNames, BUILDING_OUTPUTS } from '../data/buildings';
 
@@ -154,6 +155,9 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   battleLogs: [],
   gameLogs: [],
   discoveredMonsters: [],
+  discoveredNovelties: [],
+  discoveredPlants: [],
+  discoveredCreatures: [],
   autoPotionThreshold: 0,
   buildings: {},   // 建筑数量统计，key=建筑名，value=数量
 
@@ -180,6 +184,12 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     isRunning: false,
     farmPlots: Array.from({ length: 6 }, () => ({ plantId: null, plantedAt: null, lastHarvest: null })),
     tavernRoster: [],
+    battleLogs: [],
+    gameLogs: [],
+    discoveredMonsters: [],
+    discoveredNovelties: [],
+    discoveredPlants: [],
+    discoveredCreatures: [],
     tavernLastRefresh: 0,
     battleLogs: [],
     gameLogs: [],
@@ -493,30 +503,33 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   }),
 
   addDiscoveredNovelty: (name) => set((s) => {
-    if (s.discoveredNovelties.includes(name)) return {};
+    const list = s.discoveredNovelties || [];
+    if (list.includes(name)) return {};
     const now = Date.now();
     const hhmmss = new Date(now).toTimeString().slice(0, 8);
     get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${name}`);
-    return { discoveredNovelties: [...s.discoveredNovelties, name] };
+    return { discoveredNovelties: [...list, name] };
   }),
 
   addDiscoveredPlant: (id) => set((s) => {
-    if (s.discoveredPlants.includes(id)) return {};
+    const list = s.discoveredPlants || [];
+    if (list.includes(id)) return {};
     const plant = PLANTS_CATALOG.find(p => p.id === id);
     const name = plant ? plant.name : id;
     const now = Date.now();
     const hhmmss = new Date(now).toTimeString().slice(0, 8);
     get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${name}`);
-    return { discoveredPlants: [...s.discoveredPlants, id] };
+    return { discoveredPlants: [...list, id] };
   }),
 
   addDiscoveredCreature: (id) => set((s) => {
-    if (s.discoveredCreatures.includes(id)) return {};
+    const list = s.discoveredCreatures || [];
+    if (list.includes(id)) return {};
     const creature = RANCH_CATALOG.find(c => c.id === id);
     const name = creature ? creature.name : id;
     const now = Date.now();
     const hhmmss = new Date(now).toTimeString().slice(0, 8);
     get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${name}`);
-    return { discoveredCreatures: [...s.discoveredCreatures, id] };
+    return { discoveredCreatures: [...list, id] };
   }),
 }));
