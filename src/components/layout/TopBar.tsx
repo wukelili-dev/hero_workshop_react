@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { FaBomb } from 'react-icons/fa6';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 import { useGameStore } from '../../store/useGameStore';
 import { formatNumber } from '../../data/constants';
@@ -9,7 +10,7 @@ export const TopBar: React.FC = () => {
     <div className="flex items-center justify-between px-4 py-2 bg-blue-600 text-white">
       {/* Left: Title */}
       <div className="flex items-center gap-2">
-        <span className="text-lg">⚔️</span>
+        <FaBomb className="text-lg text-red-500" />
         <span className="font-bold text-base">勇者工坊 v5.1</span>
       </div>
 

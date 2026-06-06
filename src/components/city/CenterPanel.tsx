@@ -9,7 +9,7 @@ import { formatNumber } from '../../data/constants';
 import { RARITY_NAME, RARITY_COLOR } from '../../types';
 import type { Monster } from '../../types';
 import type { BattleLog, Rewards } from '../../engine/Combat';
-import { FaSkullCrossbones } from 'react-icons/fa6';
+import { FaSkullCrossbones, FaBomb, FaShield } from 'react-icons/fa6';
 
 type TeamTab = 'hero' | 'teammate' | 'all';
 type BattlePhase = 'idle' | 'fighting' | 'result';
@@ -199,7 +199,7 @@ export const CenterPanel: React.FC = () => {
         </div>
         <div className="ml-auto flex gap-1.5">
           <div className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center text-xs text-gray-400" title="武器">
-            ⚔️
+            <FaBomb />
           </div>
         </div>
       </div>
@@ -440,7 +440,7 @@ export const CenterPanel: React.FC = () => {
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                   >
-                    ⚔ 战斗
+                    <FaBomb className="inline" /> 战斗
                   </button>
                 </div>
 
@@ -457,8 +457,8 @@ export const CenterPanel: React.FC = () => {
 
                 {/* Stats row */}
                 <div className="flex gap-3 text-xs text-gray-500">
-                  <span>⚔ ATK {enemy.atk}</span>
-                  <span>🛡 DEF {enemy.def}</span>
+                  <span><FaBomb className="inline" /> ATK {enemy.atk}</span>
+                  <span><FaShield className="inline" /> DEF {enemy.def}</span>
                 </div>
 
                 {/* Drop preview */}

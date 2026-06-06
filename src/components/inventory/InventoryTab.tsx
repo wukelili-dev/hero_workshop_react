@@ -1,4 +1,5 @@
 import React from 'react';
+import { FaBomb, FaShield } from 'react-icons/fa6';
 import { useGameStore } from '../../store/useGameStore';
 import { RARITY_COLORS } from '../../data/constants';
 
@@ -45,7 +46,7 @@ export const InventoryTab: React.FC = () => {
         {/* 武器槽 */}
         <div className="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg">
           <div className="flex items-center gap-2">
-            <span className="text-gray-400">⚔️</span>
+            <FaBomb className="text-gray-400" />
             {weapon ? (
               <>
                 <span className="font-bold text-sm" style={{ color: RARITY_COLORS[weapon.rarity] ?? '#888' }}>
@@ -79,7 +80,7 @@ export const InventoryTab: React.FC = () => {
         {/* 护甲槽 */}
         <div className="flex items-center justify-between px-3 py-2 bg-white border border-gray-200 rounded-lg">
           <div className="flex items-center gap-2">
-            <span className="text-gray-400">🛡️</span>
+            <FaShield className="text-gray-400" />
             {armor ? (
               <>
                 <span className="font-bold text-sm" style={{ color: RARITY_COLORS[armor.rarity] ?? '#888' }}>

@@ -4,6 +4,7 @@ import { WEAPONS } from '../../data/equipment';
 import { RARITY_COLORS } from '../../data/constants';
 import { useGameStore } from '../../store/useGameStore';
 import type { Equipment } from '../../types';
+import { FaBomb } from 'react-icons/fa6';
 
 const TIERS = [
   { tier: 1, name: '初阶', level: 'Lv.1~5' },
@@ -78,8 +79,8 @@ export const WeaponTab: React.FC = () => {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-gray-700">⚔ 武器</h2>
+      <div className="flex items-center justify-between items-center">
+        <h2 className="text-sm font-bold text-gray-700 flex items-center gap-1"><FaBomb className="text-red-500" /> 武器</h2>
         <span className="text-xs text-yellow-600 font-medium">💰 {hero.gold}</span>
       </div>
 
@@ -117,7 +118,7 @@ export const WeaponTab: React.FC = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-3">
-                      {w.stats?.atk && <span className="text-xs text-red-500">⚔{w.stats.atk}</span>}
+                      {w.stats?.atk && <span className="text-xs text-red-500 flex items-center gap-0.5"><FaBomb className="text-red-400" />{w.stats.atk}</span>}
                       {w.stats?.crit && <span className="text-xs text-orange-500">CRIT {(w.stats.crit * 100).toFixed(0)}%</span>}
                       <CostDisplay cost={w.cost ?? {}} />
                       <button

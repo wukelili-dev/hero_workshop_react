@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { FaBomb, FaScroll } from 'react-icons/fa6';
 import { useGameStore } from '../../store/useGameStore';
 
 type LogTab = 'battle' | 'game';
@@ -29,7 +30,7 @@ export const LogPanel: React.FC = () => {
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
             }`}
           >
-            {tab === 'battle' ? '⚔ 战斗日志' : '📋 杂项日志'}
+            {tab === 'battle' ? <><FaBomb className="inline text-red-400" /> 战斗日志</> : <><FaScroll className="inline text-blue-400" /> 杂项日志</>}
           </button>
         ))}
       </div>

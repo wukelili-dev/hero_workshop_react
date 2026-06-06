@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FaBomb, FaShield } from 'react-icons/fa6';
 import { useGameStore } from '../../store/useGameStore';
 import { generateTavernRoster, type TavernRecruit } from '../../data/tavern';
 
@@ -93,7 +94,7 @@ export const TavernTab: React.FC = () => {
                       className="text-[10px] px-1.5 py-0.5 rounded"
                       style={{ backgroundColor: g.rarityColor + '22', color: g.rarityColor }}
                     >
-                      {g.type === 'weapon' ? '⚔' : '🛡'} {g.name}
+                      {g.type === 'weapon' ? <FaBomb className="inline text-red-400" /> : <FaShield className="inline text-blue-400" />} {g.name}
                     </span>
                   ))}
                 </div>
@@ -127,8 +128,8 @@ export const TavernTab: React.FC = () => {
                 <span>👤</span>
                 <span className="font-medium">{m.roleName}</span>
                 <span className="text-gray-400">Lv.{m.level}</span>
-                <span className="text-red-400">⚔{m.atk}</span>
-                <span className="text-blue-400">🛡{m.def}</span>
+                <span className="text-red-400"><FaBomb className="inline" />{m.atk}</span>
+                <span className="text-blue-400"><FaShield className="inline" />{m.def}</span>
               </div>
             ))}
           </div>
