@@ -8,7 +8,33 @@ import { AnimatedNumber } from '../../hooks/useCountUp';
 import { useGameStore } from '../../store/useGameStore';
 import { BUILDING_CONFIGS, WONDERS, getAllBuildingNames, getWonderNames } from '../../data/buildings';
 import { formatNumber } from '../../data/constants';
-import { FaTree, FaMagnet, FaPaw, FaMountain, FaBoxOpen, FaBuilding, FaStar } from 'react-icons/fa6';
+import { FaTree, FaMagnet, FaPaw, FaMountain, FaBoxOpen, FaBuilding, FaStar, FaCoins } from 'react-icons/fa6';
+
+// 造价显示：图标+简短数字（如 💰10K 🪵5K）
+const COST_ICON_MAP: Record<string, React.ReactNode> = {
+  '金币': <FaCoins className="text-yellow-500" />,
+  '木材': <FaTree className="text-amber-600" />,
+  '铁矿': <FaMagnet className="text-gray-500" />,
+  '皮革': <FaPaw className="text-orange-700" />,
+  '石头': <FaMountain className="text-stone-400" />,
+};
+
+function formatCost(cost: Record<string, number>): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  let first = true;
+  for (const [mat, v] of Object.entries(cost)) {
+    if (!first) nodes.push(<span key={`s_${mat}`} className="mx-0.5" />);
+    first = false;
+    const label = v >= 1000 ? `${Math.round(v / 1000)}K` : `${v}`;
+    nodes.push(
+      <span key={mat} className="inline-flex items-center gap-0.5 text-xs text-gray-400">
+        {COST_ICON_MAP[mat] ?? mat}
+        {label}
+      </span>
+    );
+  }
+  return nodes;
+}
 
 export const MainCityPanel: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
@@ -125,7 +151,7 @@ export const MainCityPanel: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between mt-1.5">
                   <span className="text-xs text-gray-400">
-                    建造: {Object.entries(config.buildCost).map(([m, v]) => `${m}×${v}`).join(' ')}
+                    {formatCost(config.buildCost)}
                   </span>
                   <button
                     onClick={() => handleBuildBuilding(name)}
@@ -156,7 +182,7 @@ export const MainCityPanel: React.FC = () => {
                 {!isBuilt && (
                   <div className="flex items-center justify-between mt-1.5">
                     <span className="text-xs text-gray-400">
-                      需要: {Object.entries(config.buildCost).map(([m, v]) => `${m}×${v}`).join(' ')}
+                      {formatCost(config.buildCost)}
                     </span>
                     <button
                       onClick={() => handleBuildWonder(name)}
