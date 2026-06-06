@@ -70,7 +70,7 @@ export const FarmTab: React.FC = () => {
             <div key={idx} className="border border-gray-200 rounded-lg p-2 text-center space-y-1 bg-white">
               <div className="text-lg">{plant ? plant.icon : '🟫'}</div>
               <div className="text-[10px] text-gray-400">地块 {idx + 1}</div>
-              {plant && (<div className="text-[10px] font-medium truncate" style={{ color: rarityColor }}>{plant.name}</div>)}
+              {plant && (<div className="text-[10px] font-medium truncate" style={{ color: rarityColor }}>{plant.name}种子</div>)}
               <div className="text-[10px] text-gray-400">{text}</div>
               {status === 'growing' && (
                 <div className="w-full bg-gray-100 rounded-full h-1.5">
@@ -116,7 +116,7 @@ export const FarmTab: React.FC = () => {
                   <div key={plant.id} className="flex items-center justify-between px-2 py-1.5 border border-gray-100 rounded-lg">
                     <div className="flex items-center gap-2">
                       <span>{plant.icon}</span>
-                      <span className="text-sm font-medium" style={{ color }}>{plant.name}</span>
+                      <span className="text-sm font-medium" style={{ color }}>{plant.name}种子</span>
                       <span className="text-[10px] px-1 rounded bg-gray-100 text-gray-500">{rName}</span>
                     </div>
                     <div className="flex items-center gap-2">
