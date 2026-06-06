@@ -16,7 +16,7 @@ export const TopBar: React.FC = () => {
 
       {/* Right: Kill count + Gold */}
       <div className="flex items-center gap-4">
-        <span className="text-sm text-blue-200">击杀: 0</span>
+        <span className="text-sm text-blue-200">击杀: {hero.kills ?? 0}</span>
         <div className="px-3 py-0.5 bg-yellow-400 text-gray-900 rounded-full font-bold text-sm">
           <FaCoins /><AnimatedNumber value={hero.gold} />
         </div>

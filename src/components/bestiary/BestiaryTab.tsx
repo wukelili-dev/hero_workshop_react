@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { FaBookOpen } from 'react-icons/fa6';
+import { Tooltip } from 'radix-ui';
 import { useGameStore } from '../../store/useGameStore';
 import { MAPS } from '../../data/maps';
 import type { Monster } from '../../types';
@@ -117,23 +118,51 @@ export const BestiaryTab: React.FC = () => {
           return (
             <div
               key={monster.id}
-              className={`rounded-lg border p-3 transition-colors ${
+              className={`rounded-lg border p-3 transition-all duration-200 hover:shadow-md hover:border-blue-300 ${
                 discovered
-                  ? 'bg-white border-gray-200'
+                  ? 'bg-white border-gray-200 hover:scale-[1.02]'
                   : 'bg-gray-100 border-gray-200 opacity-60'
               }`}
             >
               {discovered ? (
                 <>
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span
-                      className="text-xl w-8 h-8 flex items-center justify-center shrink-0"
-                    >
-                      {icon}
-                    </span>
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <span
+                          className="text-xl w-8 h-8 flex items-center justify-center shrink-0 cursor-pointer hover:scale-110 transition-transform"
+                        >
+                          {icon}
+                        </span>
+                      </Tooltip.Trigger>
+                      <Tooltip.Portal>
+                        <Tooltip.Content
+                          className="bg-gray-800 text-white text-xs rounded-lg px-3 py-2 shadow-lg max-w-xs"
+                          sideOffset={5}
+                        >
+                          <div className="space-y-1">
+                            <div className="font-bold">{monster.name}</div>
+                            <div>等级：Lv.{monster.level ?? '?'}</div>
+                            <div>HP：{monster.hp}　ATK：{monster.atk}　DEF：{monster.def}</div>
+                            {monster.drops && monster.drops.length > 0 && (
+                              <div className="text-[11px] text-gray-300">
+                                掉落：{monster.drops.map((d, i) => (
+                                  <span key={i}>
+                                    {i > 0 && '、'}
+                                    {d.itemId} ×{d.quantity[0]}{d.quantity[0] !== d.quantity[1] ? `~${d.quantity[1]}` : ''}
+                                    ({Math.round(d.chance * 100)}%)
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <Tooltip.Arrow className="fill-gray-800" />
+                        </Tooltip.Content>
+                      </Tooltip.Portal>
+                    </Tooltip.Root>
                     <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                       <span className="font-bold text-sm text-gray-800">
-                        {icon} {monster.name}
+                        {monster.name}
                       </span>
                       <span
                         className="text-xs px-1.5 py-0.5 rounded text-white font-medium"

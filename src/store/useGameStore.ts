@@ -202,9 +202,23 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     );
     const now = Date.now();
     const hhmm = new Date(now).toTimeString().slice(0, 5);
+    const hhmmss = new Date(now).toTimeString().slice(0, 8);
     if (result.victory) {
       get().addBattleLog(`[${hhmm}] 战胜${monster.name}！获得 ${result.rewards.exp} EXP，${result.rewards.gold} 金币`);
+      
+      // 检查是否新发现怪物
+      const { discoveredMonsters } = get();
+      const isNewDiscovery = !discoveredMonsters.includes(monster.id);
+      
       get().addDiscoveredMonster(monster.id);
+      
+      // 新发现时输出杂项日志
+      if (isNewDiscovery) {
+        get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${monster.name}`);
+      }
+      
+      // 递增击杀数
+      set((s) => ({ hero: { ...s.hero, kills: s.hero.kills + 1 } }));
     } else {
       // 死亡：自动复活到50% HP
       get().addBattleLog(`[${hhmm}] 被 ${monster.name} 击败！自动复活至 50% HP`);
