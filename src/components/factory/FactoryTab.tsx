@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FaIndustry, FaCoins } from 'react-icons/fa6';
 import { useGameStore } from '../../store/useGameStore';
 import { useFactoryStore } from '../../store/useFactoryStore';
 import { DEPARTMENTS, MAX_FACTORY_WORKERS, FACTORY_WORKER_COST_GOLD, FACTORY_BASE_PROFIT, FACTORY_BASE_INTERVAL_S, FACTORY_BUILD_COST, calcFactoryBonus } from '../../data/factory';
@@ -64,7 +65,7 @@ export const FactoryTab: React.FC = () => {
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-gray-700">🏭 工厂</h2>
+          <h2 className="text-sm font-bold text-gray-700 flex items-center gap-1"><FaIndustry /> 工厂</h2>
         </div>
 
         <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 text-center">
@@ -104,9 +105,9 @@ export const FactoryTab: React.FC = () => {
     <div className="space-y-3">
       {/* 标题栏 */}
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-gray-700">🏭 工厂</h2>
+        <h2 className="text-sm font-bold text-gray-700 flex items-center gap-1"><FaIndustry /> 工厂</h2>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-yellow-600 font-medium">💰 {hero.gold}</span>
+          <span className="text-xs text-yellow-600 font-medium flex items-center gap-0.5"><FaCoins /> {hero.gold}</span>
           <button
             onClick={() => setAutoRunning(!autoRunning)}
             className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${autoRunning ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'}`}>

@@ -9,7 +9,7 @@ import { formatNumber } from '../../data/constants';
 import { RARITY_NAME, RARITY_COLOR } from '../../types';
 import type { Monster } from '../../types';
 import type { BattleLog, Rewards } from '../../engine/Combat';
-import { FaSkullCrossbones, FaBomb, FaShield } from 'react-icons/fa6';
+import { FaSkullCrossbones, FaBomb, FaShield, FaUsers } from 'react-icons/fa6';
 
 type TeamTab = 'hero' | 'teammate' | 'all';
 type BattlePhase = 'idle' | 'fighting' | 'result';
@@ -177,7 +177,7 @@ export const CenterPanel: React.FC = () => {
     <div className="h-full overflow-y-auto p-3 space-y-3">
       {/* 队伍标签栏 */}
       <div className="flex items-center gap-2">
-        <span className="text-sm font-bold text-gray-700">👥 队伍</span>
+        <span className="text-sm font-bold text-gray-700 flex items-center gap-1"><FaUsers /> 队伍</span>
         <div className="flex gap-1.5">
           {([
             { id: 'hero' as TeamTab, label: '勇者' },

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FaSeedling } from 'react-icons/fa6';
 import { toast } from 'sonner';
 import { useGameStore } from '../../store/useGameStore';
 import { PLANTS_CATALOG, PLANT_RARITY_COLORS, PLANT_RARITY_NAMES } from '../../data/plants';
@@ -58,7 +59,7 @@ export const FarmTab: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-gray-700">🌱 农场</h2>
+        <h2 className="text-sm font-bold text-gray-700 flex items-center gap-1"><FaSeedling /> 农场</h2>
         <span className="text-xs text-yellow-600 font-medium">💰 {hero.gold}</span>
       </div>
 

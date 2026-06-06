@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FaGift } from 'react-icons/fa6';
 import { NOVELTY_ITEMS, NOVELTY_RARITY_COLORS, NOVELTY_RARITY_NAMES } from '../../data/inventory';
 import { useGameStore } from '../../store/useGameStore';
 
@@ -30,7 +31,7 @@ export const NoveltyTab: React.FC = () => {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-gray-700">🎁 杂货店</h2>
+        <h2 className="text-sm font-bold text-gray-700 flex items-center gap-1"><FaGift /> 杂货店</h2>
         <span className="text-xs text-yellow-600 font-medium">💰 {hero.gold}</span>
       </div>
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaBomb, FaShield } from 'react-icons/fa6';
+import { FaBomb, FaShield, FaBagShopping } from 'react-icons/fa6';
 import { useGameStore } from '../../store/useGameStore';
 import { RARITY_COLORS } from '../../data/constants';
 
@@ -37,7 +37,7 @@ export const InventoryTab: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-sm font-bold text-gray-700">🎒 背包</h2>
+      <h2 className="text-sm font-bold text-gray-700 flex items-center gap-1"><FaBagShopping /> 背包</h2>
 
       {/* 装备槽 */}
       <div className="space-y-2">

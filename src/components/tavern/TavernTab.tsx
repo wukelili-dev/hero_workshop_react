@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaBomb, FaShield } from 'react-icons/fa6';
+import { FaBomb, FaShield, FaBeerMugEmpty } from 'react-icons/fa6';
 import { useGameStore } from '../../store/useGameStore';
 import { generateTavernRoster, type TavernRecruit } from '../../data/tavern';
 
@@ -44,7 +44,7 @@ export const TavernTab: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-gray-700">🍺 酒馆</h2>
+        <h2 className="text-sm font-bold text-gray-700 flex items-center gap-1"><FaBeerMugEmpty /> 酒馆</h2>
         <div className="flex items-center gap-2">
           <span className="text-xs text-yellow-600 font-medium">💰 {hero.gold}</span>
           <button

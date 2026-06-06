@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { FaBomb } from 'react-icons/fa6';
+import { FaBomb, FaCoins } from 'react-icons/fa6';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 import { useGameStore } from '../../store/useGameStore';
 import { formatNumber } from '../../data/constants';
@@ -18,7 +18,7 @@ export const TopBar: React.FC = () => {
       <div className="flex items-center gap-4">
         <span className="text-sm text-blue-200">击杀: 0</span>
         <div className="px-3 py-0.5 bg-yellow-400 text-gray-900 rounded-full font-bold text-sm">
-          💰<AnimatedNumber value={hero.gold} />
+          <FaCoins /><AnimatedNumber value={hero.gold} />
         </div>
         <button className="text-white/80 hover:text-white text-lg">☰</button>
       </div>
