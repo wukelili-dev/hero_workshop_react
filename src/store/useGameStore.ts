@@ -136,7 +136,6 @@ function tickBuildings() {
 
   // ── 建筑产出 ──
   if (!buildings || Object.keys(buildings).length === 0) return;
-  const now = Date.now();
   for (const [bName, count] of Object.entries(buildings)) {
     if (!count) continue;
     const cfg = BUILDING_CONFIGS[bName];
