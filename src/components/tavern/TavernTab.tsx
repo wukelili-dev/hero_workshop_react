@@ -5,6 +5,7 @@ import { generateTavernRoster, type TavernRecruit } from '../../data/tavern';
 
 export const TavernTab: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
+  const team = useGameStore((s) => s.hero.team);
   const [roster, setRoster] = useState<TavernRecruit[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -119,11 +120,11 @@ export const TavernTab: React.FC = () => {
       </div>
 
       {/* 当前队伍 */}
-      {hero.team.length > 0 && (
+      {team.length > 0 && (
         <div>
           <h3 className="text-xs font-bold text-gray-500 mb-2">当前队伍</h3>
           <div className="space-y-1">
-            {hero.team.map((m, i) => (
+            {team.map((m, i) => (
               <div key={i} className="flex items-center gap-2 text-xs text-gray-600">
                 <span>👤</span>
                 <span className="font-medium">{m.roleName}</span>

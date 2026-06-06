@@ -8,11 +8,11 @@ import type { Equipment } from '../../types';
 import { FaBomb, FaTree, FaMagnet, FaPaw, FaMountain, FaLeaf, FaCoins } from 'react-icons/fa6';
 
 const TIERS = [
-  { tier: 1, name: '初阶', level: 'Lv.1~5' },
-  { tier: 2, name: '二阶', level: 'Lv.6~10' },
-  { tier: 3, name: '三阶', level: 'Lv.11~15' },
-  { tier: 4, name: '四阶', level: 'Lv.16~20' },
-  { tier: 5, name: '五阶', level: 'Lv.21~25' },
+  { tier: 1, name: '初阶', level: 'Lv.1~5', hoverClass: 'hover:border-green-300/80 hover:shadow-sm hover:shadow-green-100/50' },
+  { tier: 2, name: '二阶', level: 'Lv.6~10', hoverClass: 'hover:border-blue-300/80 hover:shadow-sm hover:shadow-blue-100/50' },
+  { tier: 3, name: '三阶', level: 'Lv.11~15', hoverClass: 'hover:border-purple-300/80 hover:shadow-sm hover:shadow-purple-100/50' },
+  { tier: 4, name: '四阶', level: 'Lv.16~20', hoverClass: 'hover:border-yellow-300/80 hover:shadow-sm hover:shadow-yellow-100/50' },
+  { tier: 5, name: '五阶', level: 'Lv.21~25', hoverClass: 'hover:border-orange-300/80 hover:shadow-sm hover:shadow-orange-100/50' },
 ];
 
 const RES_ICONS: Record<string, React.ReactNode> = {
@@ -98,7 +98,7 @@ export const WeaponTab: React.FC = () => {
         <span className="text-xs text-yellow-600 font-medium">💰 {hero.gold}</span>
       </div>
 
-      {TIERS.map(({ tier, name, level }) => {
+      {TIERS.map(({ tier, name, level, hoverClass }) => {
         const items = Object.values(WEAPONS).filter((w: any) => w.tier === tier);
         if (!items.length) return null;
         return (
@@ -119,8 +119,8 @@ export const WeaponTab: React.FC = () => {
                     variants={listVariants}
                     initial="hidden"
                     animate="visible"
-                    whileHover={{ scale: 1.012, boxShadow: '0 2px 12px rgba(59,130,246,0.10)' }}
-                    className="flex items-center justify-between px-3 py-2 bg-white border border-gray-200/80 rounded-xl hover:border-blue-200/80 transition-colors duration-200 cursor-default"
+                    whileHover={{ scale: 1.012 }}
+                    className={`flex items-center justify-between px-3 py-2 bg-white border border-gray-200/80 rounded-xl transition-all duration-200 cursor-default shadow-sm ${hoverClass}`}
                   >
                     <div className="flex items-center gap-2">
                       <span
