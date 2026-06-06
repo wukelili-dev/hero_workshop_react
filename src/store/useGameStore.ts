@@ -151,9 +151,9 @@ function tickBuildings() {
   }
 }
 
-// 中文建筑�?�?产出资源 key
+// 中文建筑名 → 产出资源 key
 const BUILDING_OUTPUT_MAP: Record<string, string> = {
-  '伐木�?: 'wood', '铁矿': 'iron', '狩猎�?: 'hide', '采石�?: 'stone',
+  '伐木厂': 'wood', '铁矿': 'iron', '狩猎场': 'hide', '采石场': 'stone',
 };
 
 // 建筑自动产出定时器引�?
