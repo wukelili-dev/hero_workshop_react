@@ -262,7 +262,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       
       // 新发现时输出杂项日志
       if (isNewDiscovery) {
-        get().addGameLog(`[${hhmmss}] 已点亮新图鉴�?{monster.name}`);
+        get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${monster.name}`);
       }
       
       // 递增击杀�?
@@ -292,7 +292,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const { hero } = get();
     if (hero.gold < 25) return false;
     set((s) => ({ hero: { ...s.hero, gold: s.hero.gold - 25, potions: s.hero.potions + 1 } }));
-    get().addGameLog(`购买药水 x1（剩�?${get().hero.potions} 瓶）`);
+    get().addGameLog(`购买药水 x1（剩：${get().hero.potions} 瓶）`);
     return true;
   },
 
@@ -302,7 +302,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const heal = Math.min(20, hero.maxHp - hero.hp);
     if (heal <= 0) return false;
     set((s) => ({ hero: { ...s.hero, potions: s.hero.potions - 1, hp: s.hero.hp + heal } }));
-    get().addGameLog(`使用药水 +${heal} HP（剩�?${get().hero.potions} 瓶）`);
+    get().addGameLog(`使用药水 +${heal} HP（剩：${get().hero.potions} 瓶）`);
     return true;
   },
 
@@ -321,7 +321,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     // 建造日�?
     const outputRes = BUILDING_OUTPUTS[name] || name;
     const outputPerTick = cfg ? cfg.baseOutput * newCount : 0;
-    get().addGameLog(`建�?{name}x${newCount}完成，当前产量：${outputRes}X${outputPerTick}/tick`);
+    get().addGameLog(`建造${name}x${newCount}完成，当前产量：${outputRes}X${outputPerTick}/tick`);
     return { buildings: updated };
   }),
 
@@ -418,7 +418,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     useInventoryStore.getState().addNovelty(itemName, 1);
     // 记录到图�?
     get().addDiscoveredNovelty(itemName);
-    get().addGameLog(`购买杂货 ${itemName}，花�?${price} 金币`);
+    get().addGameLog(`购买杂货 ${itemName}，花费${price} 金币`);
     return true;
   },
 
@@ -434,7 +434,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         gold: s.hero.gold + refund,
       },
     }));
-    get().addGameLog(`出售杂货 ${itemName}，获�?${refund} 金币�?0%）`);
+    get().addGameLog(`出售杂货 ${itemName}，获得${refund} 金币（80%）`);
     return true;
   },
 
@@ -451,7 +451,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     });
     // 记录到图�?
     get().addDiscoveredPlant(plantId);
-    get().addGameLog(`种植 ${plantId}（地�?{plotIdx + 1}）`);
+    get().addGameLog(`种植 ${plantId}（地块${plotIdx + 1}）`);
     return true;
   },
 
@@ -475,7 +475,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         farmPlots: plots,
       };
     });
-    get().addGameLog(`收获 ${plot.plantId}（地�?{plotIdx + 1}），获得 ${plant.harvestGold ?? 0} 金币`);
+    get().addGameLog(`收获 ${plot.plantId}（地块${plotIdx + 1}），获得 ${plant.harvestGold ?? 0} 金币`);
     return true;
   },
 
@@ -509,7 +509,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         ],
       },
     }));
-    get().addGameLog(`招募 ${recruit.roleName}（精�?{recruit.isElite ? '�? : '�?}），花费 ${recruit.cost} 金币`);
+    get().addGameLog(`招募 ${recruit.roleName}（精英：${recruit.isElite ? '是' : '否'}），花费 ${recruit.cost} 金币`);
     return true;
   },
 
@@ -535,7 +535,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     if (list.includes(name)) return {};
     const now = Date.now();
     const hhmmss = new Date(now).toTimeString().slice(0, 8);
-    get().addGameLog(`[${hhmmss}] 已点亮新图鉴�?{name}`);
+    get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${name}`);
     return { discoveredNovelties: [...list, name] };
   }),
 
@@ -546,7 +546,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const name = plant ? plant.name : id;
     const now = Date.now();
     const hhmmss = new Date(now).toTimeString().slice(0, 8);
-    get().addGameLog(`[${hhmmss}] 已点亮新图鉴�?{name}`);
+    get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${name}`);
     return { discoveredPlants: [...list, id] };
   }),
 
@@ -557,7 +557,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const name = creature ? creature.name : id;
     const now = Date.now();
     const hhmmss = new Date(now).toTimeString().slice(0, 8);
-    get().addGameLog(`[${hhmmss}] 已点亮新图鉴�?{name}`);
+    get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${name}`);
     return { discoveredCreatures: [...list, id] };
   }),
 }));
