@@ -56,6 +56,9 @@ export const CenterPanel: React.FC = () => {
   const setHp = useGameStore((s) => s.setHp);
   const addResource = useGameStore((s) => s.addResource);
 
+  const autoBattle = useGameStore((s) => s.autoBattle);
+  const setAutoBattle = useGameStore((s) => s.setAutoBattle);
+
   const [teamTab, setTeamTab] = useState<TeamTab>('hero');
   const [battlePhase, setBattlePhase] = useState<BattlePhase>('idle');
   const [battleLogs, setBattleLogs] = useState<BattleLog[]>(EMPTY_LOGS);
@@ -266,6 +269,13 @@ export const CenterPanel: React.FC = () => {
               className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${useGameStore.getState().autoPotionThreshold === v ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'}`}
             >{v === 0 ? '关' : `${v}%`}</button>
           ))}
+        </div>
+        <div className="flex items-center gap-1.5 mt-1.5">
+          <span className="text-[10px] text-amber-600">自动战斗：</span>
+          <button
+            onClick={() => setAutoBattle(!autoBattle)}
+            className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${autoBattle ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+          >{autoBattle ? '🔴 开启' : '⚪ 关闭'}</button>
         </div>
       </motion.div>
 

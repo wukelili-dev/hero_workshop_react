@@ -81,6 +81,81 @@ Tab 图标映射（`AppShell.tsx` → `TABS` 数组）：
 > 新增图标时优先从 `react-icons/fa6` 选取，fa6 没有再回退到 `react-icons/fa`。
 > `TabBar.tsx` 的 `TabConfig.icon` 类型为 `React.ReactNode`，直接传入 JSX 组件即可。
 
+## 项目结构
+
+```
+src/
+├── App.tsx                    # 根组件
+├── main.tsx                   # 入口
+├── types.ts                   # 全局类型定义
+├── assets/                    # 静态资源
+├── components/
+│   ├── layout/                # 布局组件
+│   │   ├── AppShell.tsx       # 三栏自适应布局壳
+│   │   ├── TabBar.tsx         # 桌面端左侧导航
+│   │   └── TopBar.tsx         # 顶部状态栏（金币/材料）
+│   ├── city/                  # 主城面板
+│   │   ├── CenterPanel.tsx    # 核心面板：队伍 + 属性 + 战斗 + 自动战斗
+│   │   ├── LogPanel.tsx       # 系统日志面板
+│   │   └── MainCityPanel.tsx  # 主城：建筑 / 奇观卡片
+│   ├── equipment/             # 装备 Tab
+│   │   ├── WeaponTab.tsx      # 武器商店
+│   │   └── ArmorTab.tsx       # 护甲商店
+│   ├── novelty/               # 杂货 Tab（NoveltyTab.tsx）
+│   ├── inventory/             # 背包（10格通用背包，InventoryTab.tsx）
+│   ├── farm/                  # 农场（种植 / 收获，FarmTab.tsx）
+│   ├── ranch/                 # 牧场（购买 / 自动孵化，RanchTab.tsx）
+│   ├── forge/                 # 锻造（ForgeTab.tsx）
+│   ├── factory/               # 工厂（FactoryTab.tsx）
+│   ├── tavern/                # 酒馆（招募队友，TavernTab.tsx）
+│   ├── materials/             # 材料（MaterialsTab.tsx）
+│   ├── bestiary/              # 图鉴（BestiaryTab.tsx）
+│   └── shared/                # 共享组件
+│       ├── ConfirmDialog.tsx
+│       ├── ProgressBar.tsx
+│       ├── RarityBadge.tsx
+│       └── Tooltip.tsx
+├── store/                     # Zustand 状态管理
+│   ├── useGameStore.ts        # 核心状态：英雄/战斗/建筑/工厂/自动战斗
+│   ├── useInventoryStore.ts   # 背包状态
+│   ├── useFarmStore.ts        # 农场状态
+│   ├── useRanchStore.ts       # 牧场状态
+│   ├── useForgeStore.ts       # 锻造状态
+│   ├── useFactoryStore.ts     # 工厂状态
+│   ├── useCombatStore.ts      # 战斗状态
+│   └── saveUtils.ts           # 存档序列化
+├── engine/                    # 战斗 / 经济引擎
+│   ├── Combat.ts              # 战斗核心（executeBattle）
+│   ├── Economy.ts             # 经济系统
+│   ├── Hero.ts                # 英雄定义
+│   ├── Passives.ts            # 被动技能
+│   └── Team.ts                # 队伍管理
+├── systems/                   # 子系统
+│   ├── BuildingSystem.ts      # 建筑产出
+│   ├── DropSystem.ts          # 掉落
+│   ├── EquipmentSystem.ts     # 装备
+│   ├── FactorySystem.ts       # 工厂
+│   ├── FarmSystem.ts          # 农场
+│   ├── ForgeSystem.ts         # 锻造
+│   ├── RanchSystem.ts         # 牧场
+│   └── SaveSystem.ts          # 存档
+├── data/                      # 数据定义
+│   ├── constants.ts           # 常量 / formatNumber
+│   ├── maps.ts                # 地图 & 怪物
+│   ├── equipment.ts           # 装备数据
+│   ├── buildings.ts           # 建筑配置
+│   ├── factory.ts             # 工厂配方
+│   ├── forge.ts               # 锻造配方
+│   ├── inventory.ts           # 物品数据
+│   ├── plants.ts              # 植物数据
+│   ├── ranch.ts               # 牧场动物
+│   ├── tavern.ts              # 酒馆生成
+│   └── types.ts               # 数据类型
+├── hooks/
+│   └── useCountUp.tsx         # 自建数字滚动动画
+└── styles/                    # 样式
+```
+
 ## 原版
 
 Python MUD 版存档于 [idle-game](https://github.com/wukelili-dev/idle-game)。

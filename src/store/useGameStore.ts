@@ -8,6 +8,19 @@ import { RANCH_CATALOG } from '../data/ranch';
 import { generateTavernRoster, type TavernRecruit } from '../data/tavern';
 import { BUILDING_CONFIGS, getAllBuildingNames, BUILDING_OUTPUTS } from '../data/buildings';
 
+// 自动战斗定时器
+let _autoBattleTimer: ReturnType<typeof setInterval> | null = null;
+
+// 判断英雄是否能打过怪物
+function canDefeat(hero: any, monster: any): boolean {
+  const result = executeBattle(
+    { hp: hero.hp, atk: hero.atk, def: hero.def, crit: hero.critRate },
+    hero.team || [],
+    monster
+  );
+  return result.victory;
+}
+
 interface GameState {
   hero: HeroState;
   resources: Resources;
@@ -25,7 +38,7 @@ interface GameState {
   discoveredPlants: string[];
   discoveredCreatures: string[];
   autoPotionThreshold: number;
-  buildings: Record<string, number>;   // { "伐木�?: 2, "铁矿": 1 }
+  autoBattle: boolean;
   buildings: Record<string, number>;   // { "伐木�?: 2, "铁矿": 1 }
 }
 
@@ -62,6 +75,9 @@ interface GameActions {
   buyPotion: () => boolean;
   usePotion: () => boolean;
   setAutoPotionThreshold: (val: number) => void;
+  setAutoBattle: (v: boolean) => void;
+  startAutoBattle: () => void;
+  stopAutoBattle: () => void;
 }
 
 // 中文材料�?�?store resources key 映射
@@ -201,7 +217,18 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   addGold: (amt) => set((s) => ({ hero: { ...s.hero, gold: Math.max(0, s.hero.gold + amt) } })),
   addResource: (key, amt) => set((s) => ({ resources: { ...s.resources, [key]: Math.max(0, (s.resources[key] ?? 0) + amt) } })),
   setRunning: (r) => set({ isRunning: r }),
-  refreshEnemies: () => set((s) => ({ currentEnemies: getEnemies(s.currentMapId) })),
+  refreshEnemies: () => set((s) => {
+    const m = MAPS.find(x => x.id === s.currentMapId);
+    let enemies = getEnemies(s.currentMapId);
+    // Boss 概率刷新：当前地图所有普通怪图鉴点亮后，10% 概率出现 Boss
+    if (m?.boss && m.monsters.every(mon => s.discoveredMonsters.includes(mon.id))) {
+      if (Math.random() < 0.1 && enemies.length > 0) {
+        const idx = Math.floor(Math.random() * enemies.length);
+        enemies = [...enemies.slice(0, idx), m.boss, ...enemies.slice(idx + 1)];
+      }
+    }
+    return { currentEnemies: enemies };
+  }),
 
   resetGame: () => ({
     hero: { ...initHero },
@@ -226,6 +253,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     discoveredPlants: [],
     discoveredCreatures: [],
     autoPotionThreshold: 0,
+    autoBattle: false,
     buildings: {},
   }),
 
@@ -307,6 +335,51 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   },
 
   setAutoPotionThreshold: (val) => set({ autoPotionThreshold: val }),
+
+  setAutoBattle: (v: boolean) => {
+    if (v && !_autoBattleTimer) {
+      _autoBattleTimer = setInterval(() => {
+        const state = get();
+        if (!state.autoBattle || state.hero.hp <= 0) {
+          if (_autoBattleTimer) { clearInterval(_autoBattleTimer); _autoBattleTimer = null; }
+          return;
+        }
+        const winnable = state.currentEnemies.filter(m => canDefeat(state.hero, m));
+        if (winnable.length === 0) {
+          // 没有能打过的怪，等待敌人刷新
+          return;
+        }
+        const target = winnable.reduce((a, b) => ((a.rewards?.exp || 0) > (b.rewards?.exp || 0) ? a : b));
+        const result = get().fightMonster(target);
+        if (result.victory) {
+          // 应用战斗奖励
+          const s = get();
+          s.addGold(result.rewards?.gold ?? 0);
+          s.addExp(result.rewards?.exp ?? 0);
+          if (typeof result.heroFinalHp === 'number') s.setHp(result.heroFinalHp);
+          if (result.rewards?.drops) {
+            for (const drop of result.rewards.drops) {
+              if (drop?.itemId) s.addResource(drop.itemId, drop.quantity ?? 1);
+            }
+          }
+          // 自动喝药（用最新状态）
+          const h2 = get().hero;
+          if (h2.potions <= 0 && h2.gold >= 50) get().buyPotion();
+          if (h2.hp < h2.maxHp * (get().autoPotionThreshold / 100) && h2.potions > 0) get().usePotion();
+          get().refreshEnemies();
+          // 清理自动战斗日志，防止刷屏
+          set((s) => ({ battleLogs: s.battleLogs.slice(-5) }));
+        } else {
+          // 失败：刷新敌人避免死循环
+          get().refreshEnemies();
+        }
+      }, 600);
+    } else if (!v && _autoBattleTimer) {
+      clearInterval(_autoBattleTimer);
+      _autoBattleTimer = null;
+    }
+    set((s) => ({ autoBattle: v }));
+  },
 
   addBuilding: (name) => set((s) => {
     const newCount = (s.buildings[name] ?? 0) + 1;
