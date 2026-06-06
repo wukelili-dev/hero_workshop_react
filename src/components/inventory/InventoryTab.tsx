@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaBomb, FaShield, FaBagShopping, FaBox, FaTimes, FaHandPaper } from 'react-icons/fa6';
+import { FaBomb, FaShield, FaBagShopping, FaBox } from 'react-icons/fa6';
 import { useGameStore } from '../../store/useGameStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { RARITY_COLORS } from '../../data/constants';

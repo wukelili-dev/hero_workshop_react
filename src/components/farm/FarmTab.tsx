@@ -63,7 +63,7 @@ export const FarmTab: React.FC = () => {
       {/* 地块网格 */}
       <div className="grid grid-cols-3 gap-2">
         {farmPlots.map((plot, idx) => {
-          const { status, text, pct } = getPlotStatus(plot, idx);
+          const { status, text, pct, accGold } = getPlotStatus(plot, idx);
           const plant = plot.plantId ? PLANTS_CATALOG.find(p => p.id === plot.plantId) : null;
           const rarityColor = plant ? (PLANT_RARITY_COLORS[plant.rarity] ?? '#888') : '#888';
           return (
