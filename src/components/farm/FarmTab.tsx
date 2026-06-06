@@ -9,7 +9,7 @@ export const FarmTab: React.FC = () => {
   const farmPlots = useGameStore((s) => s.farmPlots);
   const plantCrop = useGameStore((s) => s.plantCrop);
   const harvestCrop = useGameStore((s) => s.harvestCrop);
-  const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
+  const [showPlantModal, setShowPlantModal] = useState(false);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -17,17 +17,11 @@ export const FarmTab: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // 按稀有度分组供购买
-  const plantsByRarity = PLANTS_CATALOG.reduce<Record<number, typeof PLANTS_CATALOG>>((acc, p) => {
-    (acc[p.rarity] ||= []).push(p);
-    return acc;
-  }, {});
-
   const handlePlant = (plotIdx: number, plantId: string) => {
     const ok = plantCrop(plotIdx, plantId);
     if (ok) {
       toast.success('种植成功！');
-      setSelectedPlant(null);
+      setShowPlantModal(false);
     } else {
       toast.error('金币不足或地块已被占用');
       useGameStore.getState().addGameLog(`种植失败: 地块${plotIdx + 1} 金币不足或已占用`);
@@ -85,7 +79,7 @@ export const FarmTab: React.FC = () => {
               <div className="flex gap-1 justify-center">
                 {status === 'empty' && (
                   <button
-                    onClick={() => setSelectedPlant(plant?.id ?? null)}
+                    onClick={() => setShowPlantModal(true)}
                     className="px-2 py-0.5 bg-green-100 hover:bg-green-200 rounded text-[10px] text-green-800 transition-colors"
                   >种植</button>
                 )}
@@ -105,10 +99,10 @@ export const FarmTab: React.FC = () => {
       </div>
 
       {/* 选择植物弹窗 */}
-      {selectedPlant !== null && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center" onClick={() => setSelectedPlant(null)}>
+      {showPlantModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center" onClick={() => setShowPlantModal(false)}>
           <div className="bg-white w-full max-w-md rounded-t-2xl p-4 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-sm font-bold text-gray-700">选择作物</h3>
+            <h3 className="text-sm font-bold text-gray-700">选择作物购买并种植</h3>
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {PLANTS_CATALOG.map(plant => {
                 const afford = hero.gold >= plant.seedPrice;
@@ -131,13 +125,13 @@ export const FarmTab: React.FC = () => {
                         }}
                         disabled={!afford}
                         className={`px-2 py-0.5 rounded text-[10px] font-medium ${afford ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
-                      >种植</button>
+                      >购买并种植</button>
                     </div>
                   </div>
                 );
               })}
             </div>
-            <button onClick={() => setSelectedPlant(null)} className="w-full py-1.5 text-xs text-gray-400">取消</button>
+            <button onClick={() => setShowPlantModal(false)} className="w-full py-1.5 text-xs text-gray-400">取消</button>
           </div>
         </div>
       )}

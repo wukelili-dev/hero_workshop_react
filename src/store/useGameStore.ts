@@ -19,6 +19,9 @@ interface GameState {
   battleLogs: { timestamp: number; message: string }[];
   gameLogs: { timestamp: number; message: string }[];
   discoveredMonsters: string[];
+  discoveredNovelties: string[];
+  discoveredPlants: string[];
+  discoveredCreatures: string[];
   autoPotionThreshold: number;
   buildings: Record<string, number>;   // { "伐木场": 2, "铁矿": 1 }
   buildings: Record<string, number>;   // { "伐木场": 2, "铁矿": 1 }
@@ -49,6 +52,9 @@ interface GameActions {
   addBattleLog: (message: string) => void;
   addGameLog: (message: string) => void;
   addDiscoveredMonster: (id: string) => void;
+  addDiscoveredNovelty: (name: string) => void;
+  addDiscoveredPlant: (id: string) => void;
+  addDiscoveredCreature: (id: string) => void;
   addBuilding: (name: string) => void;
   addBuilding: (name: string) => void;
   buyPotion: () => boolean;
@@ -178,6 +184,9 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     battleLogs: [],
     gameLogs: [],
     discoveredMonsters: [],
+    discoveredNovelties: [],
+    discoveredPlants: [],
+    discoveredCreatures: [],
     autoPotionThreshold: 0,
     buildings: {},
   }),
@@ -359,29 +368,35 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
   buyNovelty: (itemName, price) => {
     const { hero } = get();
-    if (hero.gold < price || hero.noveltyItems.includes(itemName)) return false;
+    if (hero.gold < price) return false;
+    // 扣除金币
     set((s) => ({
       hero: {
         ...s.hero,
         gold: s.hero.gold - price,
-        noveltyItems: [...s.hero.noveltyItems, itemName],
       },
     }));
+    // 添加到背包（可叠加）
+    useInventoryStore.getState().addNovelty(itemName, 1);
+    // 记录到图鉴
+    get().addDiscoveredNovelty(itemName);
     get().addGameLog(`购买杂货 ${itemName}，花费 ${price} 金币`);
     return true;
   },
 
   sellNovelty: (itemName, sellPrice) => {
-    const { hero } = get();
-    if (!hero.noveltyItems.includes(itemName)) return false;
+    // 从背包移除（可叠加）
+    const removed = useInventoryStore.getState().removeNovelty(itemName, 1);
+    if (!removed) return false;
+    // 返还80%金币
+    const refund = Math.floor(sellPrice * 0.8);
     set((s) => ({
       hero: {
         ...s.hero,
-        gold: s.hero.gold + sellPrice,
-        noveltyItems: s.hero.noveltyItems.filter((x) => x !== itemName),
+        gold: s.hero.gold + refund,
       },
     }));
-    get().addGameLog(`出售杂货 ${itemName}，获得 ${sellPrice} 金币`);
+    get().addGameLog(`出售杂货 ${itemName}，获得 ${refund} 金币（80%）`);
     return true;
   },
 
@@ -396,6 +411,8 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         farmPlots: plots,
       };
     });
+    // 记录到图鉴
+    get().addDiscoveredPlant(plantId);
     get().addGameLog(`种植 ${plantId}（地块${plotIdx + 1}）`);
     return true;
   },
@@ -473,5 +490,33 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   addDiscoveredMonster: (id) => set((s) => {
     if (s.discoveredMonsters.includes(id)) return {};
     return { discoveredMonsters: [...s.discoveredMonsters, id] };
+  }),
+
+  addDiscoveredNovelty: (name) => set((s) => {
+    if (s.discoveredNovelties.includes(name)) return {};
+    const now = Date.now();
+    const hhmmss = new Date(now).toTimeString().slice(0, 8);
+    get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${name}`);
+    return { discoveredNovelties: [...s.discoveredNovelties, name] };
+  }),
+
+  addDiscoveredPlant: (id) => set((s) => {
+    if (s.discoveredPlants.includes(id)) return {};
+    const plant = PLANTS_CATALOG.find(p => p.id === id);
+    const name = plant ? plant.name : id;
+    const now = Date.now();
+    const hhmmss = new Date(now).toTimeString().slice(0, 8);
+    get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${name}`);
+    return { discoveredPlants: [...s.discoveredPlants, id] };
+  }),
+
+  addDiscoveredCreature: (id) => set((s) => {
+    if (s.discoveredCreatures.includes(id)) return {};
+    const creature = RANCH_CATALOG.find(c => c.id === id);
+    const name = creature ? creature.name : id;
+    const now = Date.now();
+    const hhmmss = new Date(now).toTimeString().slice(0, 8);
+    get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${name}`);
+    return { discoveredCreatures: [...s.discoveredCreatures, id] };
   }),
 }));
