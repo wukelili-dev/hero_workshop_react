@@ -9,6 +9,7 @@ import { formatNumber } from '../../data/constants';
 import { RARITY_NAME, RARITY_COLOR } from '../../types';
 import type { Monster } from '../../types';
 import type { BattleLog, Rewards } from '../../engine/Combat';
+import { FaSkullCrossbones } from 'react-icons/fa6';
 
 type TeamTab = 'hero' | 'teammate' | 'all';
 type BattlePhase = 'idle' | 'fighting' | 'result';
@@ -289,7 +290,7 @@ export const CenterPanel: React.FC = () => {
       {/* 战斗区域 */}
       <div>
         <div className="flex items-center gap-1 mb-2">
-          <span>💀</span>
+          <FaSkullCrossbones className="text-gray-600" />
           <span className="text-sm font-bold text-gray-700">敌人</span>
         </div>
 

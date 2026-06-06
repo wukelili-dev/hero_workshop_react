@@ -8,7 +8,7 @@ import { AnimatedNumber } from '../../hooks/useCountUp';
 import { useGameStore } from '../../store/useGameStore';
 import { BUILDING_CONFIGS, WONDERS, getAllBuildingNames, getWonderNames } from '../../data/buildings';
 import { formatNumber } from '../../data/constants';
-import { FaTree, FaMagnet, FaPaw, FaMountain } from 'react-icons/fa6';
+import { FaTree, FaMagnet, FaPaw, FaMountain, FaBoxOpen, FaBuilding, FaStar } from 'react-icons/fa6';
 
 export const MainCityPanel: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
@@ -86,7 +86,7 @@ export const MainCityPanel: React.FC = () => {
     <div className="h-full overflow-y-auto p-3 space-y-4">
       {/* 资源区 */}
       <div>
-        <h3 className="text-sm font-bold text-gray-700 mb-2">📦 资源</h3>
+        <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5"><FaBoxOpen className="text-amber-600" /> 资源</h3>
         <div className="space-y-1">
           {MATERIALS_DATA.map((mat) => (
             <div key={mat.key} className="flex items-center gap-2 py-1">
@@ -112,7 +112,7 @@ export const MainCityPanel: React.FC = () => {
 
       {/* 建筑区 */}
       <div>
-        <h3 className="text-sm font-bold text-gray-700 mb-2">🏗️ 建筑</h3>
+        <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5"><FaBuilding className="text-blue-600" /> 建筑</h3>
         <div className="space-y-2">
           {getAllBuildingNames().map((name) => {
             const config = BUILDING_CONFIGS[name];
@@ -140,7 +140,7 @@ export const MainCityPanel: React.FC = () => {
 
       {/* 奇观区 */}
       <div>
-        <h3 className="text-sm font-bold text-gray-700 mb-2">✨ 奇观</h3>
+        <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5"><FaStar className="text-yellow-500" /> 奇观</h3>
         <div className="space-y-2">
           {getWonderNames().map((name) => {
             const config = WONDERS[name];
