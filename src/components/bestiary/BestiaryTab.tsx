@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { FaBookOpen } from 'react-icons/fa6';
-import { Tooltip } from 'radix-ui';
+import * as Tooltip from '@radix-ui/react-tooltip';
 import { useGameStore } from '../../store/useGameStore';
 import { MAPS } from '../../data/maps';
 import type { Monster } from '../../types';
@@ -105,6 +105,7 @@ export const BestiaryTab: React.FC = () => {
   );
 
   return (
+    <Tooltip.Provider delayDuration={100}>
     <div className="space-y-4">
       <h2 className="text-lg font-bold text-gray-800 flex items-center gap-1"><FaBookOpen /> 怪物图鉴</h2>
       <p className="text-xs text-gray-500">
@@ -207,5 +208,6 @@ export const BestiaryTab: React.FC = () => {
         })}
       </div>
     </div>
+    </Tooltip.Provider>
   );
 };
