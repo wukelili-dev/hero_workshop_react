@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, type Variants } from 'framer-motion';
 import { useGameStore } from '../../store/useGameStore';
 import { MAPS } from '../../data/maps';
 import { formatNumber } from '../../data/constants';
@@ -22,6 +23,25 @@ interface BattleResult {
 }
 
 const EMPTY_LOGS: BattleLog[] = [];
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 18 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+};
+
+const enemyVariants: Variants = {
+  hidden: { opacity: 0, x: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: { delay: i * 0.08, duration: 0.3, ease: 'easeOut' },
+  }),
+};
+
+const resultVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.92 },
+  visible: { opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 260, damping: 20 } },
+};
 
 export const CenterPanel: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
@@ -44,7 +64,6 @@ export const CenterPanel: React.FC = () => {
   const logsRef = useRef<HTMLDivElement>(null);
   const animTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Cleanup animation timer on unmount / phase change
   const clearAnimTimer = useCallback(() => {
     if (animTimerRef.current !== null) {
       clearInterval(animTimerRef.current);
@@ -56,7 +75,6 @@ export const CenterPanel: React.FC = () => {
     return () => clearAnimTimer();
   }, [clearAnimTimer]);
 
-  // Auto-scroll battle logs
   useEffect(() => {
     if (logsRef.current && battleLogs.length > 0) {
       logsRef.current.scrollTop = logsRef.current.scrollHeight;
@@ -95,24 +113,16 @@ export const CenterPanel: React.FC = () => {
 
   const handleFight = useCallback((monster: Monster) => {
     if (hero.hp <= 0) return;
-
-    // Clear any running animation
     clearAnimTimer();
-
-    // Set fighting state atomically
     setFightingMonster(monster);
     setBattlePhase('fighting');
     setBattleLogs(EMPTY_LOGS);
     setBattleResult(null);
 
     try {
-      // Run battle synchronously
       const result = fightMonster(monster);
-      if (!result || !result.logs) {
-        throw new Error('Invalid battle result');
-      }
+      if (!result || !result.logs) throw new Error('Invalid battle result');
 
-      // Apply results to game state
       if (result.victory) {
         addGold(result.rewards?.gold ?? 0);
         addExp(result.rewards?.exp ?? 0);
@@ -128,16 +138,13 @@ export const CenterPanel: React.FC = () => {
         setHp(0);
       }
 
-      // Animate battle logs line by line
       const logs = result.logs;
       let lineIdx = 0;
       animTimerRef.current = setInterval(() => {
         if (lineIdx < logs.length) {
           setBattleLogs((prev) => {
-            // Safety: don't exceed logs length
             if (lineIdx >= logs.length) return prev;
-            const newLogs = [...prev, logs[lineIdx]];
-            return newLogs;
+            return [...prev, logs[lineIdx]];
           });
           lineIdx++;
         } else {
@@ -157,21 +164,14 @@ export const CenterPanel: React.FC = () => {
     }
   }, [hero.hp, fightMonster, addGold, addExp, setHp, addResource, clearAnimTimer, resetBattleState]);
 
-  const handleConfirmResult = () => {
-    resetBattleState();
-  };
+  const handleConfirmResult = () => resetBattleState();
 
   const currentMap = MAPS.find(m => m.id === currentMapId);
 
-  // Safe rarity helpers
-  const getRarityColor = (r: number | undefined): string => {
-    if (r === undefined || r === null) return '#C0C0C0';
-    return (RARITY_COLOR as Record<number, string>)[r] ?? '#C0C0C0';
-  };
-  const getRarityName = (r: number | undefined): string => {
-    if (r === undefined || r === null) return '';
-    return (RARITY_NAME as Record<number, string>)[r] ?? '';
-  };
+  const getRarityColor = (r: number | undefined): string =>
+    (RARITY_COLOR as Record<number, string>)[r ?? 0] ?? '#C0C0C0';
+  const getRarityName = (r: number | undefined): string =>
+    (RARITY_NAME as Record<number, string>)[r ?? 0] ?? '';
 
   return (
     <div className="h-full overflow-y-auto p-3 space-y-3">
@@ -184,8 +184,9 @@ export const CenterPanel: React.FC = () => {
             { id: 'teammate' as TeamTab, label: '队友' },
             { id: 'all' as TeamTab, label: '全队' },
           ]).map((tab) => (
-            <button
+            <motion.button
               key={tab.id}
+              whileTap={{ scale: 0.92 }}
               onClick={() => setTeamTab(tab.id)}
               className={`px-4 py-1 rounded-full text-sm font-medium transition-colors ${
                 teamTab === tab.id
@@ -194,7 +195,7 @@ export const CenterPanel: React.FC = () => {
               }`}
             >
               {tab.label}
-            </button>
+            </motion.button>
           ))}
         </div>
         <div className="ml-auto flex gap-1.5">
@@ -205,7 +206,12 @@ export const CenterPanel: React.FC = () => {
       </div>
 
       {/* 英雄属性卡 */}
-      <div className="bg-white rounded-lg border border-gray-200 p-3">
+      <motion.div
+        variants={cardVariants}
+        initial="hidden"
+        animate="visible"
+        className="bg-white rounded-xl border border-gray-200/80 p-3 shadow-sm"
+      >
         <div className="flex items-center gap-2 mb-2">
           <span className="text-lg">🧙</span>
           <span className="font-bold text-gray-900">{hero.name}</span>
@@ -224,26 +230,33 @@ export const CenterPanel: React.FC = () => {
           <div className="flex"><span className="text-gray-500 w-14">武器:</span><span className="text-gray-600">{hero.weapon?.name ?? '空手'}</span></div>
           <div className="flex"><span className="text-gray-500 w-14">护甲:</span><span className="text-gray-600">{hero.armor?.name ?? '布衣'}</span></div>
         </div>
-      </div>
+      </motion.div>
 
       {/* 药水栏 */}
-      <div className="p-2 border border-amber-200 rounded-lg bg-amber-50">
+      <motion.div
+        variants={cardVariants}
+        initial="hidden"
+        animate="visible"
+        transition={{ delay: 0.15 }}
+        className="p-2 border border-amber-200/80 rounded-xl bg-gradient-to-r from-amber-50/60 to-yellow-50/40"
+      >
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-xs font-medium text-amber-700">💊 药水</span>
           <span className="text-xs font-bold text-amber-800">x{hero.potions ?? 0}</span>
         </div>
         <div className="flex gap-2">
-          <button
+          <motion.button
+            whileTap={{ scale: 0.88 }}
             onClick={() => { if (!useGameStore.getState().buyPotion()) alert('金币不足！'); }}
-            className="flex-1 py-1 bg-amber-400 hover:bg-amber-500 text-white rounded text-[11px] font-medium transition-colors"
-          >购买 (25G)</button>
-          <button
+            className="flex-1 py-1 bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-white rounded text-[11px] font-medium transition-colors shadow-sm hover:shadow"
+          >购买 (25G)</motion.button>
+          <motion.button
+            whileTap={{ scale: 0.88 }}
             onClick={() => { if (!useGameStore.getState().usePotion()) alert((hero.potions ?? 0) <= 0 ? '没有药水！' : 'HP已满！'); }}
             disabled={(hero.potions ?? 0) <= 0 || hero.hp >= hero.maxHp}
-            className={`flex-1 py-1 rounded text-[11px] font-medium transition-colors ${(hero.potions ?? 0) <= 0 || hero.hp >= hero.maxHp ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
-          >使用 +20HP</button>
+            className={`flex-1 py-1 rounded text-[11px] font-medium transition-colors ${(hero.potions ?? 0) <= 0 || hero.hp >= hero.maxHp ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 active:bg-green-700 text-white shadow-sm hover:shadow'}`}
+          >使用 +20HP</motion.button>
         </div>
-        {/* 自动喝药阈值 */}
         <div className="flex items-center gap-1.5 mt-1.5">
           <span className="text-[10px] text-amber-600">自动喝药：</span>
           {[0, 30, 50, 80].map((v) => (
@@ -254,7 +267,7 @@ export const CenterPanel: React.FC = () => {
             >{v === 0 ? '关' : `${v}%`}</button>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* 地图区域 */}
       <div>
@@ -268,8 +281,9 @@ export const CenterPanel: React.FC = () => {
             const isUnlocked = unlockedMaps.includes(map.id);
             const isActive = currentMapId === map.id;
             return (
-              <button
+              <motion.button
                 key={map.id}
+                whileTap={{ scale: 0.9 }}
                 onClick={() => isUnlocked ? handleSelectMap(map.id) : handleUnlockMap(map)}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                   isActive && isUnlocked
@@ -281,7 +295,7 @@ export const CenterPanel: React.FC = () => {
                 disabled={!isUnlocked && hero.gold < map.unlockCost}
               >
                 {map.name}{!isUnlocked ? ` (${formatNumber(map.unlockCost)}G)` : ''}
-              </button>
+              </motion.button>
             );
           })}
         </div>
@@ -295,18 +309,19 @@ export const CenterPanel: React.FC = () => {
         </div>
 
         {/* 刷新按钮 */}
-        <button
+        <motion.button
+          whileTap={{ scale: 0.88 }}
           onClick={handleRefreshEnemies}
           disabled={battlePhase === 'fighting'}
           className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded text-sm text-blue-700 transition-colors disabled:opacity-50"
         >
           🔄 刷新敌人
-        </button>
+        </motion.button>
 
         {/* 战斗日志 / 结果区 */}
         {battlePhase !== 'idle' && (
           <div className="mt-2 border border-gray-200 rounded-lg overflow-hidden">
-            {/* 战斗中的 HP 条 */}
+            {/* 战斗中 HP 条 */}
             {fightingMonster && battlePhase === 'fighting' && (
               <div className="p-2 bg-gray-50 border-b border-gray-200 space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
@@ -337,14 +352,17 @@ export const CenterPanel: React.FC = () => {
               className="p-2 space-y-0.5 max-h-40 overflow-y-auto bg-gray-900 text-xs font-mono"
             >
               {(battleLogs.length > 0 ? battleLogs : (battlePhase === 'fighting' ? [{ round: 0, attacker: '', defender: '', damage: 0, isCrit: false, description: '准备战斗...' }] : [])).map((log, i) => (
-                <div
+                <motion.div
                   key={i}
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.15 }}
                   className={`${
                     log.isCrit ? 'text-yellow-300' : log.damage === 0 ? 'text-cyan-300 font-bold' : 'text-green-300'
                   }`}
                 >
                   {log.description}
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -352,11 +370,16 @@ export const CenterPanel: React.FC = () => {
 
         {/* 战斗结果 */}
         {battlePhase === 'result' && battleResult && (
-          <div className={`mt-2 p-3 rounded-lg border-2 ${
-            battleResult.victory
-              ? 'bg-green-50 border-green-400'
-              : 'bg-red-50 border-red-400'
-          }`}>
+          <motion.div
+            variants={resultVariants}
+            initial="hidden"
+            animate="visible"
+            className={`mt-2 p-3 rounded-xl border-2 ${
+              battleResult.victory
+                ? 'bg-green-50 border-green-400'
+                : 'bg-red-50 border-red-400'
+            }`}
+          >
             <div className="text-lg font-bold mb-2">
               {battleResult.victory ? '🎉 战斗胜利！' : '💀 战斗失败...'}
             </div>
@@ -389,7 +412,8 @@ export const CenterPanel: React.FC = () => {
               </div>
             )}
 
-            <button
+            <motion.button
+              whileTap={{ scale: 0.9 }}
               onClick={handleConfirmResult}
               className={`px-4 py-1.5 rounded-full text-sm font-medium text-white transition-colors ${
                 battleResult.victory
@@ -398,24 +422,29 @@ export const CenterPanel: React.FC = () => {
               }`}
             >
               确认
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         )}
       </div>
 
       {/* 敌人列表（仅在空闲时显示） */}
       {battlePhase === 'idle' && currentEnemies.length > 0 && (
         <div className="space-y-2">
-          {currentEnemies.map((enemy) => {
+          {currentEnemies.map((enemy, i) => {
             if (!enemy) return null;
             const rarityColor = getRarityColor(enemy.rarity);
             const rarityName = getRarityName(enemy.rarity);
             const canFight = hero.hp > 0;
 
             return (
-              <div
+              <motion.div
                 key={enemy.id}
-                className="bg-white rounded-lg border border-gray-200 p-2.5 hover:shadow-md transition-shadow"
+                custom={i}
+                variants={enemyVariants}
+                initial="hidden"
+                animate="visible"
+                whileHover={{ scale: 1.01, boxShadow: '0 2px 12px rgba(239,68,68,0.08)' }}
+                className="bg-white rounded-xl border border-gray-200/80 p-2.5 shadow-sm hover:border-red-200/70 transition-colors duration-200 cursor-default"
               >
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-1.5">
@@ -431,17 +460,18 @@ export const CenterPanel: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.85 }}
                     onClick={() => handleFight(enemy)}
                     disabled={!canFight}
                     className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
                       canFight
-                        ? 'bg-red-500 hover:bg-red-600 text-white shadow-sm'
+                        ? 'bg-red-500 hover:bg-red-600 text-white shadow-sm hover:shadow'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                   >
                     <FaBomb className="inline" /> 战斗
-                  </button>
+                  </motion.button>
                 </div>
 
                 {/* HP Bar */}
@@ -474,7 +504,7 @@ export const CenterPanel: React.FC = () => {
                     ))}
                   </div>
                 )}
-              </div>
+              </motion.div>
             );
           })}
         </div>
