@@ -73,6 +73,7 @@ const initHero: HeroState = {
   gold: 100, weapon: null, armor: null,
   passives: [], noveltyItems: [], team: [],
   potions: 0,
+  kills: 0,
 };
 
 const initRes: Resources = { wood: 0, iron: 0, hide: 0, stone: 0, herb: 0 };

@@ -78,6 +78,7 @@ export interface HeroState {
   noveltyItems: string[];
   team: TeamMember[];  // 队友列表
   discoveredMonsters: string[];  // 已发现的怪物ID列表
+  kills: number;              // 击杀数
   potions: number;  // 药水数量
 }
 
