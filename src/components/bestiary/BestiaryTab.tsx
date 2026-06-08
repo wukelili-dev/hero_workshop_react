@@ -9,7 +9,7 @@ import { NOVELTY_ITEMS, NOVELTY_RARITY_COLORS, NOVELTY_RARITY_NAMES } from '../.
 import { PLANTS_CATALOG, PLANT_RARITY_COLORS, PLANT_RARITY_NAMES } from '../../data/plants';
 import { RANCH_CATALOG } from '../../data/ranch';
 
-const ALL_MONSTERS: Monster[] = MAPS.flatMap((m) => m.monsters ?? []);
+const ALL_MONSTERS: Monster[] = MAPS.flatMap((m) => [...(m.monsters ?? []), ...(m.boss ? [m.boss] : [])]);
 
 const RARITY_COLOR: Record<number, string> = {
   0: '#C0C0C0', 1: '#4CAF50', 2: '#2196F3', 3: '#9370DB', 4: '#FF9800',
