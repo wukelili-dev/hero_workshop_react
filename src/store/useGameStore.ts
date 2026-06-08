@@ -39,7 +39,7 @@ interface GameState {
   discoveredCreatures: string[];
   autoPotionThreshold: number;
   autoBattle: boolean;
-  buildings: Record<string, number>;   // { "伐木�?: 2, "铁矿": 1 }
+  buildings: Record<string, number>;   // { "伐木场: 2, "铁矿": 1 }
 }
 
 interface GameActions {
@@ -80,7 +80,7 @@ interface GameActions {
   stopAutoBattle: () => void;
 }
 
-// 中文材料�?�?store resources key 映射
+// 中文材料名store resources key 映射
 const RES_KEY_MAP: Record<string, string> = {
   '木材': 'wood', '铁矿': 'iron', '皮革': 'hide', '石头': 'stone', '药草': 'herb',
 };
@@ -115,7 +115,7 @@ function getEnemies(mapId: string): Monster[] {
   return out;
 }
 
-// 启动建筑定时器（�?1 秒检查一次）
+// 启动建筑定时器（每1 秒检查一次）
 function startBuildingTimer() {
   if (_buildingTimer) return;
   _buildingTimer = setInterval(tickBuildings, 1000);
@@ -171,11 +171,11 @@ const BUILDING_OUTPUT_MAP: Record<string, string> = {
   '伐木场': 'wood', '铁矿': 'iron', '狩猎场': 'hide', '采石场': 'stone',
 };
 
-// 建筑自动产出定时器引�?
+// 建筑自动产出定时器引用
 let _buildingTimer: ReturnType<typeof setInterval> | null = null;
 const _lastBuildingTick: Record<string, number> = {};
 
-// ── 监听 buildings 变化自动启停定时�?──
+// ── 监听 buildings 变化自动启停定时器 ──
 let _prevBuildings: string | null = null;
 function syncBuildingTimer() {
   const { buildings } = useGameStore.getState();
@@ -280,7 +280,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const hhmm = new Date(now).toTimeString().slice(0, 5);
     const hhmmss = new Date(now).toTimeString().slice(0, 8);
     if (result.victory) {
-      get().addBattleLog(`[${hhmm}] 战胜${monster.name}！获�?${result.rewards.exp} EXP�?{result.rewards.gold} 金币`);
+      get().addBattleLog(`[${hhmm}] 战胜${monster.name}！获得${result.rewards.exp} EXP，${result.rewards.gold} 金币`);
       
       // 检查是否新发现怪物
       const { discoveredMonsters } = get();
@@ -293,11 +293,11 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${monster.name}`);
       }
       
-      // 递增击杀�?
+      // 递增击杀数
       set((s) => ({ hero: { ...s.hero, kills: s.hero.kills + 1 } }));
     } else {
       // 死亡：自动复活到50% HP
-      get().addBattleLog(`[${hhmm}] �?${monster.name} 击败！自动复活至 50% HP`);
+      get().addBattleLog(`[${hhmm}] 被${monster.name} 击败！自动复活至 50% HP`);
       const reviveHp = Math.floor(hero.maxHp * 0.5);
       set((s) => ({ hero: { ...s.hero, hp: reviveHp } }));
       // 尝试自动药水（复活后如果血量仍低）
@@ -308,7 +308,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           const heal = Math.min(20, hero.maxHp - reviveHp);
           if (heal > 0) {
             set((s) => ({ hero: { ...s.hero, potions: s.hero.potions - 1, hp: s.hero.hp + heal } }));
-            get().addBattleLog(`[${hhmm}] 💊 自动药水�?${heal} HP（剩�?${hero.potions - 1} 瓶）`);
+            get().addBattleLog(`[${hhmm}] 💊 自动药水恢复${heal} HP（剩余${hero.potions - 1} 瓶）`);
           }
         }
       }
@@ -404,14 +404,14 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   addBuilding: (name) => set((s) => {
     const newCount = (s.buildings[name] ?? 0) + 1;
     const updated = { ...s.buildings, [name]: newCount };
-    // 有建筑时确保定时器运�?
+    // 有建筑时确保定时器运行
     if (!_buildingTimer) startBuildingTimer();
     // 初始化该建筑的产出时间（减去 interval 让首次立即触发）
     const cfg = BUILDING_CONFIGS[name];
     if (cfg && !_lastBuildingTick[name]) {
       _lastBuildingTick[name] = Date.now() - cfg.baseInterval * 1000;
     }
-    // 建造日�?
+    // 建造日志
     const outputRes = BUILDING_OUTPUTS[name] || name;
     const outputPerTick = cfg ? cfg.baseOutput * newCount : 0;
     get().addGameLog(`建造${name}x${newCount}完成，当前产量：${outputRes}X${outputPerTick}/tick`);
@@ -422,7 +422,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const { hero, resources } = get();
     if (hero.level < (w.levelReq ?? 0)) return false;
     const cost = w.cost ?? {};
-    // 检查所有资源是否足�?
+    // 检查所有资源是否足够
     for (const [res, amt] of Object.entries(cost)) {
       const numAmt = Number(amt);
       if (res === '金币') {
@@ -432,7 +432,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         if ((resources as any)[rKey] < numAmt) return false;
       }
     }
-    // 扣减所有资�?
+    // 扣减所有资源
     const goldCost = cost['金币'] ? Number(cost['金币']) : 0;
     const newRes = { ...resources };
     for (const [res, amt] of Object.entries(cost)) {
@@ -462,7 +462,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const { hero, resources } = get();
     if (hero.level < (a.levelReq ?? 0)) return false;
     const cost = a.cost ?? {};
-    // 检查所有资源是否足�?
+    // 检查所有资源是否足够
     for (const [res, amt] of Object.entries(cost)) {
       const numAmt = Number(amt);
       if (res === '金币') {
@@ -472,7 +472,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         if ((resources as any)[rKey] < numAmt) return false;
       }
     }
-    // 扣减所有资�?
+    // 扣减所有资源
     const goldCost = cost['金币'] ? Number(cost['金币']) : 0;
     const newRes = { ...resources };
     for (const [res, amt] of Object.entries(cost)) {
@@ -509,7 +509,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     }));
     // 添加到背包（可叠加）
     useInventoryStore.getState().addNovelty(itemName, 1);
-    // 记录到图�?
+    // 记录到图鉴
     get().addDiscoveredNovelty(itemName);
     get().addGameLog(`购买杂货 ${itemName}，花费${price} 金币`);
     return true;
@@ -542,7 +542,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         farmPlots: plots,
       };
     });
-    // 记录到图�?
+    // 记录到图鉴
     get().addDiscoveredPlant(plantId);
     get().addGameLog(`种植 ${plantId}（地块${plotIdx + 1}）`);
     return true;
