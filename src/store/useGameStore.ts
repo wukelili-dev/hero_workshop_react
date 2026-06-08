@@ -11,6 +11,20 @@ import { BUILDING_CONFIGS, getAllBuildingNames, BUILDING_OUTPUTS } from '../data
 // 自动战斗定时器
 let _autoBattleTimer: ReturnType<typeof setInterval> | null = null;
 
+// 自动药水：先买后喝（低于阈值时触发）
+function _autoPotionIfNeeded() {
+  const { autoPotionThreshold } = useGameStore.getState();
+  if (autoPotionThreshold <= 0) return;
+  let h = useGameStore.getState().hero;
+  if (h.potions <= 0 && h.gold >= 25) {
+    useGameStore.getState().buyPotion();
+    h = useGameStore.getState().hero;
+  }
+  if (h.potions > 0 && h.hp < h.maxHp * (autoPotionThreshold / 100)) {
+    useGameStore.getState().usePotion();
+  }
+}
+
 // 判断英雄是否能打过怪物
 function canDefeat(hero: any, monster: any): boolean {
   const result = executeBattle(
@@ -282,36 +296,36 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     if (result.victory) {
       get().addBattleLog(`[${hhmm}] 战胜${monster.name}！获得${result.rewards.exp} EXP，${result.rewards.gold} 金币`);
       
-      // 检查是否新发现怪物
+      // 应用奖励
+      get().addGold(result.rewards?.gold ?? 0);
+      get().addExp(result.rewards?.exp ?? 0);
+      if (typeof result.heroFinalHp === 'number') get().setHp(result.heroFinalHp);
+      if (result.rewards?.drops) {
+        for (const drop of result.rewards.drops) {
+          if (drop?.itemId) get().addResource(drop.itemId, drop.quantity ?? 1);
+        }
+      }
+      
+      // 检查新发现
       const { discoveredMonsters } = get();
       const isNewDiscovery = !discoveredMonsters.includes(monster.id);
-      
       get().addDiscoveredMonster(monster.id);
-      
-      // 新发现时输出杂项日志
       if (isNewDiscovery) {
         get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${monster.name}`);
       }
       
       // 递增击杀数
       set((s) => ({ hero: { ...s.hero, kills: s.hero.kills + 1 } }));
+      
+      // 自动药水（战胜后血量低于阈值时自动买药+喝药）
+      _autoPotionIfNeeded();
     } else {
       // 死亡：自动复活到50% HP
       get().addBattleLog(`[${hhmm}] 被${monster.name} 击败！自动复活至 50% HP`);
       const reviveHp = Math.floor(hero.maxHp * 0.5);
       set((s) => ({ hero: { ...s.hero, hp: reviveHp } }));
-      // 尝试自动药水（复活后如果血量仍低）
-      const { autoPotionThreshold } = get();
-      if (autoPotionThreshold > 0 && hero.potions > 0) {
-        const hpPct = reviveHp / hero.maxHp;
-        if (hpPct * 100 < autoPotionThreshold) {
-          const heal = Math.min(20, hero.maxHp - reviveHp);
-          if (heal > 0) {
-            set((s) => ({ hero: { ...s.hero, potions: s.hero.potions - 1, hp: s.hero.hp + heal } }));
-            get().addBattleLog(`[${hhmm}] 💊 自动药水恢复${heal} HP（剩余${hero.potions - 1} 瓶）`);
-          }
-        }
-      }
+      // 复活后也检查自动药水
+      _autoPotionIfNeeded();
     }
     return result;
   },
@@ -360,49 +374,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           }
         }
         const target = winnable.reduce((a, b) => ((a.rewards?.exp || 0) > (b.rewards?.exp || 0) ? a : b));
-        const result = get().fightMonster(target);
-        if (result.victory) {
-          // 应用战斗奖励
-          const s = get();
-          s.addGold(result.rewards?.gold ?? 0);
-          s.addExp(result.rewards?.exp ?? 0);
-          if (typeof result.heroFinalHp === 'number') s.setHp(result.heroFinalHp);
-          if (result.rewards?.drops) {
-            for (const drop of result.rewards.drops) {
-              if (drop?.itemId) s.addResource(drop.itemId, drop.quantity ?? 1);
-            }
-          }
-          // 自动喝药（用最新状态）
-          const th = get().autoPotionThreshold;
-          if (th > 0) {
-            let h = get().hero;
-            if (h.potions <= 0 && h.gold >= 50) {
-              get().buyPotion();
-              h = get().hero; // 买完后刷新状态
-            }
-            if (h.potions > 0 && h.hp < h.maxHp * (th / 100)) {
-              get().usePotion();
-            }
-          }
-          get().refreshEnemies();
-          // 清理自动战斗日志，防止刷屏
-          set((s) => ({ battleLogs: s.battleLogs.slice(-5) }));
-        } else {
-          // 失败：刷新敌人避免死循环
-          get().refreshEnemies();
-          // 失败复活后也检查自动喝药
-          const th2 = get().autoPotionThreshold;
-          if (th2 > 0) {
-            let hd = get().hero;
-            if (hd.potions <= 0 && hd.gold >= 50) {
-              get().buyPotion();
-              hd = get().hero;
-            }
-            if (hd.potions > 0 && hd.hp < hd.maxHp * (th2 / 100)) {
-              get().usePotion();
-            }
-          }
-        }
+        get().fightMonster(target);
+        get().refreshEnemies();
+        // 防止日志刷屏
+        set((s) => ({ battleLogs: s.battleLogs.slice(-5) }));
       }, 600);
     } else if (!v && _autoBattleTimer) {
       clearInterval(_autoBattleTimer);

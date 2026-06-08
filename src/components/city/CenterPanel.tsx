@@ -52,10 +52,6 @@ export const CenterPanel: React.FC = () => {
   const currentEnemies = useGameStore((s) => s.currentEnemies);
   const refreshEnemies = useGameStore((s) => s.refreshEnemies);
   const fightMonster = useGameStore((s) => s.fightMonster);
-  const addGold = useGameStore((s) => s.addGold);
-  const addExp = useGameStore((s) => s.addExp);
-  const setHp = useGameStore((s) => s.setHp);
-  const addResource = useGameStore((s) => s.addResource);
 
   const autoBattle = useGameStore((s) => s.autoBattle);
   const setAutoBattle = useGameStore((s) => s.setAutoBattle);
@@ -127,20 +123,7 @@ export const CenterPanel: React.FC = () => {
       const result = fightMonster(monster);
       if (!result || !result.logs) throw new Error('Invalid battle result');
 
-      if (result.victory) {
-        addGold(result.rewards?.gold ?? 0);
-        addExp(result.rewards?.exp ?? 0);
-        setHp(result.heroFinalHp ?? hero.hp);
-        if (result.rewards?.drops) {
-          for (const drop of result.rewards.drops) {
-            if (drop && drop.itemId) {
-              addResource(drop.itemId, drop.quantity ?? 1);
-            }
-          }
-        }
-      } else {
-        setHp(0);
-      }
+      // 奖励和自动药水已由 fightMonster 内部处理
 
       const logs = result.logs;
       let lineIdx = 0;
@@ -166,7 +149,7 @@ export const CenterPanel: React.FC = () => {
       console.error('Battle error:', err);
       resetBattleState();
     }
-  }, [hero.hp, fightMonster, addGold, addExp, setHp, addResource, clearAnimTimer, resetBattleState]);
+  }, [hero.hp, fightMonster, clearAnimTimer, resetBattleState]);
 
   const handleConfirmResult = () => resetBattleState();
 
