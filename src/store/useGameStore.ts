@@ -344,10 +344,20 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           if (_autoBattleTimer) { clearInterval(_autoBattleTimer); _autoBattleTimer = null; }
           return;
         }
-        const winnable = state.currentEnemies.filter(m => canDefeat(state.hero, m));
+        let winnable = state.currentEnemies.filter(m => canDefeat(state.hero, m));
         if (winnable.length === 0) {
-          // 没有能打过的怪，等待敌人刷新
-          return;
+          // 没有能打过的怪，自动刷新敌人
+          get().refreshEnemies();
+          // 刷新后重试一次
+          const retryEnemies = get().currentEnemies;
+          winnable = retryEnemies.filter(m => canDefeat(get().hero, m));
+          if (winnable.length === 0) {
+            // 刷新后仍然打不动，停止自动战斗
+            get().addBattleLog(`[${new Date().toTimeString().slice(0, 5)}] ⚠ 当前地图无敌可敌，自动战斗暂停`);
+            if (_autoBattleTimer) { clearInterval(_autoBattleTimer); _autoBattleTimer = null; }
+            set({ autoBattle: false });
+            return;
+          }
         }
         const target = winnable.reduce((a, b) => ((a.rewards?.exp || 0) > (b.rewards?.exp || 0) ? a : b));
         const result = get().fightMonster(target);
