@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaIndustry, FaCoins } from 'react-icons/fa6';
 import { useGameStore } from '../../store/useGameStore';
 import { useFactoryStore } from '../../store/useFactoryStore';
-import { DEPARTMENTS, MAX_FACTORY_WORKERS, FACTORY_WORKER_COST_GOLD, FACTORY_BASE_PROFIT, FACTORY_BASE_INTERVAL_S, FACTORY_BUILD_COST, calcFactoryBonus } from '../../data/factory';
+import { DEPARTMENTS, MAX_FACTORY_WORKERS, FACTORY_WORKER_COST_GOLD, FACTORY_WORKER_BONUS, FACTORY_BASE_PROFIT, FACTORY_BASE_INTERVAL_S, FACTORY_BUILD_COST, calcFactoryBonus } from '../../data/factory';
 
 export const FactoryTab: React.FC = () => {
   const hero = useGameStore(s => s.hero);
