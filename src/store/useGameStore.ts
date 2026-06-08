@@ -380,7 +380,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             return;
           }
         }
-        const target = winnable.reduce((a, b) => ((a.rewards?.exp || 0) > (b.rewards?.exp || 0) ? a : b));
+        const target = winnable.reduce((a, b) => ((a.expReward || 0) > (b.expReward || 0) ? a : b));
         get().fightMonster(target);
         get().refreshEnemies();
         // 防止日志刷屏
