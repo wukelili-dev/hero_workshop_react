@@ -21,9 +21,13 @@ export const FactoryTab: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // 中文材料名 → resources 英文 key
+  const CN_TO_EN: Record<string, string> = { '木材': 'wood', '铁矿': 'iron', '皮革': 'hide', '石头': 'stone', '药草': 'herb' };
+
   // ── 建造工厂 ──
   const handleBuildFactory = () => {
-    buildFactory();
+    const ok = buildFactory();
+    if (!ok) alert('资源不足，无法建造工厂！');
   };
 
   // ── 购买部门 ──
@@ -81,7 +85,7 @@ export const FactoryTab: React.FC = () => {
                 <span key={res} className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                   res === '金币'
                     ? (hero.gold >= amt ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-600')
-                    : ((resources[res] ?? 0) >= amt ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-600')
+                    : ((resources[CN_TO_EN[res] ?? res] ?? 0) >= amt ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-600')
                 }`}>
                   {res} ×{amt}
                 </span>
@@ -156,7 +160,7 @@ export const FactoryTab: React.FC = () => {
 
           // 建造/购买条件
           const buildCostMet = hero.gold >= cfg.costGold && Object.entries(cfg.costResources).every(
-            ([r, a]) => (resources[r] ?? 0) >= (a ?? 0)
+            ([r, a]) => (resources[CN_TO_EN[r] ?? r] ?? 0) >= (a ?? 0)
           );
 
           // 雇佣条件
