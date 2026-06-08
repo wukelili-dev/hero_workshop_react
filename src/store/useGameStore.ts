@@ -8,7 +8,11 @@ import { RANCH_CATALOG } from '../data/ranch';
 import { generateTavernRoster, type TavernRecruit } from '../data/tavern';
 import { BUILDING_CONFIGS, getAllBuildingNames, BUILDING_OUTPUTS } from '../data/buildings';
 
-// 自动战斗定时器
+// 掉落物品 itemId → 资源 key 映射（怪物掉落用中文，资源状态用英文）
+const DROP_TO_RESOURCE: Record<string, string> = {
+  '皮革': 'hide', '铁矿': 'iron', '木材': 'wood', '石头': 'stone', '药草': 'herb',
+  '金币': 'gold',
+};
 let _autoBattleTimer: ReturnType<typeof setInterval> | null = null;
 
 // 自动药水：先买后喝（低于阈值时触发）
@@ -302,7 +306,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       if (typeof result.heroFinalHp === 'number') get().setHp(result.heroFinalHp);
       if (result.rewards?.drops) {
         for (const drop of result.rewards.drops) {
-          if (drop?.itemId) get().addResource(drop.itemId, drop.quantity ?? 1);
+          if (drop?.itemId) get().addResource(DROP_TO_RESOURCE[drop.itemId] ?? drop.itemId, drop.quantity ?? 1);
         }
       }
       
