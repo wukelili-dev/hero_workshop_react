@@ -358,13 +358,16 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           if (_autoBattleTimer) { clearInterval(_autoBattleTimer); _autoBattleTimer = null; }
           return;
         }
-        let winnable = state.currentEnemies.filter(m => canDefeat(state.hero, m));
+        // 用满血状态判断能否击败（避免残血误判所有怪都打不过）
+        const heroAtFull = { ...state.hero, hp: state.hero.maxHp };
+        let winnable = state.currentEnemies.filter(m => canDefeat(heroAtFull, m));
         if (winnable.length === 0) {
           // 没有能打过的怪，自动刷新敌人
           get().refreshEnemies();
           // 刷新后重试一次
           const retryEnemies = get().currentEnemies;
-          winnable = retryEnemies.filter(m => canDefeat(get().hero, m));
+          const retryHero = { ...get().hero, hp: get().hero.maxHp };
+          winnable = retryEnemies.filter(m => canDefeat(retryHero, m));
           if (winnable.length === 0) {
             // 刷新后仍然打不动，停止自动战斗
             get().addBattleLog(`[${new Date().toTimeString().slice(0, 5)}] ⚠ 当前地图无敌可敌，自动战斗暂停`);
