@@ -11,6 +11,7 @@ import { RARITY_NAME, RARITY_COLOR } from '../../types';
 import type { Monster } from '../../types';
 import type { BattleLog, Rewards } from '../../engine/Combat';
 import { FaSkullCrossbones, FaBomb, FaShield, FaUsers } from 'react-icons/fa6';
+import { AnimatedNumber } from '../../hooks/useCountUp';
 
 type TeamTab = 'hero' | 'teammate' | 'all';
 type BattlePhase = 'idle' | 'fighting' | 'result';
@@ -223,13 +224,13 @@ export const CenterPanel: React.FC = () => {
         <div className="space-y-0.5 text-sm">
           <div className="flex"><span className="text-gray-500 w-14">生命:</span>
             <span className={hero.hp < hero.maxHp * 0.3 ? 'text-red-600 font-bold' : ''}>
-              {hero.hp}/{hero.maxHp}
+              <AnimatedNumber value={hero.hp} duration={400} />/{hero.maxHp}
             </span>
           </div>
           <div className="flex"><span className="text-gray-500 w-14">攻击:</span><span className="text-red-600 font-medium">{hero.atk}</span></div>
           <div className="flex"><span className="text-gray-500 w-14">防御:</span><span className="text-blue-600 font-medium">{hero.def}</span></div>
           <div className="flex"><span className="text-gray-500 w-14">CRIT:</span><span>{(hero.critRate * 100).toFixed(0)}%</span></div>
-          <div className="flex"><span className="text-gray-500 w-14">经验:</span><span>{formatNumber(hero.exp)}/{hero.level * 100}</span></div>
+          <div className="flex"><span className="text-gray-500 w-14">经验:</span><span><AnimatedNumber value={hero.exp} duration={400} />/{hero.level * 100}</span></div>
           <div className="flex"><span className="text-gray-500 w-14">武器:</span><span className="text-gray-600">{hero.weapon?.name ?? '空手'}</span></div>
           <div className="flex"><span className="text-gray-500 w-14">护甲:</span><span className="text-gray-600">{hero.armor?.name ?? '布衣'}</span></div>
         </div>
