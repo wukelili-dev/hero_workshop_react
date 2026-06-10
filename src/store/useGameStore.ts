@@ -229,7 +229,8 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   setCurrentMap: (id) => set({ currentMapId: id, currentEnemies: getEnemies(id) }),
   unlockMap: (id) => set((s) => {
     if (s.unlockedMaps.includes(id)) return {};
-    get().addGameLog(`解锁地图: ${id}`);
+    const map = MAPS.find(m => m.id === id);
+    get().addGameLog(`解锁地图: ${map?.name ?? id}`);
     return { unlockedMaps: [...s.unlockedMaps, id] };
   }),
   addGold: (amt) => set((s) => ({ hero: { ...s.hero, gold: Math.max(0, s.hero.gold + amt) } })),

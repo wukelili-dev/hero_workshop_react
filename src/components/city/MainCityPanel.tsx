@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 import { useGameStore } from '../../store/useGameStore';
+import { useFactoryStore } from '../../store/useFactoryStore';
 import { BUILDING_CONFIGS, WONDERS, getAllBuildingNames, getWonderNames } from '../../data/buildings';
 import { formatNumber } from '../../data/constants';
 import { FaTree, FaMagnet, FaPaw, FaMountain, FaBoxOpen, FaBuilding, FaStar, FaCoins } from 'react-icons/fa6';
@@ -61,6 +62,7 @@ export const MainCityPanel: React.FC = () => {
   const resources = useGameStore((s) => s.resources);
   const addGold = useGameStore((s) => s.addGold);
   const addResource = useGameStore((s) => s.addResource);
+  const addGameLog = useGameStore((s) => s.addGameLog);
 
   const addBuilding = useGameStore((s) => s.addBuilding);
   const buildings = useGameStore((s) => s.buildings);
@@ -98,6 +100,8 @@ export const MainCityPanel: React.FC = () => {
     if (hero.gold >= price * qty) {
       addGold(-price * qty);
       addResource(key, qty);
+      const name = MATERIALS_DATA.find(m => m.key === key)?.name ?? key;
+      addGameLog(`购买 ${name} ×${qty}，花费 ${price * qty} 金币`);
     }
   };
 
@@ -107,6 +111,8 @@ export const MainCityPanel: React.FC = () => {
     if ((resources[key] || 0) >= qty) {
       addResource(key, -qty);
       addGold(price * qty);
+      const name = MATERIALS_DATA.find(m => m.key === key)?.name ?? key;
+      addGameLog(`出售 ${name} ×${qty}，获得 ${price * qty} 金币`);
     }
   };
 
