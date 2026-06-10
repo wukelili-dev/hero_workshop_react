@@ -34,6 +34,13 @@ export function saveGame(): boolean {
       unlockedMaps: gameState.unlockedMaps,
       currentEnemies: gameState.currentEnemies,
       farmPlots: gameState.farmPlots,
+      // 图鉴数据
+      discoveredMonsters: gameState.discoveredMonsters,
+      discoveredNovelties: gameState.discoveredNovelties,
+      discoveredPlants: gameState.discoveredPlants,
+      discoveredCreatures: gameState.discoveredCreatures,
+      // 建筑统计
+      buildings: gameState.buildings,
       inventory: {
         weapons: invState.weapons,
         armors: invState.armors,
@@ -83,6 +90,24 @@ export function loadGame(): boolean {
 
     // v2 新增字段
     if (data.farmPlots) gameStore.setFarmPlots(data.farmPlots);
+
+    // 图鉴数据
+    if (data.discoveredMonsters) {
+      useGameStore.setState({ discoveredMonsters: data.discoveredMonsters });
+    }
+    if (data.discoveredNovelties) {
+      useGameStore.setState({ discoveredNovelties: data.discoveredNovelties });
+    }
+    if (data.discoveredPlants) {
+      useGameStore.setState({ discoveredPlants: data.discoveredPlants });
+    }
+    if (data.discoveredCreatures) {
+      useGameStore.setState({ discoveredCreatures: data.discoveredCreatures });
+    }
+    // 建筑统计
+    if (data.buildings) {
+      useGameStore.setState({ buildings: data.buildings });
+    }
 
     if (data.inventory) {
       if (data.inventory.weapons) invStore.setWeapons(data.inventory.weapons);
