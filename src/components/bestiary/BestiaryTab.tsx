@@ -113,9 +113,12 @@ export const BestiaryTab: React.FC = () => {
                   key={monster.id}
                   className={`rounded-lg border p-3 transition-all duration-200 hover:shadow-md hover:border-blue-300 ${
                     discovered
-                      ? 'bg-white border-gray-200 hover:scale-[1.02]'
+                      ? monster.isBoss
+                        ? 'bg-gradient-to-br from-amber-50 via-yellow-100 to-orange-100 border-2 border-yellow-400 shadow-yellow-400/40 shadow-lg'
+                        : 'bg-white border-gray-200 hover:scale-[1.02]'
                       : 'bg-gray-100 border-gray-200 opacity-60'
                   }`}
+                  style={monster.isBoss && discovered ? { boxShadow: '0 0 12px 2px rgba(234,179,8,0.5)' } : {}}
                 >
                   {discovered ? (
                     <Tooltip.Root>
@@ -133,7 +136,7 @@ export const BestiaryTab: React.FC = () => {
                               {RARITY_NAME[monster.rarity ?? 0] || '普通'}
                             </span>
                             {monster.isBoss && (
-                              <span className="text-xs text-red-500 font-bold">BOSS</span>
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-gradient-to-r from-yellow-500 to-amber-400 text-white font-bold shadow-sm">⭐ BOSS</span>
                             )}
                           </div>
                         </div>
