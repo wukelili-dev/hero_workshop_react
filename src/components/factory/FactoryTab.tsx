@@ -45,24 +45,22 @@ export const FactoryTab: React.FC = () => {
   const totalBonus = calcFactoryBonus(builtDeptIds, totalWorkers);
   const estimatedProfit = Math.floor(FACTORY_BASE_PROFIT * totalBonus);
 
-  // ── 冷却状态 ──
-  // basic 车间不受冷却；其他部门需等 5 分钟
-  const cooledDepts = depts.filter(d => {
-    if (!d.built) return false;
-    if (d.id === 'basic') return true;
-    return (now - d.lastProduceAt) / 1000 >= FACTORY_BASE_INTERVAL_S;
-  });
-  const canCollect = cooledDepts.length > 0;
-  // 下一个可收取的倒计时
-  const nextCoolTime = depts
-    .filter(d => d.built && d.id !== 'basic')
-    .map(d => {
-      const elapsed = (now - d.lastProduceAt) / 1000;
-      return Math.max(0, FACTORY_BASE_INTERVAL_S - elapsed);
-    })
-    .concat([0])
-    .reduce((a, b) => Math.min(a, b), Infinity);
-  const nextMin = nextCoolTime === Infinity || nextCoolTime === 0 ? 0 : Math.ceil(nextCoolTime / 60);
+  // ── 积累进度（时间积累制） ──
+  const builtDepts = depts.filter(d => d.built);
+  // 统一从最早的 lastCollectAt 开始计时（如果全是0则立即可收）
+  const earliestCollectAt = builtDepts.length > 0
+    ? Math.min(...builtDepts.map(d => d.lastCollectAt))
+    : 0;
+  // 已积累秒数（0~FACTORY_BASE_INTERVAL_S）
+  const elapsedS = earliestCollectAt === 0
+    ? FACTORY_BASE_INTERVAL_S  // 全新状态，立即可收
+    : Math.min((now - earliestCollectAt) / 1000, FACTORY_BASE_INTERVAL_S);
+  const progress = Math.min(elapsedS / FACTORY_BASE_INTERVAL_S, 1);
+  const remainingS = Math.max(0, FACTORY_BASE_INTERVAL_S - elapsedS);
+  const canCollect = builtDepts.length > 0 && elapsedS >= FACTORY_BASE_INTERVAL_S;
+
+  // 实时待收金币
+  const pendingGold = canCollect ? 0 : Math.floor(estimatedProfit * progress);
 
   // ── 工厂未建造时 ──
   if (!factoryBuilt) {
@@ -131,20 +129,36 @@ export const FactoryTab: React.FC = () => {
         </div>
       </div>
 
-      {/* 收取按钮 */}
-      <div className="flex gap-2">
-        <button
-          onClick={handleCollect}
-          disabled={!canCollect}
-          className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
-            canCollect
-              ? 'bg-yellow-500 hover:bg-yellow-600 text-white shadow'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          {canCollect ? `💰 收取利润` : `⏳ ${nextMin}分钟后可收取`}
-        </button>
+      {/* 积累进度条 */}
+      <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg space-y-1.5">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-amber-700 font-medium">积累进度</span>
+          <span className="text-amber-600 font-bold">待收 {pendingGold} G</span>
+        </div>
+        <div className="h-2 bg-amber-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-amber-400 to-yellow-500 transition-all duration-1000 rounded-full"
+            style={{ width: `${(progress * 100).toFixed(1)}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between text-[10px] text-amber-500">
+          <span>{Math.floor(elapsedS)}s / {FACTORY_BASE_INTERVAL_S}s</span>
+          <span>{remainingS > 0 ? `剩余 ${Math.ceil(remainingS)}s` : '✅ 可收取'}</span>
+        </div>
       </div>
+
+      {/* 收取按钮 */}
+      <button
+        onClick={handleCollect}
+        disabled={!canCollect}
+        className={`w-full py-2 rounded-lg text-sm font-bold transition-colors ${
+          canCollect
+            ? 'bg-yellow-500 hover:bg-yellow-600 text-white shadow'
+            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+        }`}
+      >
+        {canCollect ? `💰 收取利润 +${estimatedProfit}G` : `⏳ ${Math.ceil(remainingS)}s 后可收取`}
+      </button>
 
       {/* 部门列表 */}
       <div className="space-y-2">
@@ -154,9 +168,9 @@ export const FactoryTab: React.FC = () => {
 
           const isBasic = cfg.id === 'basic';
           const isBuilt = dept.built;
-          // 非 basic 部门需等冷却
-          const cooled = isBasic || (now - dept.lastProduceAt) / 1000 >= FACTORY_BASE_INTERVAL_S;
-          const cooldownMin = isBasic ? 0 : Math.ceil(Math.max(0, FACTORY_BASE_INTERVAL_S - (now - dept.lastProduceAt) / 1000) / 60);
+          // 统一进度条：所有部门共享同一计时
+          const cooled = canCollect;
+          const cooldownSec = Math.ceil(remainingS);
 
           // 建造/购买条件
           const buildCostMet = hero.gold >= cfg.costGold && Object.entries(cfg.costResources).every(
@@ -200,7 +214,7 @@ export const FactoryTab: React.FC = () => {
                   {isBasic && <span className="text-[9px] px-1 py-0.5 bg-blue-100 text-blue-600 rounded">自带</span>}
                 </div>
                 <div className={`text-[10px] font-medium ${cooled ? 'text-green-600' : 'text-blue-500'}`}>
-                  {cooled ? '✅ 可收取' : `⏳ ${cooldownMin}分钟后`}
+                  {cooled ? '✅ 可收取' : `⏳ ${cooldownSec}s`}
                 </div>
               </div>
 

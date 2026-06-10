@@ -12,7 +12,7 @@ export interface FactoryDeptState {
   built: boolean;
   level: number;
   workerCount: number;
-  lastProduceAt: number;  // 上次收取时间戳，0=从未收取
+  lastCollectAt: number;  // 上次收取时间戳，0=从未收取（时间积累制）
 }
 
 interface FactoryState {
@@ -43,7 +43,7 @@ const initDepts: FactoryDeptState[] = DEPARTMENTS.map(d => ({
   built: false,   // 全部未建造，factoryBuilt=true 时 basic 由 buildFactory 解锁
   level: 1,
   workerCount: 0,
-  lastProduceAt: 0,
+  lastCollectAt: 0,
 }));
 
 export const useFactoryStore = create<FactoryState & FactoryActions>((set, get) => ({
@@ -73,7 +73,7 @@ export const useFactoryStore = create<FactoryState & FactoryActions>((set, get) 
     // 建造工厂，解锁基础车间
     set((s) => ({
       factoryBuilt: true,
-      depts: s.depts.map(d => d.id === 'basic' ? { ...d, built: true, lastProduceAt: Date.now() } : d),
+      depts: s.depts.map(d => d.id === 'basic' ? { ...d, built: true, lastCollectAt: 0 } : d),
     }));
     useGameStore.getState().addGameLog('工厂建造完成！基础车间已解锁！');
     return true;
@@ -106,7 +106,7 @@ export const useFactoryStore = create<FactoryState & FactoryActions>((set, get) 
       useGameStore.getState().addResource(enKey, -amt);
     }
     set((s) => ({
-      depts: s.depts.map(d => d.id === deptId ? { ...d, built: true, lastProduceAt: Date.now() } : d),
+      depts: s.depts.map(d => d.id === deptId ? { ...d, built: true, lastCollectAt: 0 } : d),
     }));
     useGameStore.getState().addGameLog(`部门「${cfg.name}」解锁！（利润 +${Math.round(cfg.bonusFactor * 100)}%）`);
   },
@@ -132,34 +132,26 @@ export const useFactoryStore = create<FactoryState & FactoryActions>((set, get) 
       };
     }),
 
-  // ── 收取利润：必须有至少一个部门冷却完毕才能收 ──
+  // ── 收取利润：所有部门统一积累，收取后统一重置冷却 ──
   collectProfit: () => {
     const { depts, totalWorkers } = get();
     const now = Date.now();
-    // basic 车间不受冷却限制；其他部门需等待 FACTORY_BASE_INTERVAL_S
-    const cooledDepts = depts.filter(d => {
-      if (!d.built) return false;
-      if (d.id === 'basic') return true;
-      return (now - d.lastProduceAt) / 1000 >= FACTORY_BASE_INTERVAL_S;
-    });
-    if (cooledDepts.length === 0) {
-      useGameStore.getState().addGameLog('工厂：各部门冷却中，暂时无法收取！');
-      return { gold: 0 };
-    }
-    // 计算利润倍率（只统计已冷却的部门）
-    let bonus = 1.0;
-    for (const d of cooledDepts) {
+    const builtDepts = depts.filter(d => d.built);
+    if (builtDepts.length === 0) return { gold: 0 };
+    // 计算利润倍率（统计所有已建造部门）
+    let bonus = 0;
+    for (const d of depts) {
+      if (!d.built) continue;
       const cfg = DEPARTMENTS.find(c => c.id === d.id);
       if (cfg) bonus += cfg.bonusFactor;
     }
     bonus += totalWorkers * FACTORY_WORKER_BONUS;
     const profit = Math.floor(FACTORY_BASE_PROFIT * bonus);
-    // 收取后重置冷却（basic 不动；basic 在首次建造时已设 lastProduceAt，之后不再变）
+    // 收取后所有已建造部门统一重置 lastCollectAt
     set((s) => ({
       depts: s.depts.map(d => {
         if (!d.built) return d;
-        if (d.id === 'basic') return d;
-        return { ...d, lastProduceAt: now };
+        return { ...d, lastCollectAt: now };
       }),
     }));
     useGameStore.getState().addGold(profit);
@@ -178,8 +170,8 @@ export const useFactoryStore = create<FactoryState & FactoryActions>((set, get) 
           const now = Date.now();
           const cooled = depts.filter(d => {
             if (!d.built) return false;
-            if (d.id === 'basic') return true;
-            return (now - d.lastProduceAt) / 1000 >= FACTORY_BASE_INTERVAL_S;
+            if (d.lastCollectAt === 0) return true;
+            return (now - d.lastCollectAt) / 1000 >= FACTORY_BASE_INTERVAL_S;
           });
           if (cooled.length > 0) {
             useFactoryStore.getState().collectProfit();
