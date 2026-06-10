@@ -73,17 +73,40 @@ export const MainCityPanel: React.FC = () => {
     { name: '石头', icon: <FaMountain className="text-stone-400" />, key: 'stone' as const, sellPrice: 15, buyPrice: 20 },
   ];
 
+  const [batchSize, setBatchSize] = useState<number>(1);
+  const [batchMode, setBatchMode] = useState<'1' | '10' | '100' | 'max'>('1');
+
+  const getBatchAmount = (mode: 'buy' | 'sell', key: string, price: number): number => {
+    if (batchMode === 'max') {
+      if (mode === 'buy') {
+        return Math.floor(hero.gold / price);
+      } else {
+        return resources[key] ?? 0;
+      }
+    }
+    const n = batchMode === '1' ? 1 : batchMode === '10' ? 10 : 100;
+    if (mode === 'buy') {
+      return Math.min(n, Math.floor(hero.gold / price));
+    } else {
+      return Math.min(n, resources[key] ?? 0);
+    }
+  };
+
   const handleBuyMaterial = (key: string, price: number) => {
-    if (hero.gold >= price) {
-      addGold(-price);
-      addResource(key, 1);
+    const qty = getBatchAmount('buy', key, price);
+    if (qty <= 0) return;
+    if (hero.gold >= price * qty) {
+      addGold(-price * qty);
+      addResource(key, qty);
     }
   };
 
   const handleSellMaterial = (key: string, price: number) => {
-    if ((resources[key] || 0) > 0) {
-      addResource(key, -1);
-      addGold(price);
+    const qty = getBatchAmount('sell', key, price);
+    if (qty <= 0) return;
+    if ((resources[key] || 0) >= qty) {
+      addResource(key, -qty);
+      addGold(price * qty);
     }
   };
 
@@ -132,7 +155,25 @@ export const MainCityPanel: React.FC = () => {
     <div className="h-full overflow-y-auto p-3 space-y-4">
       {/* 资源区 */}
       <div>
-        <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5"><FaBoxOpen className="text-amber-600" /> 资源</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-bold text-gray-700 flex items-center gap-1.5"><FaBoxOpen className="text-amber-600" /> 资源</h3>
+          <div className="flex items-center gap-1 text-xs">
+            <span className="text-gray-400">批量:</span>
+            {(['1', '10', '100', 'max'] as const).map(m => (
+              <button
+                key={m}
+                onClick={() => setBatchMode(m)}
+                className={`px-1.5 py-0.5 rounded text-xs font-bold transition-colors ${
+                  batchMode === m
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                {m === 'max' ? 'MAX' : m}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="space-y-1">
           {MATERIALS_DATA.map((mat, i) => (
             <motion.div
@@ -152,13 +193,16 @@ export const MainCityPanel: React.FC = () => {
                 whileTap={{ scale: 0.85 }}
                 onClick={() => handleSellMaterial(mat.key, mat.sellPrice)}
                 className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-500 transition-colors text-xs font-bold"
-                title={`卖出 (+${mat.sellPrice}G)`}
+                title={`卖出${batchMode === 'max' ? '全部' : ` ×${batchMode}`} (+${mat.sellPrice * (batchMode === 'max' ? (resources[mat.key] ?? 0) : batchMode === '1' ? 1 : batchMode === '10' ? 10 : 100)}G)`}
               >−</motion.button>
+              <span className="text-xs text-gray-400 w-6 text-center">
+                {batchMode === 'max' ? 'MAX' : batchMode}
+              </span>
               <motion.button
                 whileTap={{ scale: 0.85 }}
                 onClick={() => handleBuyMaterial(mat.key, mat.buyPrice)}
                 className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 hover:bg-green-100 text-gray-500 hover:text-green-500 transition-colors text-xs font-bold"
-                title={`购买 (-${mat.buyPrice}G)`}
+                title={`购买${batchMode === 'max' ? '满' : ` ×${batchMode}`} (-${mat.buyPrice * (batchMode === 'max' ? Math.floor(hero.gold / mat.buyPrice) : batchMode === '1' ? 1 : batchMode === '10' ? 10 : 100)}G)`}
               >+</motion.button>
             </motion.div>
           ))}
