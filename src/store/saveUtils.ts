@@ -120,7 +120,14 @@ export function loadGame(): boolean {
 
     if (data.factory) {
       if (data.factory.factoryBuilt !== undefined) factoryStore.setFactoryBuilt(data.factory.factoryBuilt);
-      if (data.factory.depts) factoryStore.setDepts(data.factory.depts);
+      if (data.factory.depts) {
+        // 补全缺失的 lastCollectAt 字段（旧存档可能没有）
+        const fixedDepts = data.factory.depts.map((d: any) => ({
+          ...d,
+          lastCollectAt: d.lastCollectAt ?? 0,
+        }));
+        factoryStore.setDepts(fixedDepts);
+      }
       if (data.factory.totalWorkers !== undefined) factoryStore.setTotalWorkers(data.factory.totalWorkers);
       if (data.factory.autoRunning !== undefined) factoryStore.setAutoRunning(data.factory.autoRunning);
     }
