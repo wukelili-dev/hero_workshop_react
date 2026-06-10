@@ -138,8 +138,8 @@ export const useFactoryStore = create<FactoryState & FactoryActions>((set, get) 
     const now = Date.now();
     const builtDepts = depts.filter(d => d.built);
     if (builtDepts.length === 0) return { gold: 0 };
-    // 计算利润倍率（统计所有已建造部门）
-    let bonus = 0;
+    // 计算利润倍率（统计所有已建造部门，基础倍率 1.0）
+    let bonus = 1.0;
     for (const d of depts) {
       if (!d.built) continue;
       const cfg = DEPARTMENTS.find(c => c.id === d.id);
