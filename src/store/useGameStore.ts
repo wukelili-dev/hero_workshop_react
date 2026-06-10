@@ -134,7 +134,7 @@ function getEnemies(mapId: string): Monster[] {
 }
 
 // 启动建筑定时器（每1 秒检查一次）
-function startBuildingTimer() {
+export function startBuildingTimer() {
   if (_buildingTimer) return;
   _buildingTimer = setInterval(tickBuildings, 1000);
 }

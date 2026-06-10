@@ -2,7 +2,7 @@
  * 存档工具 — 存档全量 Zustand stores 到 localStorage
  * v2: 新增 inventory / ranch / factory / farmPlots
  */
-import { useGameStore } from '../store/useGameStore';
+import { useGameStore, startBuildingTimer } from '../store/useGameStore';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useRanchStore } from '../store/useRanchStore';
 import { useFactoryStore } from '../store/useFactoryStore';
@@ -136,6 +136,13 @@ export function loadGame(): boolean {
     if (!g.gameLogs) missing.gameLogs = [];
     if (Object.keys(missing).length > 0) {
       useGameStore.setState(missing);
+    }
+
+    // ── 读档后启动建筑定时器 ──
+    const { buildings } = useGameStore.getState();
+    const hasBuildings = buildings && Object.keys(buildings).some(k => (buildings as any)[k] > 0);
+    if (hasBuildings) {
+      startBuildingTimer();
     }
 
     return true;
