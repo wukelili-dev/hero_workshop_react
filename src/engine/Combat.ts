@@ -1,6 +1,7 @@
 // 战斗系统核心模块
 // 参考 Python 版 game_core.py 的伤害公式和战斗逻辑
-import type { Monster } from '../types';
+import type { Monster, Equipment } from '../types';
+import { generateDrop } from './equipmentDrops';
 
 export interface HeroStats {
   hp: number;
@@ -22,6 +23,7 @@ export interface Rewards {
   exp: number;
   gold: number;
   drops: Array<{ itemId: string; quantity: number }>;
+  equipment: Equipment[];  // 掉落的装备
 }
 
 /**
@@ -121,7 +123,7 @@ export function executeBattle(
     drops: [],
   };
   
-  // 计算掉落
+  // 计算掉落（材料）
   if (victory && monster.drops) {
     for (const drop of monster.drops) {
       if (Math.random() < drop.chance) {
@@ -131,6 +133,16 @@ export function executeBattle(
           quantity: qty,
         });
       }
+    }
+  }
+  
+  // 计算掉落（装备）
+  if (victory) {
+    const monsterLevel = monster.level || 1;
+    const isBoss = monster.isBoss || false;
+    const equip = generateDrop(monsterLevel, isBoss);
+    if (equip) {
+      rewards.equipment.push(equip);
     }
   }
   

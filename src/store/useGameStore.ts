@@ -311,6 +311,14 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         }
       }
       
+      // 处理装备掉落
+      if (result.rewards?.equipment && result.rewards.equipment.length > 0) {
+        for (const equip of result.rewards.equipment) {
+          useInventoryStore.getState().addEquipment(equip);
+          get().addBattleLog(`[${hhmm}] 获得装备：${equip.name}（${equip.type === 'weapon' ? '武器' : '护甲'}）`);
+        }
+      }
+      
       // 检查新发现
       const { discoveredMonsters } = get();
       const isNewDiscovery = !discoveredMonsters.includes(monster.id);
