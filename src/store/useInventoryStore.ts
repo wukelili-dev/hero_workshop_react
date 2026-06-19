@@ -1,12 +1,19 @@
 import { create } from 'zustand';
 import type { Equipment } from '../types';
+import { EXP_PILL_IDS, EXP_PILL_MAX_STACK } from '../data/inventory';
 
 // 背包格子项
-interface InventorySlot {
+export interface InventorySlot {
   type: 'weapon' | 'armor' | 'novelty';
   id: string;        // weapon/armor: Equipment.id; novelty: 杂货名称
   qty: number;       // weapon/armor: 始终为1; novelty: 1-20
   data?: Equipment;  // 存储完整的Equipment对象（用于weapon/armor）
+}
+
+const MAX_NOVELTY_STACK = 20;
+
+function getMaxStack(id: string): number {
+  return EXP_PILL_IDS.has(id) ? EXP_PILL_MAX_STACK : MAX_NOVELTY_STACK;
 }
 
 interface InventoryState {
@@ -114,11 +121,12 @@ export const useInventoryStore = create<InventoryState & InventoryActions>((set,
       // 同时添加到背包格子（堆叠逻辑）
       const slots = [...s.slots];
       let remaining = count;
+      const maxStack = getMaxStack(name);
       
       // 先尝试堆叠到现有格子
       for (let i = 0; i < slots.length && remaining > 0; i++) {
-        if (slots[i] && slots[i]!.type === 'novelty' && slots[i]!.id === name && slots[i]!.qty < 20) {
-          const canAdd = Math.min(remaining, 20 - slots[i]!.qty);
+        if (slots[i] && slots[i]!.type === 'novelty' && slots[i]!.id === name && slots[i]!.qty < maxStack) {
+          const canAdd = Math.min(remaining, maxStack - slots[i]!.qty);
           slots[i] = { ...slots[i]!, qty: slots[i]!.qty + canAdd };
           remaining -= canAdd;
         }
@@ -127,7 +135,7 @@ export const useInventoryStore = create<InventoryState & InventoryActions>((set,
       // 剩余开新格
       for (let i = 0; i < slots.length && remaining > 0; i++) {
         if (slots[i] === null) {
-          const addQty = Math.min(remaining, 20);
+          const addQty = Math.min(remaining, maxStack);
           slots[i] = { type: 'novelty', id: name, qty: addQty };
           remaining -= addQty;
         }
@@ -188,14 +196,15 @@ export const useInventoryStore = create<InventoryState & InventoryActions>((set,
       const newSlots = [...s.slots];
       
       if (type === 'novelty') {
-        // 杂货：先尝试堆叠到现有格子（最多20个）
+        // 杂货：先尝试堆叠到现有格子
+        const maxStack = getMaxStack(id);
         const existingIdx = newSlots.findIndex(
-          slot => slot && slot.type === 'novelty' && slot.id === id && slot.qty < 20
+          slot => slot && slot.type === 'novelty' && slot.id === id && slot.qty < maxStack
         );
         
         if (existingIdx >= 0 && newSlots[existingIdx]) {
           // 堆叠到现有格子
-          const canAdd = Math.min(qty, 20 - newSlots[existingIdx]!.qty);
+          const canAdd = Math.min(qty, maxStack - newSlots[existingIdx]!.qty);
           newSlots[existingIdx] = {
             ...newSlots[existingIdx]!,
             qty: newSlots[existingIdx]!.qty + canAdd,
@@ -210,7 +219,7 @@ export const useInventoryStore = create<InventoryState & InventoryActions>((set,
             console.warn('背包已满！无法添加更多杂货');
             break;
           }
-          const addQty = Math.min(qty, 20);
+          const addQty = Math.min(qty, maxStack);
           newSlots[emptyIdx] = { type: 'novelty', id, qty: addQty };
           qty -= addQty;
         }

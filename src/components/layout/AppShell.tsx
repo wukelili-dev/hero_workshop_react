@@ -10,6 +10,7 @@ import { LogPanel } from '../city/LogPanel';
 import { WeaponTab } from '../equipment/WeaponTab';
 import { ArmorTab } from '../equipment/ArmorTab';
 import { NoveltyTab } from '../novelty/NoveltyTab';
+import { ExpPillTab } from '../expPill/ExpPillTab';
 import { InventoryTab } from '../inventory/InventoryTab';
 import { MaterialsTab } from '../materials/MaterialsTab';
 import { TavernTab } from '../tavern/TavernTab';
@@ -22,19 +23,20 @@ import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils'
 
 // Icon imports
 import {
-  FaBomb, FaShieldHalved, FaBagShopping,
+  FaBomb, FaShieldHalved, FaBagShopping, FaFlask,
   FaBeerMugEmpty, FaWheatAwn, FaIndustry, FaPaw,
   FaBookOpen, FaCity, FaFloppyDisk, FaFolderOpen, FaCircleQuestion,
 } from 'react-icons/fa6';
 import { FaGift, FaCube, FaHammer, FaSkullCrossbones } from 'react-icons/fa';
 
-export type TabId = 'weapon' | 'armor' | 'novelty' | 'inventory' | 'materials' | 'tavern' | 'farm' | 'factory' | 'ranch' | 'forge' | 'bestiary';
+export type TabId = 'weapon' | 'armor' | 'novelty' | 'expPill' | 'inventory' | 'materials' | 'tavern' | 'farm' | 'factory' | 'ranch' | 'forge' | 'bestiary';
 type MobileView = 'city' | 'combat' | TabId;
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode; description: string }[] = [
   { id: 'weapon', label: '武器', icon: <FaBomb />, description: '购买和装备武器' },
   { id: 'armor', label: '护甲', icon: <FaShieldHalved />, description: '购买和装备护甲' },
   { id: 'novelty', label: '杂货', icon: <FaGift />, description: '购买各类杂货道具' },
+  { id: 'expPill', label: '经验丹', icon: <FaFlask />, description: '购买经验丹提升等级' },
   { id: 'inventory', label: '背包', icon: <FaBagShopping />, description: '查看和管理背包物品' },
   { id: 'materials', label: '材料', icon: <FaCube />, description: '查看材料库存' },
   { id: 'tavern', label: '酒馆', icon: <FaBeerMugEmpty />, description: '招募英雄和刷新英雄' },
@@ -91,6 +93,7 @@ export const AppShell: React.FC = () => {
       case 'weapon': return <WeaponTab />;
       case 'armor': return <ArmorTab />;
       case 'novelty': return <NoveltyTab />;
+      case 'expPill': return <ExpPillTab />;
       case 'inventory': return <InventoryTab />;
       case 'materials': return <MaterialsTab />;
       case 'tavern': return <TavernTab />;

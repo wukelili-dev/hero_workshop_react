@@ -61,6 +61,30 @@ export const NOVELTY_RARITY_NAMES: Record<number, string> = {
 
 export const MAX_INVENTORY = 20;
 
+// ── 经验丹 ──
+export interface ExpPillItem {
+  id: string;
+  name: string;
+  desc: string;
+  price: number;
+  exp: number;
+  rarityIdx: number;
+}
+
+export const EXP_PILL_ITEMS: ExpPillItem[] = [
+  { id: 'exp_pill_green', name: '初级经验丹', desc: '使用后获得50点经验', price: 500, exp: 50, rarityIdx: 1 },
+  { id: 'exp_pill_blue', name: '中级经验丹', desc: '使用后获得250点经验', price: 2000, exp: 250, rarityIdx: 2 },
+  { id: 'exp_pill_purple', name: '高级经验丹', desc: '使用后获得750点经验', price: 5000, exp: 750, rarityIdx: 3 },
+  { id: 'exp_pill_gold', name: '特级经验丹', desc: '使用后获得1800点经验', price: 10000, exp: 1800, rarityIdx: 4 },
+];
+
+export const EXP_PILL_IDS = new Set(EXP_PILL_ITEMS.map(p => p.id));
+export const EXP_PILL_MAX_STACK = 99;
+
+export const EXP_PILL_BY_ID: Record<string, ExpPillItem> = Object.fromEntries(
+  EXP_PILL_ITEMS.map(p => [p.id, p])
+);
+
 // 背包物品类型
 export interface InventoryItem {
   name: string;

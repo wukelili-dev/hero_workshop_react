@@ -1,5 +1,6 @@
 import React from 'react';
 import { FaBomb, FaShield, FaBagShopping, FaBox } from 'react-icons/fa6';
+import { EXP_PILL_BY_ID, EXP_PILL_IDS } from '../../data/inventory';
 import { useGameStore } from '../../store/useGameStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { RARITY_COLORS } from '../../data/constants';
@@ -13,10 +14,18 @@ const NOVELTY_NAMES: Record<string, string> = {
   // 可以根据实际数据补充
 };
 
+function getNoveltyDisplayName(id: string): string {
+  if (EXP_PILL_IDS.has(id)) {
+    return EXP_PILL_BY_ID[id]?.name || id;
+  }
+  return NOVELTY_NAMES[id] || id;
+}
+
 export const InventoryTab: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
   const equipWeapon = useGameStore((s) => s.equipWeapon);
   const equipArmor = useGameStore((s) => s.equipArmor);
+  const useExpPill = useGameStore((s) => s.useExpPill);
   const addGold = useGameStore((s) => s.addGold);
   
   const slots = useInventoryStore((s) => s.slots);
@@ -40,9 +49,16 @@ export const InventoryTab: React.FC = () => {
         removeFromInventory(index);
       }
     } else if (slot.type === 'novelty') {
-      // 使用/出售杂货
-      // 这里可以添加使用逻辑，或者提示用户去杂货界面
-      alert(`杂货：${NOVELTY_NAMES[slot.id] || slot.id} x${slot.qty}\n请前往杂货界面使用`);
+      // 经验丹：直接使用
+      if (EXP_PILL_IDS.has(slot.id)) {
+        const ok = useExpPill(slot.id);
+        if (!ok) {
+          alert('使用失败：背包中没有该经验丹');
+        }
+        return;
+      }
+      // 普通杂货：提示去杂货界面
+      alert(`杂货：${getNoveltyDisplayName(slot.id)} x${slot.qty}\n请前往杂货界面使用`);
     }
   };
 
@@ -137,7 +153,7 @@ export const InventoryTab: React.FC = () => {
             </span>
           ) : (
             <span className="text-xs text-center leading-tight text-green-700">
-              {NOVELTY_NAMES[slot.id] || slot.id}
+              {getNoveltyDisplayName(slot.id)}
               {slot.qty > 1 && <span className="text-[10px]"> x{slot.qty}</span>}
             </span>
           )}

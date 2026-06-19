@@ -3,10 +3,11 @@ import { useInventoryStore } from './useInventoryStore';
 import type { HeroState, Resources, Monster, Equipment } from '../types';
 import { MAPS } from '../data/maps';
 import { executeBattle, type BattleLog, type Rewards } from '../engine/Combat';
+import { EXP_PILL_BY_ID } from '../data/inventory';
 import { PLANTS_CATALOG } from '../data/plants';
 import { RANCH_CATALOG } from '../data/ranch';
 import { generateTavernRoster, type TavernRecruit } from '../data/tavern';
-import { BUILDING_CONFIGS, getAllBuildingNames, BUILDING_OUTPUTS } from '../data/buildings';
+import { BUILDING_CONFIGS, BUILDING_OUTPUTS } from '../data/buildings';
 
 // 掉落物品 itemId → 资源 key 映射（怪物掉落用中文，资源状态用英文）
 const DROP_TO_RESOURCE: Record<string, string> = {
@@ -77,11 +78,13 @@ interface GameActions {
   equipArmor: (armor: Equipment) => boolean;
   buyNovelty: (itemName: string, price: number) => boolean;
   sellNovelty: (itemName: string, sellPrice: number) => boolean;
+  buyExpPill: (pillId: string, price: number) => boolean;
+  useExpPill: (pillId: string) => boolean;
   plantCrop: (plotIdx: number, plantId: string) => boolean;
   harvestCrop: (plotIdx: number) => boolean;
   refreshTavern: () => void;
   recruitMember: (recruit: TavernRecruit) => boolean;
-  setFarmPlots: (plots: typeof initState.farmPlots) => void;
+  setFarmPlots: (plots: { plantId: string | null; plantedAt: number | null; lastHarvest: number | null; accumulatedGold: number }[]) => void;
   addBattleLog: (message: string) => void;
   addGameLog: (message: string) => void;
   addDiscoveredMonster: (id: string) => void;
@@ -89,13 +92,10 @@ interface GameActions {
   addDiscoveredPlant: (id: string) => void;
   addDiscoveredCreature: (id: string) => void;
   addBuilding: (name: string) => void;
-  addBuilding: (name: string) => void;
   buyPotion: () => boolean;
   usePotion: () => boolean;
   setAutoPotionThreshold: (val: number) => void;
   setAutoBattle: (v: boolean) => void;
-  startAutoBattle: () => void;
-  stopAutoBattle: () => void;
 }
 
 // 中文材料名store resources key 映射
@@ -114,6 +114,7 @@ const initHero: HeroState = {
   critRate: 0.05, critDmg: 1.5,
   gold: 100, weapon: null, armor: null,
   passives: [], noveltyItems: [], team: [],
+  discoveredMonsters: [],
   potions: 0,
   kills: 0,
 };
@@ -193,17 +194,6 @@ const BUILDING_OUTPUT_MAP: Record<string, string> = {
 let _buildingTimer: ReturnType<typeof setInterval> | null = null;
 const _lastBuildingTick: Record<string, number> = {};
 
-// ── 监听 buildings 变化自动启停定时器 ──
-let _prevBuildings: string | null = null;
-function syncBuildingTimer() {
-  const { buildings } = useGameStore.getState();
-  const hasAny = buildings && Object.keys(buildings).some(k => (buildings as any)[k] > 0);
-  const currentKey = JSON.stringify(buildings);
-  if (currentKey === _prevBuildings) return;
-  _prevBuildings = currentKey;
-  if (hasAny) startBuildingTimer();
-}
-
 export const useGameStore = create<GameState & GameActions>((set, get) => ({
   hero: { ...initHero },
   resources: { ...initRes },
@@ -221,6 +211,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   discoveredPlants: [],
   discoveredCreatures: [],
   autoPotionThreshold: 0,
+  autoBattle: false,
   buildings: {},   // 建筑数量统计，key=建筑名，value=数量
 
 
@@ -258,12 +249,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     isRunning: false,
     farmPlots: Array.from({ length: 6 }, () => ({ plantId: null, plantedAt: null, lastHarvest: null, accumulatedGold: 0 })),
     tavernRoster: [],
-    battleLogs: [],
-    gameLogs: [],
-    discoveredMonsters: [],
-    discoveredNovelties: [],
-    discoveredPlants: [],
-    discoveredCreatures: [],
     tavernLastRefresh: 0,
     battleLogs: [],
     gameLogs: [],
@@ -399,7 +384,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       clearInterval(_autoBattleTimer);
       _autoBattleTimer = null;
     }
-    set((s) => ({ autoBattle: v }));
+    set(() => ({ autoBattle: v }));
   },
 
   addBuilding: (name) => set((s) => {
@@ -441,7 +426,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       const rKey = RES_KEY_MAP[res] ?? res;
       newRes[rKey] = Math.max(0, (newRes as any)[rKey] - Number(amt));
     }
-    const oldAtk = hero.weapon?.stats?.atk ?? 0;
     const newAtk = w.stats?.atk ?? 0;
     const oldCrit = hero.weapon?.stats?.crit ?? 0;
     const newCrit = w.stats?.crit ?? 0;
@@ -532,12 +516,42 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     return true;
   },
 
+  buyExpPill: (pillId, price) => {
+    const pill = EXP_PILL_BY_ID[pillId];
+    if (!pill) return false;
+    const { hero } = get();
+    if (hero.gold < price) return false;
+    // 扣除金币
+    set((s) => ({
+      hero: {
+        ...s.hero,
+        gold: s.hero.gold - price,
+      },
+    }));
+    // 添加到背包（可叠加，上限99）
+    useInventoryStore.getState().addNovelty(pillId, 1);
+    get().addGameLog(`购买 ${pill.name}，花费${price} 金币`);
+    return true;
+  },
+
+  useExpPill: (pillId) => {
+    const pill = EXP_PILL_BY_ID[pillId];
+    if (!pill) return false;
+    // 从背包移除
+    const removed = useInventoryStore.getState().removeNovelty(pillId, 1);
+    if (!removed) return false;
+    // 增加经验
+    get().addExp(pill.exp);
+    get().addGameLog(`使用 ${pill.name}，获得${pill.exp} 经验`);
+    return true;
+  },
+
   plantCrop: (plotIdx, plantId) => {
     const plant = PLANTS_CATALOG.find((p: any) => p.id === plantId);
     if (!plant || get().hero.gold < plant.seedPrice) return false;
     set((s) => {
       const plots = [...s.farmPlots];
-      plots[plotIdx] = { plantId, plantedAt: Date.now(), lastHarvest: null };
+      plots[plotIdx] = { plantId, plantedAt: Date.now(), lastHarvest: null, accumulatedGold: 0 };
       return {
         hero: { ...s.hero, gold: s.hero.gold - plant.seedPrice },
         farmPlots: plots,
