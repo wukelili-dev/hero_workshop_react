@@ -21,7 +21,7 @@ const RESOURCE_NAMES: Record<string, string> = {
 export const MaterialsTab: React.FC = () => {
   const resources = useGameStore((s) => s.resources);
 
-  const entries = Object.entries(resources).filter(([_, v]) => v > 0);
+  const entries = Object.entries(resources).filter(([_, v]) => (v ?? 0) > 0);
   const hasMaterials = entries.length > 0;
 
   return (

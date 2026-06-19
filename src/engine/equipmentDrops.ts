@@ -4,7 +4,7 @@
  */
 
 import type { Equipment, Rarity } from '../types';
-import { RARITY_NAME, RARITY_COLOR } from '../types';
+import { RARITY_NAME } from '../types';
 
 // 装备名称前缀
 const WEAPON_PREFIXES = ["铁", "钢", "银", "金", "魔法", "神圣", "暗黑", "冰霜", "火焰", "雷电", "远古", "圣", "恶魔", "龙"];
@@ -14,10 +14,8 @@ const ARMOR_SUFFIXES = ["甲", "盔", "盾", "袍", "衣", "铠", "胄", "披风
 
 // 特殊装备名称
 const SPECIAL_WEAPON_NAMES = ["轩辕剑", "青龙偃月刀", "方天画戟", "丈八蛇矛", "倚天剑", "屠龙刀"];
-const SPECIAL_ARMOR_NAMES = ["玄武甲", "凤凰袍", "白虎盔", "青龙铠", "麒麟胄", "天使之翼"];
 
-// 极品装备（无等级限制，商店不可购买）
-const PERFECT_WEAPON_NAMES = ["如意金箍棒", "九齿钉耙", "降妖宝杖", "混铁棍", "风火轮", "风火蒲扇"];
+// 极品装备(无等级限制,商店不可购买)
 const PERFECT_ARMOR_NAMES = ["锁子黄金甲", "藕丝步云履", "凤翅紫金冠", "凯甲", "天蚕丝披风"];
 
 // 稀有度配置
@@ -63,14 +61,14 @@ function generateArmorName(perfect: boolean = false): string {
  */
 function getRarityByMonsterLevel(level: number): string | null {
   const roll = Math.random();
-  
+
   if (level >= 20) { // 高级地图
     if (roll < 0.05) return "传说";      // 5%
     if (roll < 0.20) return "史诗";      // 15%
     if (roll < 0.45) return "稀有";      // 25%
     return "普通";                         // 55%
   }
-  
+
   if (level >= 15) { // 中级地图
     if (roll < 0.02) return "传说";
     if (roll < 0.10) return "史诗";
@@ -78,14 +76,14 @@ function getRarityByMonsterLevel(level: number): string | null {
     if (roll < 0.50) return "普通";
     return null;
   }
-  
+
   if (level >= 10) { // 初级进阶
     if (roll < 0.05) return "史诗";
     if (roll < 0.20) return "稀有";
     if (roll < 0.50) return "普通";
     return null;
   }
-  
+
   // 新手地图 (Lv1-9)
   if (roll < 0.10) return "稀有";
   if (roll < 0.40) return "普通";
@@ -122,26 +120,26 @@ function generateWeapon(
     "史诗": { attack: [50, 90], crit_rate: [12, 22], crit_dmg: [160, 180] },
     "传说": { attack: [100, 150], crit_rate: [20, 35], crit_dmg: [170, 200] },
   };
-  
+
   const stats = baseStats[rarity] || baseStats["普通"];
-  
-  // 缩放公式：每级+3%基础属性
+
+  // 缩放公式:每级+3%基础属性
   let scale = 1 + (level - 1) * 0.03;
   if (isBoss) scale *= 1.25; // Boss加成25%
-  
+
   const attack = Math.floor(
     (Math.floor(Math.random() * (stats.attack[1] - stats.attack[0] + 1)) + stats.attack[0]) * scale
   );
   const crit_rate = Math.min(50, Math.floor(Math.random() * (stats.crit_rate[1] - stats.crit_rate[0] + 1)) + stats.crit_rate[0]);
   const crit_dmg = Math.floor(Math.random() * (stats.crit_dmg[1] - stats.crit_dmg[0] + 1)) + stats.crit_dmg[0];
-  
+
   const name = generateWeaponName(isPerfect);
-  
+
   // 映射稀有度到 Rarity 类型
   const rarityMap: Record<string, Rarity> = {
     "普通": 0, "稀有": 1, "珍稀": 2, "史诗": 3, "传说": 4
   };
-  
+
   const equip: Equipment = {
     id: `weapon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: 'weapon',
@@ -163,8 +161,8 @@ function generateWeapon(
     fortifyLevel: 0,
     special: undefined,
   };
-  
-  // 极品装备：在传说基础上×1.4，无等级限制，必带特殊属性，暴击伤害固定200%
+
+  // 极品装备:在传说基础上×1.4,无等级限制,必带特殊属性,暴击伤害固定200%
   if (isPerfect) {
     equip.stats!.atk = Math.floor(equip.stats!.atk! * 1.4);
     equip.attack = equip.stats!.atk;
@@ -179,7 +177,7 @@ function generateWeapon(
       { name: "连击", value: Math.floor(Math.random() * 9) + 10 },
     ][Math.floor(Math.random() * 3)];
   }
-  
+
   // 史诗/传说有概率带特殊属性
   if (!isPerfect && ["史诗", "传说"].includes(rarity) && Math.random() < RARITY_CONFIG[rarity].special_chance) {
     const specialOptions = [
@@ -189,7 +187,7 @@ function generateWeapon(
     ];
     equip.special = specialOptions[Math.floor(Math.random() * specialOptions.length)];
   }
-  
+
   return equip;
 }
 
@@ -211,25 +209,25 @@ function generateArmor(
     "史诗": { defense: [40, 75], hp_bonus: [180, 320] },
     "传说": { defense: [85, 140], hp_bonus: [380, 600] },
   };
-  
+
   const stats = baseStats[rarity] || baseStats["普通"];
-  
+
   let scale = 1 + (level - 1) * 0.03;
   if (isBoss) scale *= 1.25;
-  
+
   const defense = Math.floor(
     (Math.floor(Math.random() * (stats.defense[1] - stats.defense[0] + 1)) + stats.defense[0]) * scale
   );
   const hp_bonus = Math.floor(
     (Math.floor(Math.random() * (stats.hp_bonus[1] - stats.hp_bonus[0] + 1)) + stats.hp_bonus[0]) * scale
   );
-  
+
   const name = generateArmorName(isPerfect);
-  
+
   const rarityMap: Record<string, Rarity> = {
     "普通": 0, "稀有": 1, "珍稀": 2, "史诗": 3, "传说": 4
   };
-  
+
   const equip: Equipment = {
     id: `armor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: 'armor',
@@ -249,8 +247,8 @@ function generateArmor(
     fortifyLevel: 0,
     special: undefined,
   };
-  
-  // 极品装备：在传说基础上×1.4，无等级限制，必带特殊属性
+
+  // 极品装备:在传说基础上×1.4,无等级限制,必带特殊属性
   if (isPerfect) {
     equip.stats!.def = Math.floor(equip.stats!.def! * 1.4);
     equip.defense = equip.stats!.def;
@@ -263,7 +261,7 @@ function generateArmor(
       { name: "护盾", value: Math.floor(Math.random() * 16) + 15 },
     ][Math.floor(Math.random() * 3)];
   }
-  
+
   // 史诗/传说有概率带特殊属性
   if (!isPerfect && ["史诗", "传说"].includes(rarity) && Math.random() < RARITY_CONFIG[rarity].special_chance) {
     const specialOptions = [
@@ -273,16 +271,16 @@ function generateArmor(
     ];
     equip.special = specialOptions[Math.floor(Math.random() * specialOptions.length)];
   }
-  
+
   return equip;
 }
 
 /**
- * 生成怪物掉落装备（可能掉落武器或护甲）
+ * 生成怪物掉落装备(可能掉落武器或护甲)
  */
 export function generateDrop(monsterLevel: number, isBoss: boolean = false): Equipment | null {
   const rarity = getRarityByMonsterLevel(monsterLevel);
-  
+
   // Boss掉落概率更高
   let finalRarity = rarity;
   if (isBoss && !rarity) {
@@ -295,15 +293,15 @@ export function generateDrop(monsterLevel: number, isBoss: boolean = false): Equ
     else if (roll < 0.50) finalRarity = "稀有";
     else finalRarity = "普通";
   }
-  
+
   if (!finalRarity) return null;
-  
+
   // 检查极品装备掉落
   let isPerfect = false;
   if (Math.random() < getPerfectDropChance(monsterLevel, isBoss)) {
     isPerfect = true;
   }
-  
+
   // 生成武器或护甲
   if (Math.random() < 0.5) {
     return generateWeapon(monsterLevel, finalRarity, isPerfect, isBoss);
@@ -317,31 +315,30 @@ export function generateDrop(monsterLevel: number, isBoss: boolean = false): Equ
  */
 export function getDropSummary(equip: Equipment): string | null {
   if (!equip) return null;
-  
-  const rarityColor = equip.rarityColor || "#AAAAAA";
+
   const name = equip.name;
   const levelReq = equip.levelReq || 0;
   const isPerfect = equip.isPerfect || false;
-  
+
   let info = "";
   if (isPerfect) {
     info = `[极品] ${name} (无等级限制)`;
   } else {
     info = `[${RARITY_NAME[equip.rarity as Rarity] || '普通'}] ${name} (Lv.${levelReq}+)`;
   }
-  
+
   if (equip.type === "weapon") {
     info += ` ATK:${equip.attack || equip.stats?.atk || 0} CRIT:${equip.critRate || equip.stats?.crit || 0}%`;
   } else {
     info += ` DEF:${equip.defense || equip.stats?.def || 0} HP+:${equip.hpBonus || equip.stats?.hp || 0}`;
   }
-  
+
   if (equip.special) {
-    const special = typeof equip.special === 'string' 
-      ? equip.special 
+    const special = typeof equip.special === 'string'
+      ? equip.special
       : `${equip.special.name}+${equip.special.value}`;
     info += ` [${special}]`;
   }
-  
+
   return info;
 }

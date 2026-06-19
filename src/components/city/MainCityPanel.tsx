@@ -7,9 +7,8 @@ import React, { useState } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 import { useGameStore } from '../../store/useGameStore';
-import { useFactoryStore } from '../../store/useFactoryStore';
 import { BUILDING_CONFIGS, WONDERS, getAllBuildingNames, getWonderNames } from '../../data/buildings';
-import { formatNumber } from '../../data/constants';
+
 import { FaTree, FaMagnet, FaPaw, FaMountain, FaBoxOpen, FaBuilding, FaStar, FaCoins } from 'react-icons/fa6';
 
 // 造价显示：图标+简短数字（如 💰10K 🪵5K）
@@ -74,8 +73,6 @@ export const MainCityPanel: React.FC = () => {
     { name: '皮革', icon: <FaPaw className="text-orange-700" />, key: 'hide' as const, sellPrice: 10, buyPrice: 12 },
     { name: '石头', icon: <FaMountain className="text-stone-400" />, key: 'stone' as const, sellPrice: 15, buyPrice: 20 },
   ];
-
-  const [batchSize, setBatchSize] = useState<number>(1);
   const [batchMode, setBatchMode] = useState<'1' | '10' | '100' | 'max'>('1');
 
   const getBatchAmount = (mode: 'buy' | 'sell', key: string, price: number): number => {

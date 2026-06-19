@@ -2,11 +2,10 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useGameStore } from '../../store/useGameStore';
 import { useRanchStore } from '../../store/useRanchStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
-import { RANCH_CATALOG, PERSONALITIES, getPersonalityMultiplier, getFertilizerDropRate } from '../../data/ranch';
+import { RANCH_CATALOG, getPersonalityMultiplier } from '../../data/ranch';
 import type { RanchCreature } from '../../data/ranch';
-import { RARITY_COLOR } from '../../types';
 
-const MAX_SLOTS = 12;
+const RARITY_COLOR: Record<number, string> = { 0: '#C0C0C0', 1: '#22C55E', 2: '#3B82F6', 3: '#A855F7', 4: '#F59E0B' };
 const FEED_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4小时
 const RARITY_NAMES = ['白', '绿', '蓝', '紫', '橙'];
 

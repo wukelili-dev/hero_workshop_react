@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { DEPARTMENTS, MAX_FACTORY_WORKERS, FACTORY_WORKER_COST_GOLD, FACTORY_WORKER_BONUS, FACTORY_BASE_PROFIT, FACTORY_BUILD_COST, getDeptById } from '../data/factory';
+import { FACTORY_BASE_INTERVAL_S, DEPARTMENTS, MAX_FACTORY_WORKERS, FACTORY_WORKER_BONUS, FACTORY_BASE_PROFIT, FACTORY_BUILD_COST, getDeptById } from '../data/factory';
 import { useGameStore } from './useGameStore';
 
 // 中文材料名 → store resources key（与 useGameStore 中的 RES_KEY_MAP 保持一致）

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaBomb, FaScroll } from 'react-icons/fa6';
 import { useGameStore } from '../../store/useGameStore';
@@ -10,7 +10,7 @@ const logVariants = {
   visible: (i: number) => ({
     opacity: 1,
     x: 0,
-    transition: { delay: Math.min(i, 10) * 0.03, duration: 0.2, ease: 'easeOut' },
+    transition: { delay: Math.min(i, 10) * 0.03, duration: 0.2, ease: 'easeOut' as const },
   }),
 };
 

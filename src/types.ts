@@ -43,7 +43,7 @@ export interface Equipment {
   critRate?: number;
   critDmg?: number;
   hpBonus?: number;
-  special?: string;
+  special?: string | { name: string; value: number };
   forge_level?: number;
   is_perfect?: boolean;
   crit_rate?: number;

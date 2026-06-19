@@ -2,11 +2,11 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { useGameStore } from '../../store/useGameStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { useForgeStore } from '../../store/useForgeStore';
-import { FORGE_RECIPES, FORTIFY_CONFIG, FORGE_RARITY_COLORS, SET_EFFECTS } from '../../data/forge';
-import type { Equipment, FortifyConfig as FortifyConfigType } from '../../types';
+import { FORGE_RECIPES, FORTIFY_CONFIG, FORGE_RARITY_COLORS, SET_EFFECTS, type FortifyConfig } from '../../data/forge';
+import type { Equipment } from '../../types';
 
 // 强化配置按等级索引（1-based）
-const FORTIFY_BY_LEVEL = new Map<number, FortifyConfigType>(
+const FORTIFY_BY_LEVEL = new Map<number, FortifyConfig>(
   FORTIFY_CONFIG.map(c => [c.level, c])
 );
 
@@ -15,10 +15,9 @@ const RARITY_NAMES = ['白', '绿', '蓝', '紫', '橙'];
 export const ForgeTab: React.FC = () => {
   const hero = useGameStore(s => s.hero);
   const addGold = useGameStore(s => s.addGold);
-  const setHp = useGameStore(s => s.setHp);
   const { weapons, armors, materials, removeMaterial } = useInventoryStore();
-  const { selectedEquip, fortifyLevel, useCharm, isForging, forgeLogs,
-          selectEquip, setFortifyLevel, toggleCharm, setForging, addForgeLog, clearForgeLogs } = useForgeStore();
+  const { selectedEquip, useCharm, isForging, forgeLogs,
+          selectEquip, toggleCharm, setForging, addForgeLog, clearForgeLogs } = useForgeStore();
 
   const [tab, setTab] = useState<'fortify' | 'forge'>('fortify');
   const [msg, setMsg] = useState<string | null>(null);
@@ -132,7 +131,6 @@ export const ForgeTab: React.FC = () => {
     return FORGE_RECIPES.filter(r => r.type === forgeFilter);
   }, [forgeFilter]);
 
-  const fortifyBonus = currentFortify ? `${currentFortify.bonusPct}%` : '—';
 
   return (
     <div className="space-y-3">
@@ -288,12 +286,14 @@ export const ForgeTab: React.FC = () => {
             <div>
               <div className="text-[10px] text-gray-400 mb-1">套装效果</div>
               <div className="space-y-1">
-                {Object.entries(SET_EFFECTS).map(([setName, effect]) => (
-                  <div key={setName} className="p-1.5 bg-purple-50 rounded text-[10px]">
-                    <div className="font-medium text-purple-700">{setName}</div>
-                    <div className="text-purple-500">{effect.desc}</div>
-                  </div>
-                ))}
+                {Object.entries(SET_EFFECTS).flatMap(([setName, setEff]) =>
+                  Object.entries(setEff.effects).map(([pieces, pe]) => (
+                    <div key={setName + pieces} className="p-1.5 bg-purple-50 rounded text-[10px]">
+                      <div className="font-medium text-purple-700">{setName} ({pieces}件)</div>
+                      <div className="text-purple-500">{pe.desc}</div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}

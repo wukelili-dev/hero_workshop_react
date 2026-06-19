@@ -121,6 +121,7 @@ export function executeBattle(
     exp: victory ? monster.expReward : 0,
     gold: victory ? monster.goldReward : 0,
     drops: [],
+    equipment: [],
   };
   
   // 计算掉落（材料）

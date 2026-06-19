@@ -147,7 +147,7 @@ export const InventoryTab: React.FC = () => {
           {slot.type === 'weapon' || slot.type === 'armor' ? (
             <span 
               className="text-xs font-bold text-center leading-tight"
-              style={{ color: RARITY_COLORS[slot.data?.rarity ?? 'common'] ?? '#888' }}
+              style={{ color: (RARITY_COLORS as Record<string, string>)[slot.data?.rarity ?? 'common'] ?? '#888' }}
             >
               {slot.data?.name || slot.id}
             </span>

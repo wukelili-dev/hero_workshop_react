@@ -1,8 +1,7 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { FaBomb, FaCoins } from 'react-icons/fa6';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 import { useGameStore } from '../../store/useGameStore';
-import { formatNumber } from '../../data/constants';
 
 export const TopBar: React.FC = () => {
   const hero = useGameStore((s) => s.hero);

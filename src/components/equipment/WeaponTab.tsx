@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, type Variants } from 'framer-motion';
 import { toast } from 'sonner';
 import { WEAPONS } from '../../data/equipment';

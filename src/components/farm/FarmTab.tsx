@@ -37,7 +37,7 @@ export const FarmTab: React.FC = () => {
     }
   };
 
-  const getPlotStatus = (plot: { plantId: string | null; plantedAt: number | null; lastHarvest: number | null; accumulatedGold?: number }, idx: number) => {
+  const getPlotStatus = (plot: { plantId: string | null; plantedAt: number | null; lastHarvest: number | null; accumulatedGold?: number }) => {
     if (!plot.plantId) return { status: 'empty', text: '空地', pct: 0, accGold: 0 };
     const plant = PLANTS_CATALOG.find(p => p.id === plot.plantId);
     if (!plant) return { status: 'unknown', text: '未知', pct: 0, accGold: 0 };
@@ -63,7 +63,7 @@ export const FarmTab: React.FC = () => {
       {/* 地块网格 */}
       <div className="grid grid-cols-3 gap-2">
         {farmPlots.map((plot, idx) => {
-          const { status, text, pct, accGold } = getPlotStatus(plot, idx);
+          const { status, text, pct, accGold } = getPlotStatus(plot);
           const plant = plot.plantId ? PLANTS_CATALOG.find(p => p.id === plot.plantId) : null;
           const rarityColor = plant ? (PLANT_RARITY_COLORS[plant.rarity] ?? '#888') : '#888';
           return (

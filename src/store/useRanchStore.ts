@@ -31,7 +31,6 @@ const emptySlot = (): RanchSlotState => ({
 
 // 自动收获定时器
 let _ranchTimer: ReturnType<typeof setInterval> | null = null;
-let _lastRanchTick: number = 0;
 
 function startRanchTimer() {
   if (_ranchTimer) return;
