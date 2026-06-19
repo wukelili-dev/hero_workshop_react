@@ -54,7 +54,7 @@ export class EconomySystem {
     goldValue += (cost["木材"] ?? 0) * 2;
     goldValue += (cost["铁矿"] ?? 0) * 3;
     goldValue += (cost["皮革"] ?? 0) * 2;
-    goldValue += (cost["石头"] ?? 0) * 1;
+    goldValue += (cost["石头"] ?? 0) * 3;
     return Math.floor(goldValue * 0.8);
   }
 

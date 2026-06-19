@@ -18,7 +18,7 @@ export const FACTORY_BUILD_COST: Record<string, number> = {
 
 // 工厂基础产出
 export const FACTORY_BASE_INTERVAL_S = 300;   // 基准结算周期（5分钟）
-export const FACTORY_BASE_PROFIT = 50;        // 基准每次利润（金币）
+export const FACTORY_BASE_PROFIT = 400;       // 基准每次利润（金币）
 
 // 部门配置
 export const DEPARTMENTS: DepartmentConfig[] = [
