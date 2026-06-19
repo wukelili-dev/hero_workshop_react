@@ -2,7 +2,7 @@ import React from 'react';
 import { FaIndustry, FaCoins } from 'react-icons/fa6';
 import { useGameStore } from '../../store/useGameStore';
 import { useFactoryStore } from '../../store/useFactoryStore';
-import { DEPARTMENTS, MAX_FACTORY_WORKERS, FACTORY_WORKER_COST_GOLD, FACTORY_WORKER_BONUS, FACTORY_BASE_PROFIT, FACTORY_BUILD_COST } from '../../data/factory';
+import { DEPARTMENTS, MAX_FACTORY_WORKERS, FACTORY_WORKER_COST_GOLD, FACTORY_WORKER_BONUS, FACTORY_BASE_PROFIT, FACTORY_BASE_INTERVAL_S, FACTORY_BUILD_COST } from '../../data/factory';
 
 export const FactoryTab: React.FC = () => {
   const hero = useGameStore(s => s.hero);
@@ -16,7 +16,6 @@ export const FactoryTab: React.FC = () => {
   const CN_TO_EN: Record<string, string> = { '木材': 'wood', '铁矿': 'iron', '皮革': 'hide', '石头': 'stone', '药草': 'herb' };
 
   // ── 计算总倍率 ──
-  const builtDeptIds = depts.filter(d => d.built).map(d => d.id);
   let totalBonus = 1.0;
   for (const d of depts) {
     if (!d.built) continue;
