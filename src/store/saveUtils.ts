@@ -52,7 +52,6 @@ export function saveGame(): boolean {
         factoryBuilt: factoryState.factoryBuilt,
         depts: factoryState.depts,
         totalWorkers: factoryState.totalWorkers,
-        autoRunning: factoryState.autoRunning,
       },
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
@@ -121,15 +120,11 @@ export function loadGame(): boolean {
     if (data.factory) {
       if (data.factory.factoryBuilt !== undefined) factoryStore.setFactoryBuilt(data.factory.factoryBuilt);
       if (data.factory.depts) {
-        // 补全缺失的 lastCollectAt 字段（旧存档可能没有）
-        const fixedDepts = data.factory.depts.map((d: any) => ({
-          ...d,
-          lastCollectAt: d.lastCollectAt ?? 0,
-        }));
-        factoryStore.setDepts(fixedDepts);
+        // 旧存档可能有 lastCollectAt 字段，忽略即可
+        factoryStore.setDepts(data.factory.depts);
       }
       if (data.factory.totalWorkers !== undefined) factoryStore.setTotalWorkers(data.factory.totalWorkers);
-      if (data.factory.autoRunning !== undefined) factoryStore.setAutoRunning(data.factory.autoRunning);
+      // autoRunning 已移除（工厂改为自动入账）
     }
 
     // ── 迁移：补全 v2 存档中没有的新增字段 ──

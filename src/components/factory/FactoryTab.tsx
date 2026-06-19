@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { FaIndustry, FaCoins } from 'react-icons/fa6';
 import { useGameStore } from '../../store/useGameStore';
 import { useFactoryStore } from '../../store/useFactoryStore';
-import { DEPARTMENTS, MAX_FACTORY_WORKERS, FACTORY_WORKER_COST_GOLD, FACTORY_WORKER_BONUS, FACTORY_BASE_PROFIT, FACTORY_BASE_INTERVAL_S, FACTORY_BUILD_COST, calcFactoryBonus } from '../../data/factory';
+import { DEPARTMENTS, MAX_FACTORY_WORKERS, FACTORY_WORKER_COST_GOLD, FACTORY_WORKER_BONUS, FACTORY_BASE_PROFIT, FACTORY_BUILD_COST } from '../../data/factory';
 
 export const FactoryTab: React.FC = () => {
   const hero = useGameStore(s => s.hero);
@@ -10,57 +10,28 @@ export const FactoryTab: React.FC = () => {
   const factoryBuilt = useFactoryStore(s => s.factoryBuilt);
   const depts = useFactoryStore(s => s.depts);
   const totalWorkers = useFactoryStore(s => s.totalWorkers);
-  const autoRunning = useFactoryStore(s => s.autoRunning);
-  const { buildFactory, buyDepartment, hireWorker, fireWorker, collectProfit, setAutoRunning } = useFactoryStore();
-
-  const [now, setNow] = useState(Date.now());
-
-  // 每秒刷新，用于倒计时
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const { buildFactory, buyDepartment, hireWorker, fireWorker, getGoldPerSecond } = useFactoryStore();
 
   // 中文材料名 → resources 英文 key
   const CN_TO_EN: Record<string, string> = { '木材': 'wood', '铁矿': 'iron', '皮革': 'hide', '石头': 'stone', '药草': 'herb' };
+
+  // ── 计算总倍率 ──
+  const builtDeptIds = depts.filter(d => d.built).map(d => d.id);
+  let totalBonus = 1.0;
+  for (const d of depts) {
+    if (!d.built) continue;
+    const cfg = DEPARTMENTS.find(c => c.id === d.id);
+    if (cfg) totalBonus += cfg.bonusFactor;
+  }
+  totalBonus += totalWorkers * FACTORY_WORKER_BONUS;
+  const estimatedProfit = Math.floor(FACTORY_BASE_PROFIT * totalBonus);
+  const goldPerSecond = getGoldPerSecond();
 
   // ── 建造工厂 ──
   const handleBuildFactory = () => {
     const ok = buildFactory();
     if (!ok) alert('资源不足，无法建造工厂！');
   };
-
-  // ── 购买部门 ──
-  const handleBuyDept = (deptId: string) => {
-    buyDepartment(deptId);
-  };
-
-  // ── 收取利润 ──
-  const handleCollect = () => {
-    collectProfit();
-  };
-
-  // ── 计算总倍率 ──
-  const builtDeptIds = depts.filter(d => d.built).map(d => d.id);
-  const totalBonus = calcFactoryBonus(builtDeptIds, totalWorkers);
-  const estimatedProfit = Math.floor(FACTORY_BASE_PROFIT * totalBonus);
-
-  // ── 积累进度（时间积累制） ──
-  const builtDepts = depts.filter(d => d.built);
-  // 统一从最早的 lastCollectAt 开始计时（如果全是0则立即可收）
-  const earliestCollectAt = builtDepts.length > 0
-    ? Math.min(...builtDepts.map(d => d.lastCollectAt))
-    : 0;
-  // 已积累秒数（0~FACTORY_BASE_INTERVAL_S）
-  const elapsedS = earliestCollectAt === 0
-    ? FACTORY_BASE_INTERVAL_S  // 全新状态，立即可收
-    : Math.min((now - earliestCollectAt) / 1000, FACTORY_BASE_INTERVAL_S);
-  const progress = Math.min(elapsedS / FACTORY_BASE_INTERVAL_S, 1);
-  const remainingS = Math.max(0, FACTORY_BASE_INTERVAL_S - elapsedS);
-  const canCollect = builtDepts.length > 0 && elapsedS >= FACTORY_BASE_INTERVAL_S;
-
-  // 实时待收金币
-  const pendingGold = canCollect ? 0 : Math.floor(estimatedProfit * progress);
 
   // ── 工厂未建造时 ──
   if (!factoryBuilt) {
@@ -108,57 +79,22 @@ export const FactoryTab: React.FC = () => {
       {/* 标题栏 */}
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold text-gray-700 flex items-center gap-1"><FaIndustry /> 工厂</h2>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-yellow-600 font-medium flex items-center gap-0.5"><FaCoins /> {hero.gold}</span>
-          <button
-            onClick={() => setAutoRunning(!autoRunning)}
-            className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${autoRunning ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
-            {autoRunning ? '自动中' : '自动'}
-          </button>
-        </div>
+        <span className="text-xs text-yellow-600 font-medium flex items-center gap-0.5"><FaCoins /> {hero.gold}</span>
       </div>
 
-      {/* 总利润预览 */}
+      {/* 每秒产出 */}
       <div className="p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-yellow-700">每轮利润</span>
-          <span className="font-bold text-yellow-600">💰 {estimatedProfit}</span>
+          <span className="text-yellow-700">每秒产出</span>
+          <span className="font-bold text-yellow-600">+{goldPerSecond.toFixed(2)} G/s</span>
         </div>
         <div className="text-[9px] text-yellow-500 mt-0.5">
           倍率：{totalBonus.toFixed(1)}x（部门 +{(totalBonus - 1 - totalWorkers * FACTORY_WORKER_BONUS).toFixed(2)} + 工人 +{(totalWorkers * FACTORY_WORKER_BONUS).toFixed(2)}）
         </div>
-      </div>
-
-      {/* 积累进度条 */}
-      <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg space-y-1.5">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-amber-700 font-medium">积累进度</span>
-          <span className="text-amber-600 font-bold">待收 {pendingGold} G</span>
-        </div>
-        <div className="h-2 bg-amber-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-amber-400 to-yellow-500 transition-all duration-1000 rounded-full"
-            style={{ width: `${(progress * 100).toFixed(1)}%` }}
-          />
-        </div>
-        <div className="flex items-center justify-between text-[10px] text-amber-500">
-          <span>{Math.floor(elapsedS)}s / {FACTORY_BASE_INTERVAL_S}s</span>
-          <span>{remainingS > 0 ? `剩余 ${Math.ceil(remainingS)}s` : '✅ 可收取'}</span>
+        <div className="text-[9px] text-yellow-500">
+          每轮利润：{estimatedProfit}G / {FACTORY_BASE_INTERVAL_S}s
         </div>
       </div>
-
-      {/* 收取按钮 */}
-      <button
-        onClick={handleCollect}
-        disabled={!canCollect}
-        className={`w-full py-2 rounded-lg text-sm font-bold transition-colors ${
-          canCollect
-            ? 'bg-yellow-500 hover:bg-yellow-600 text-white shadow'
-            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-        }`}
-      >
-        {canCollect ? `💰 收取利润 +${estimatedProfit}G` : `⏳ ${Math.ceil(remainingS)}s 后可收取`}
-      </button>
 
       {/* 部门列表 */}
       <div className="space-y-2">
@@ -168,9 +104,6 @@ export const FactoryTab: React.FC = () => {
 
           const isBasic = cfg.id === 'basic';
           const isBuilt = dept.built;
-          // 统一进度条：所有部门共享同一计时
-          const cooled = canCollect;
-          const cooldownSec = Math.ceil(remainingS);
 
           // 建造/购买条件
           const buildCostMet = hero.gold >= cfg.costGold && Object.entries(cfg.costResources).every(
@@ -191,7 +124,7 @@ export const FactoryTab: React.FC = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => handleBuyDept(cfg.id)}
+                  onClick={() => buyDepartment(cfg.id)}
                   disabled={!buildCostMet}
                   className={`w-full py-1 rounded text-[10px] font-medium transition-colors ${
                     buildCostMet
@@ -199,7 +132,7 @@ export const FactoryTab: React.FC = () => {
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  购买（{cfg.costGold}💰 {Object.entries(cfg.costResources).map(([k, v]) => `${k}×${v}`).join(' ')}）
+                  购买（{cfg.costGold}💰 {Object.entries(cfg.costResources).map(([k, v]) => `${k}×${v}`).join(' ')})
                 </button>
               </div>
             );
@@ -207,15 +140,13 @@ export const FactoryTab: React.FC = () => {
 
           // 已建造部门
           return (
-            <div key={cfg.id} className={`p-2 border rounded-lg ${cooled ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
+            <div key={cfg.id} className="p-2 border rounded-lg bg-blue-50 border-blue-200">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1">
                   <span className="text-xs font-medium text-gray-800">{cfg.name}</span>
                   {isBasic && <span className="text-[9px] px-1 py-0.5 bg-blue-100 text-blue-600 rounded">自带</span>}
                 </div>
-                <div className={`text-[10px] font-medium ${cooled ? 'text-green-600' : 'text-blue-500'}`}>
-                  {cooled ? '✅ 可收取' : `⏳ ${cooldownSec}s`}
-                </div>
+                <div className="text-[10px] font-medium text-green-600">+{(cfg.bonusFactor * goldPerSecond / totalBonus).toFixed(3)} G/s</div>
               </div>
 
               {/* 工人管理 */}
