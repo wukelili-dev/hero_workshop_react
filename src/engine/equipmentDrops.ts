@@ -6,40 +6,60 @@
 import type { Equipment, Rarity } from '../types';
 import { RARITY_NAME } from '../types';
 
-// 装备名称前缀
-const WEAPON_PREFIXES = ["铁", "钢", "银", "金", "魔法", "神圣", "暗黑", "冰霜", "火焰", "雷电", "远古", "圣", "恶魔", "龙"];
-const ARMOR_PREFIXES = ["皮", "铁", "钢", "银", "金", "魔法", "神圣", "暗黑", "冰霜", "火焰", "雷电", "远古", "圣", "魔"];
-const WEAPON_SUFFIXES = ["剑", "刀", "斧", "锤", "戟", "弓", "匕首", "杖"];
-const ARMOR_SUFFIXES = ["甲", "盔", "盾", "袍", "衣", "铠", "胄", "披风"];
+// ─── 名称前缀（按地图怪物等级分层） ───
+const WEAPON_PREFIXES: [number, number, string[]][] = [
+  [1,  5,  ["铁", "钢", "铜", "木"]],
+  [6,  10, ["银", "秘银", "魔法"]],
+  [11, 15, ["金", "冰霜", "火焰", "雷电"]],
+  [16, 20, ["远古", "圣", "神圣"]],
+  [21, 99, ["暗黑", "恶魔", "龙"]],
+];
+const ARMOR_PREFIXES: [number, number, string[]][] = [
+  [1,  5,  ["皮", "布", "铁", "铜"]],
+  [6,  10, ["钢", "秘银", "魔法"]],
+  [11, 15, ["金", "冰霜", "火焰", "雷电"]],
+  [16, 20, ["远古", "圣", "神圣"]],
+  [21, 99, ["暗黑", "恶魔", "魔"]],
+];
 
-// 特殊装备名称
+const WEAPON_SUFFIXES = ["剑", "刀", "斧", "锤", "戟", "弓", "匕首", "杖", "枪", "镰"];
+const ARMOR_SUFFIXES = ["甲", "盔", "盾", "袍", "衣", "铠", "胄", "披风", "冠", "靴"];
+
+// 极品装备名（仅Lv20+可掉）
 const SPECIAL_WEAPON_NAMES = ["轩辕剑", "青龙偃月刀", "方天画戟", "丈八蛇矛", "倚天剑", "屠龙刀"];
+const PERFECT_ARMOR_NAMES = ["锁子黄金甲", "藕丝步云履", "凤翅紫金冠", "天蚕丝披风", "金蝉袈裟"];
 
-// 极品装备(无等级限制,商店不可购买)
-const PERFECT_ARMOR_NAMES = ["锁子黄金甲", "藕丝步云履", "凤翅紫金冠", "凯甲", "天蚕丝披风"];
-
-// 稀有度配置
+// 稀有度配置（只保留需要的字段）
 const RARITY_CONFIG: Record<string, {
   color: string;
-  stat_range: number;
-  drop_rate: number;
   special_chance: number;
-  stat_bonus?: number;
 }> = {
-  "普通": { color: "#AAAAAA", stat_range: 0.3, drop_rate: 0.15, special_chance: 0 },
-  "稀有": { color: "#55AAFF", stat_range: 0.5, drop_rate: 0.10, special_chance: 0.05 },
-  "史诗": { color: "#AA55FF", stat_range: 0.8, stat_bonus: 0.5, drop_rate: 0.05, special_chance: 0.15 },
-  "传说": { color: "#FFAA00", stat_range: 1.0, stat_bonus: 1.0, drop_rate: 0.02, special_chance: 0.30 },
+  "普通": { color: "#AAAAAA", special_chance: 0 },
+  "稀有": { color: "#55AAFF", special_chance: 0.05 },
+  "史诗": { color: "#AA55FF", special_chance: 0.15 },
+  "传说": { color: "#FFAA00", special_chance: 0.30 },
 };
+
+/**
+ * 根据怪物等级获取对应档位的前缀列表
+ */
+function getPrefixForLevel(level: number, type: 'weapon' | 'armor'): string[] {
+  const table = type === 'weapon' ? WEAPON_PREFIXES : ARMOR_PREFIXES;
+  for (const [minLv, maxLv, prefixes] of table) {
+    if (level >= minLv && level <= maxLv) return prefixes;
+  }
+  return table[table.length - 1][2];
+}
 
 /**
  * 生成武器名称
  */
-function generateWeaponName(perfect: boolean = false): string {
+function generateWeaponName(level: number, perfect: boolean = false): string {
   if (perfect) {
     return SPECIAL_WEAPON_NAMES[Math.floor(Math.random() * SPECIAL_WEAPON_NAMES.length)];
   }
-  const prefix = WEAPON_PREFIXES[Math.floor(Math.random() * WEAPON_PREFIXES.length)];
+  const prefixes = getPrefixForLevel(level, 'weapon');
+  const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
   const suffix = WEAPON_SUFFIXES[Math.floor(Math.random() * WEAPON_SUFFIXES.length)];
   return `${prefix}${suffix}`;
 }
@@ -47,11 +67,12 @@ function generateWeaponName(perfect: boolean = false): string {
 /**
  * 生成护甲名称
  */
-function generateArmorName(perfect: boolean = false): string {
+function generateArmorName(level: number, perfect: boolean = false): string {
   if (perfect) {
     return PERFECT_ARMOR_NAMES[Math.floor(Math.random() * PERFECT_ARMOR_NAMES.length)];
   }
-  const prefix = ARMOR_PREFIXES[Math.floor(Math.random() * ARMOR_PREFIXES.length)];
+  const prefixes = getPrefixForLevel(level, 'armor');
+  const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
   const suffix = ARMOR_SUFFIXES[Math.floor(Math.random() * ARMOR_SUFFIXES.length)];
   return `${prefix}${suffix}`;
 }
@@ -62,14 +83,14 @@ function generateArmorName(perfect: boolean = false): string {
 function getRarityByMonsterLevel(level: number): string | null {
   const roll = Math.random();
 
-  if (level >= 20) { // 高级地图
-    if (roll < 0.05) return "传说";      // 5%
-    if (roll < 0.20) return "史诗";      // 15%
-    if (roll < 0.45) return "稀有";      // 25%
-    return "普通";                         // 55%
+  if (level >= 20) {
+    if (roll < 0.05) return "传说";
+    if (roll < 0.20) return "史诗";
+    if (roll < 0.45) return "稀有";
+    return "普通";
   }
 
-  if (level >= 15) { // 中级地图
+  if (level >= 15) {
     if (roll < 0.02) return "传说";
     if (roll < 0.10) return "史诗";
     if (roll < 0.25) return "稀有";
@@ -77,7 +98,7 @@ function getRarityByMonsterLevel(level: number): string | null {
     return null;
   }
 
-  if (level >= 10) { // 初级进阶
+  if (level >= 10) {
     if (roll < 0.05) return "史诗";
     if (roll < 0.20) return "稀有";
     if (roll < 0.50) return "普通";
@@ -85,8 +106,8 @@ function getRarityByMonsterLevel(level: number): string | null {
   }
 
   // 新手地图 (Lv1-9)
-  if (roll < 0.10) return "稀有";
-  if (roll < 0.40) return "普通";
+  if (roll < 0.05) return "稀有";       // 10% → 5%
+  if (roll < 0.35) return "普通";       // 40% → 30%
   return null;
 }
 
@@ -94,11 +115,24 @@ function getRarityByMonsterLevel(level: number): string | null {
  * 获取极品装备掉落概率
  */
 function getPerfectDropChance(level: number, isBoss: boolean = false): number {
-  if (isBoss) return 0.08;         // Boss 8%
-  if (level >= 20) return 0.03;    // 3%
-  if (level >= 15) return 0.015;   // 1.5%
-  if (level >= 10) return 0.008;    // 0.8%
-  return 0.003;                     // Lv1-9: 0.3%
+  if (isBoss) return 0.08;
+  if (level >= 20) return 0.03;
+  if (level >= 15) return 0.015;
+  if (level >= 10) return 0.008;
+  return 0.003;
+}
+
+/**
+ * 获取该稀有度对应的等级缩放系数（每级增加百分比）
+ */
+function getScalePerLevel(rarity: string): number {
+  switch (rarity) {
+    case "普通": return 0.05;
+    case "稀有": return 0.08;
+    case "史诗": return 0.10;
+    case "传说": return 0.12;
+    default: return 0.05;
+  }
 }
 
 /**
@@ -115,17 +149,19 @@ function generateWeapon(
     crit_rate: [number, number];
     crit_dmg: [number, number];
   }> = {
-    "普通": { attack: [8, 20], crit_rate: [0, 5], crit_dmg: [150, 150] },
-    "稀有": { attack: [22, 45], crit_rate: [5, 12], crit_dmg: [150, 160] },
-    "史诗": { attack: [50, 90], crit_rate: [12, 22], crit_dmg: [160, 180] },
-    "传说": { attack: [100, 150], crit_rate: [20, 35], crit_dmg: [170, 200] },
+    // 基础值压缩：Lv1时数值
+    "普通": { attack: [3, 8],   crit_rate: [0, 3],   crit_dmg: [150, 150] },
+    "稀有": { attack: [8, 15],  crit_rate: [3, 8],   crit_dmg: [150, 155] },
+    "史诗": { attack: [18, 30], crit_rate: [8, 15],  crit_dmg: [155, 170] },
+    "传说": { attack: [35, 55], crit_rate: [15, 25], crit_dmg: [170, 190] },
   };
 
   const stats = baseStats[rarity] || baseStats["普通"];
+  const scalePerLv = getScalePerLevel(rarity);
 
-  // 缩放公式:每级+3%基础属性
-  let scale = 1 + (level - 1) * 0.03;
-  if (isBoss) scale *= 1.25; // Boss加成25%
+  // 缩放：按等级线性提升，等级越高差异越明显
+  let scale = 1 + (level - 1) * scalePerLv;
+  if (isBoss) scale *= 1.25;
 
   const attack = Math.floor(
     (Math.floor(Math.random() * (stats.attack[1] - stats.attack[0] + 1)) + stats.attack[0]) * scale
@@ -133,9 +169,8 @@ function generateWeapon(
   const crit_rate = Math.min(50, Math.floor(Math.random() * (stats.crit_rate[1] - stats.crit_rate[0] + 1)) + stats.crit_rate[0]);
   const crit_dmg = Math.floor(Math.random() * (stats.crit_dmg[1] - stats.crit_dmg[0] + 1)) + stats.crit_dmg[0];
 
-  const name = generateWeaponName(isPerfect);
+  const name = generateWeaponName(level, isPerfect);
 
-  // 映射稀有度到 Rarity 类型
   const rarityMap: Record<string, Rarity> = {
     "普通": 0, "稀有": 1, "珍稀": 2, "史诗": 3, "传说": 4
   };
@@ -146,7 +181,7 @@ function generateWeapon(
     name,
     tier: level,
     levelReq: isPerfect ? 0 : Math.max(1, level - 2),
-    rarity: isPerfect ? 4 : (rarityMap[rarity] || 0), // 极品视为传说
+    rarity: isPerfect ? 4 : (rarityMap[rarity] || 0),
     rarityColor: isPerfect ? "#FF5555" : (RARITY_CONFIG[rarity]?.color || "#AAAAAA"),
     stats: {
       atk: attack,
@@ -162,7 +197,7 @@ function generateWeapon(
     special: undefined,
   };
 
-  // 极品装备:在传说基础上×1.4,无等级限制,必带特殊属性,暴击伤害固定200%
+  // 极品装备：在传说基础上×1.4，无等级限制，必带特殊属性
   if (isPerfect) {
     equip.stats!.atk = Math.floor(equip.stats!.atk! * 1.4);
     equip.attack = equip.stats!.atk;
@@ -178,7 +213,7 @@ function generateWeapon(
     ][Math.floor(Math.random() * 3)];
   }
 
-  // 史诗/传说有概率带特殊属性
+  // 史诗/传说的带特殊属性
   if (!isPerfect && ["史诗", "传说"].includes(rarity) && Math.random() < RARITY_CONFIG[rarity].special_chance) {
     const specialOptions = [
       { name: "吸血", value: Math.floor(Math.random() * 6) + 3 },
@@ -204,15 +239,17 @@ function generateArmor(
     defense: [number, number];
     hp_bonus: [number, number];
   }> = {
-    "普通": { defense: [4, 12], hp_bonus: [20, 60] },
-    "稀有": { defense: [15, 35], hp_bonus: [70, 150] },
-    "史诗": { defense: [40, 75], hp_bonus: [180, 320] },
-    "传说": { defense: [85, 140], hp_bonus: [380, 600] },
+    // 基础值压缩
+    "普通": { defense: [2, 6],    hp_bonus: [10, 30] },
+    "稀有": { defense: [6, 12],   hp_bonus: [30, 60] },
+    "史诗": { defense: [14, 25],  hp_bonus: [60, 120] },
+    "传说": { defense: [30, 45],  hp_bonus: [130, 250] },
   };
 
   const stats = baseStats[rarity] || baseStats["普通"];
+  const scalePerLv = getScalePerLevel(rarity);
 
-  let scale = 1 + (level - 1) * 0.03;
+  let scale = 1 + (level - 1) * scalePerLv;
   if (isBoss) scale *= 1.25;
 
   const defense = Math.floor(
@@ -222,7 +259,7 @@ function generateArmor(
     (Math.floor(Math.random() * (stats.hp_bonus[1] - stats.hp_bonus[0] + 1)) + stats.hp_bonus[0]) * scale
   );
 
-  const name = generateArmorName(isPerfect);
+  const name = generateArmorName(level, isPerfect);
 
   const rarityMap: Record<string, Rarity> = {
     "普通": 0, "稀有": 1, "珍稀": 2, "史诗": 3, "传说": 4
@@ -248,7 +285,7 @@ function generateArmor(
     special: undefined,
   };
 
-  // 极品装备:在传说基础上×1.4,无等级限制,必带特殊属性
+  // 极品装备
   if (isPerfect) {
     equip.stats!.def = Math.floor(equip.stats!.def! * 1.4);
     equip.defense = equip.stats!.def;
@@ -262,7 +299,7 @@ function generateArmor(
     ][Math.floor(Math.random() * 3)];
   }
 
-  // 史诗/传说有概率带特殊属性
+  // 史诗/传说带特殊属性
   if (!isPerfect && ["史诗", "传说"].includes(rarity) && Math.random() < RARITY_CONFIG[rarity].special_chance) {
     const specialOptions = [
       { name: "吸血", value: Math.floor(Math.random() * 4) + 2 },
@@ -279,34 +316,32 @@ function generateArmor(
  * 生成怪物掉落装备(可能掉落武器或护甲)
  */
 export function generateDrop(monsterLevel: number, isBoss: boolean = false): Equipment | null {
-  const rarity = getRarityByMonsterLevel(monsterLevel);
+  let rarity = getRarityByMonsterLevel(monsterLevel);
 
-  // Boss掉落概率更高
-  let finalRarity = rarity;
-  if (isBoss && !rarity) {
-    finalRarity = "普通";
-  } else if (isBoss) {
-    // Boss更容易掉好东西
-    const roll = Math.random();
-    if (roll < 0.10) finalRarity = "传说";
-    else if (roll < 0.30) finalRarity = "史诗";
-    else if (roll < 0.50) finalRarity = "稀有";
-    else finalRarity = "普通";
+  // Boss：若没roll到稀有度则保底普通，否则有额外概率提升一档
+  if (isBoss) {
+    if (!rarity) {
+      rarity = "普通";
+    } else {
+      const upgradeRoll = Math.random();
+      if (rarity === "普通" && upgradeRoll < 0.30) rarity = "稀有";
+      else if (rarity === "稀有" && upgradeRoll < 0.20) rarity = "史诗";
+      else if (rarity === "史诗" && upgradeRoll < 0.10) rarity = "传说";
+    }
   }
 
-  if (!finalRarity) return null;
+  if (!rarity) return null;
 
-  // 检查极品装备掉落
+  // 检查极品装备掉落（极品只在Lv15+出现）
   let isPerfect = false;
-  if (Math.random() < getPerfectDropChance(monsterLevel, isBoss)) {
+  if (monsterLevel >= 15 && Math.random() < getPerfectDropChance(monsterLevel, isBoss)) {
     isPerfect = true;
   }
 
-  // 生成武器或护甲
   if (Math.random() < 0.5) {
-    return generateWeapon(monsterLevel, finalRarity, isPerfect, isBoss);
+    return generateWeapon(monsterLevel, rarity, isPerfect, isBoss);
   } else {
-    return generateArmor(monsterLevel, finalRarity, isPerfect, isBoss);
+    return generateArmor(monsterLevel, rarity, isPerfect, isBoss);
   }
 }
 
