@@ -345,6 +345,65 @@ export function generateDrop(monsterLevel: number, isBoss: boolean = false): Equ
   }
 }
 
+// ─── 出售价格计算 ───
+
+// 材料→金币转换率（shop装备的材料造价）
+const MATERIAL_GOLD_RATES: Record<string, number> = {
+  '金币': 1,
+  '铁矿': 5,
+  '皮革': 8,
+  '木材': 3,
+};
+
+// 怪物等级→价值阶位（匹配 shop tier 1-5）
+function monsterLevelToValueTier(level: number): number {
+  if (level >= 20) return 5;
+  if (level >= 15) return 4;
+  if (level >= 10) return 3;
+  if (level >= 5) return 2;
+  return 1;
+}
+
+// 各阶位基础金币价值（shop装备材料消耗的平均金币等价）
+const TIER_BASE_GOLD: number[] = [0, 60, 250, 500, 900, 2000];
+
+// 稀有度溢价倍率
+const RARITY_PREMIUM: number[] = [1.0, 1.5, 2.0, 3.0, 5.0];
+
+// 出售比例（shop价的50%）
+const SELL_RATIO = 0.5;
+
+/**
+ * 计算装备出售价格
+ * - drop装备：基于怪物等级+稀有度估算shop等价，半价回收
+ * - shop装备：材料成本换算金币，半价回收
+ */
+export function getEquipmentSellPrice(equip: Equipment): number {
+  if (!equip) return 0;
+
+  // 如果有成本数据（shop装备），直接换算
+  if (equip.cost && Object.keys(equip.cost).length > 0) {
+    let materialValue = 0;
+    for (const [mat, qty] of Object.entries(equip.cost)) {
+      materialValue += (MATERIAL_GOLD_RATES[mat] ?? 1) * Number(qty);
+    }
+    return Math.floor(materialValue * SELL_RATIO);
+  }
+
+  // 掉落装备：基于等级阶位+稀有度估算
+  const valueTier = monsterLevelToValueTier(equip.tier ?? 1);
+  const baseGold = TIER_BASE_GOLD[valueTier] ?? 60;
+  const rarity = Math.min(equip.rarity ?? 0, 4);
+  const premium = RARITY_PREMIUM[rarity] ?? 1.0;
+  const perfectMul = equip.isPerfect ? 1.5 : 1.0;
+
+  // 强化/锻造加的额外价值
+  const enhanceBonus = (equip.enhanceLevel ?? 0) * 20;
+  const fortifyBonus = (equip.fortifyLevel ?? 0) * 50;
+
+  return Math.floor(baseGold * premium * perfectMul * SELL_RATIO + enhanceBonus + fortifyBonus);
+}
+
 /**
  * 获取装备掉落摘要
  */

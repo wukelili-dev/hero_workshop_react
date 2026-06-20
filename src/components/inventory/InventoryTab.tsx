@@ -5,6 +5,7 @@ import { useGameStore } from '../../store/useGameStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { RARITY_COLORS } from '../../data/constants';
 import type { InventorySlot } from '../../store/useInventoryStore';
+import { getEquipmentSellPrice } from '../../engine/equipmentDrops';
 
 // 杂货目录（用于获取显示名称）
 const NOVELTY_NAMES: Record<string, string> = {
@@ -84,26 +85,37 @@ export const InventoryTab: React.FC = () => {
     });
   };
 
-  // 出售武器
+  // 出售武器（已装备）
   const handleSellWeapon = () => {
     if (!weapon) return;
-    const sellPrice = Math.floor((weapon.cost?.['金币'] ?? 0) * 0.5);
+    const sellPrice = getEquipmentSellPrice(weapon);
     addGold(sellPrice);
+    useGameStore.getState().addGameLog(`出售 ${weapon.name}，获得 ${sellPrice}G`);
     useGameStore.getState().setHero({ 
       weapon: null, 
       atk: hero.atk - (weapon.stats?.atk ?? 0) 
     });
   };
 
-  // 出售护甲
+  // 出售护甲（已装备）
   const handleSellArmor = () => {
     if (!armor) return;
-    const sellPrice = Math.floor((armor.cost?.['金币'] ?? 0) * 0.5);
+    const sellPrice = getEquipmentSellPrice(armor);
     addGold(sellPrice);
+    useGameStore.getState().addGameLog(`出售 ${armor.name}，获得 ${sellPrice}G`);
     useGameStore.getState().setHero({ 
       armor: null, 
       def: hero.def - (armor.stats?.def ?? 0) 
     });
+  };
+
+  // 出售背包中的装备
+  const handleSellSlot = (slot: InventorySlot, index: number) => {
+    if (!slot.data) return;
+    const sellPrice = getEquipmentSellPrice(slot.data);
+    addGold(sellPrice);
+    useInventoryStore.getState().removeFromInventory(index);
+    useGameStore.getState().addGameLog(`出售 ${slot.data.name}，获得 ${sellPrice}G`);
   };
 
   // 渲染背包格子
@@ -125,8 +137,7 @@ export const InventoryTab: React.FC = () => {
     return (
       <div
         key={index}
-        onClick={() => handleSlotClick(slot, index)}
-        className={`relative w-full aspect-square border-2 ${borderColor} ${bgColor} rounded-lg cursor-pointer hover:shadow-md transition-shadow p-1`}
+        className={`relative w-full aspect-square border-2 ${borderColor} ${bgColor} rounded-lg p-1`}
       >
         {/* 物品类型图标 */}
         <div className="absolute top-0.5 left-0.5">
@@ -145,12 +156,30 @@ export const InventoryTab: React.FC = () => {
         {/* 物品名称 */}
         <div className="flex items-center justify-center h-full">
           {slot.type === 'weapon' || slot.type === 'armor' ? (
-            <span 
-              className="text-xs font-bold text-center leading-tight"
-              style={{ color: (RARITY_COLORS as Record<string, string>)[slot.data?.rarity ?? 'common'] ?? '#888' }}
-            >
-              {slot.data?.name || slot.id}
-            </span>
+            <div className="flex flex-col items-center gap-0.5">
+              <span 
+                className="text-xs font-bold text-center leading-tight cursor-pointer hover:underline"
+                style={{ color: (RARITY_COLORS as Record<string, string>)[slot.data?.rarity ?? 'common'] ?? '#888' }}
+                onClick={() => handleSlotClick(slot, index)}
+              >
+                {slot.data?.name || slot.id}
+              </span>
+              {/* 背包装备操作栏 */}
+              <div className="flex gap-1 mt-0.5">
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleSlotClick(slot, index); }}
+                  className="px-1.5 py-[1px] text-[9px] bg-blue-100 hover:bg-blue-200 text-blue-600 rounded transition-colors"
+                >
+                  装备
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleSellSlot(slot, index); }}
+                  className="px-1.5 py-[1px] text-[9px] bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded transition-colors"
+                >
+                  卖{getEquipmentSellPrice(slot.data!)}G
+                </button>
+              </div>
+            </div>
           ) : (
             <span className="text-xs text-center leading-tight text-green-700">
               {getNoveltyDisplayName(slot.id)}
@@ -212,7 +241,7 @@ export const InventoryTab: React.FC = () => {
                 onClick={handleSellWeapon}
                 className="px-2 py-0.5 text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded transition-colors"
               >
-                出售 {Math.floor((weapon.cost?.['金币'] ?? 0) * 0.5)}G
+                出售 {getEquipmentSellPrice(weapon)}G
               </button>
             </div>
           )}
@@ -246,7 +275,7 @@ export const InventoryTab: React.FC = () => {
                 onClick={handleSellArmor}
                 className="px-2 py-0.5 text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded transition-colors"
               >
-                出售 {Math.floor((armor.cost?.['金币'] ?? 0) * 0.5)}G
+                出售 {getEquipmentSellPrice(armor)}G
               </button>
             </div>
           )}
