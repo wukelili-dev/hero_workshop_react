@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import { FaGem } from 'react-icons/fa6';
 import { useGameStore } from '../../store/useGameStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { useForgeStore } from '../../store/useForgeStore';
@@ -188,7 +189,7 @@ export const ForgeTab: React.FC = () => {
                 </div>
                 <div className="text-center">
                   <div className="text-gray-400">费用</div>
-                  <div className="font-medium text-yellow-600">🪨{currentFortify.ironCost} 💰{currentFortify.goldCost}</div>
+                  <div className="font-medium text-yellow-600"><FaGem className="inline" />{currentFortify.ironCost} 💰{currentFortify.goldCost}</div>
                 </div>
               </div>
 
@@ -198,7 +199,7 @@ export const ForgeTab: React.FC = () => {
                   <input type="checkbox" checked={useCharm} onChange={toggleCharm} className="rounded" />
                   使用护锻符（失败不掉级）
                 </label>
-                {useCharm && <span className="text-[10px] text-red-500">+🪨50 +💰500</span>}
+                {useCharm && <span className="text-[10px] text-red-500">+<FaGem className="inline" />50 +💰500</span>}
               </div>
 
               <button onClick={handleFortify} disabled={isForging}
@@ -216,7 +217,7 @@ export const ForgeTab: React.FC = () => {
                 <div key={cfg.level} className="flex items-center justify-between text-[10px] px-2 py-0.5 bg-gray-50 rounded">
                   <span className="w-8">+{cfg.level}</span>
                   <span className="w-10 text-center">+{cfg.bonusPct}%</span>
-                  <span className="w-12 text-center text-yellow-600">🪨{cfg.ironCost}</span>
+                  <span className="w-12 text-center text-yellow-600"><FaGem className="inline" />{cfg.ironCost}</span>
                   <span className="w-12 text-center text-yellow-600">💰{cfg.goldCost}</span>
                   <span className={`w-10 text-right ${cfg.successRate >= 0.5 ? 'text-green-600' : cfg.successRate >= 0.2 ? 'text-yellow-600' : 'text-red-500'}`}>{(cfg.successRate * 100).toFixed(0)}%</span>
                 </div>
@@ -268,7 +269,7 @@ export const ForgeTab: React.FC = () => {
                   {/* 需求 */}
                   <div className="flex gap-2 text-[10px] text-gray-400">
                     <span>{recipe.material}×{recipe.materialCount}</span>
-                    <span>🪨{recipe.iron}</span>
+                    <span><FaGem className="inline" />{recipe.iron}</span>
                     <span>💰{recipe.gold}</span>
                   </div>
                   {/* 被动 */}
