@@ -360,17 +360,13 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         const heroAtFull = { ...state.hero, hp: state.hero.maxHp };
         let winnable = state.currentEnemies.filter(m => canDefeat(heroAtFull, m));
         if (winnable.length === 0) {
-          // 没有能打过的怪，自动刷新敌人
+          // 没有能打过的怪，持续刷新直到出现可击败的敌人
           get().refreshEnemies();
-          // 刷新后重试一次
           const retryEnemies = get().currentEnemies;
           const retryHero = { ...get().hero, hp: get().hero.maxHp };
           winnable = retryEnemies.filter(m => canDefeat(retryHero, m));
           if (winnable.length === 0) {
-            // 刷新后仍然打不动，停止自动战斗
-            get().addBattleLog(`[${new Date().toTimeString().slice(0, 5)}] ⚠ 当前地图无敌可敌，自动战斗暂停`);
-            if (_autoBattleTimer) { clearInterval(_autoBattleTimer); _autoBattleTimer = null; }
-            set({ autoBattle: false });
+            // 刷新后仍无可敌目标，本轮跳过（不停止自动战斗）
             return;
           }
         }
