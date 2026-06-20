@@ -377,8 +377,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         const target = winnable.reduce((a, b) => ((a.expReward || 0) > (b.expReward || 0) ? a : b));
         get().fightMonster(target);
         get().refreshEnemies();
-        // 防止日志刷屏
-        set((s) => ({ battleLogs: s.battleLogs.slice(-5) }));
       }, 600);
     } else if (!v && _autoBattleTimer) {
       clearInterval(_autoBattleTimer);
