@@ -23,6 +23,20 @@ type ActionResult =
 
 const STEAL_FAIL_DAMAGE = 0; // 失败不再扣血，直接进战斗
 
+/** 根据当前善恶值选择合适的道德对话 */
+function _getMoralDialogue(npc: NpcDefinition): string | null {
+  const morals = npc.moralDialogues;
+  if (!morals) return null;
+  const moralValue = useGameStore.getState().hero.moralValue;
+  let kind: 'good' | 'neutral' | 'evil';
+  if (moralValue >= 50) kind = 'good';
+  else if (moralValue <= -50) kind = 'evil';
+  else kind = 'neutral';
+  const list = morals[kind];
+  if (!list || list.length === 0) return null;
+  return list[Math.floor(Math.random() * list.length)];
+}
+
 /** 根据 NPC id 前缀或特征推断阵营 */
 function _npcFaction(npc: NpcDefinition): 'human' | 'demon' | 'divine' {
   if (npc.id.startsWith('yaozu_')) return 'demon';
@@ -60,10 +74,14 @@ export function greetNpc(npc: NpcDefinition): ActionResult {
   const store = useNpcStore.getState();
   const inst = store.getInstance(npc.id);
 
+  // 善恶对话优先
+  const moralLine = _getMoralDialogue(npc);
+
   if (!inst?.greeted) {
     store.markGreeted(npc.id);
     store.recordInteraction(npc.id);
-    return { type: 'log', message: `【${npc.title}】${npc.name}：「${randomGreeting(npc)}」` };
+    const line = moralLine ?? randomGreeting(npc);
+    return { type: 'log', message: `【${npc.title}】${npc.name}：「${line}」` };
   }
 
   store.recordInteraction(npc.id);
@@ -79,7 +97,7 @@ export function greetNpc(npc: NpcDefinition): ActionResult {
   const guanyinResult = tryTriggerGuanyin(npc.location, npc.id);
   if (guanyinResult) return guanyinResult;
 
-  const line = randomDialogue(npc);
+  const line = moralLine ?? randomDialogue(npc);
   return { type: 'log', message: `【${npc.title}】${npc.name}：「${line}」` };
 }
 
@@ -160,7 +178,9 @@ export function chatNpc(npc: NpcDefinition): ActionResult {
   const crossLine = _checkCrossNpcDialogue(npc.id);
   if (crossLine) return crossLine;
 
-  const line = randomDialogue(npc);
+  // 善恶对话优先
+  const moralLine = _getMoralDialogue(npc);
+  const line = moralLine ?? randomDialogue(npc);
   return { type: 'log', message: `【${npc.title}】${npc.name}：「${line}」` };
 }
 
