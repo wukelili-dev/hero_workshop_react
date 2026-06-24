@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 test_*.mjs
+tsc_err.txt
+tsc_out.txt
+TASKS.md
+TODO.md
+$null
 
 # Editor directories and files
 .vscode/*
