@@ -36,6 +36,7 @@ export const NPCS: NpcDefinition[] = [
     ],
     challengeStats: { hp: 1500, atk: 65, def: 40 },
     challengeReward: { exp: 30, gold: 40, message: '老张头"哎哟"一声蹲坐在地，连连摆手："好汉饶命！这锭银子你拿去！"' },
+    bestiary: { source: '《酉阳杂俎·卷五·诸匠》', era: '唐代', notes: '唐朝铁匠行会以尉迟恭、程郑为祖师。民间铁匠地位高于务农者。' },
     personalItem: { name: '程氏铁谱', icon: '📜', description: '隋末唐初铁匠程郑所著，唐朝铁匠行会奉为祖师', sellPrice: 500 },
   },
 
@@ -66,6 +67,7 @@ export const NPCS: NpcDefinition[] = [
     ],
     challengeStats: { hp: 1200, atk: 55, def: 35 },
     challengeReward: { exp: 20, gold: 30, message: '孙二娘一个趔趄扶住药柜："好……好俊的功夫！这里有瓶自配的大补丹，算我送的。"' },
+    bestiary: { source: '《唐六典·太常寺·医署》', era: '唐代·贞观年间', notes: '唐代女医地位高于前朝。孙思邈《千金方》推广女科，民间女郎中渐多。' },
     personalItem: { name: '江南绣帕', icon: '🧵', description: '苏州绣坊所制，唐女随身信物', sellPrice: 80 },
   },
 
@@ -95,6 +97,7 @@ export const NPCS: NpcDefinition[] = [
     ],
     challengeStats: { hp: 1300, atk: 60, def: 38 },
     challengeReward: { exp: 25, gold: 35, message: '胡姬笑着退后一步："郎君好身手～这壶西域葡萄酒算奴家请的，可别忘了常来坐坐～"' },
+    bestiary: { source: '《酉阳杂俎·卷十二·酒食》', era: '唐代·贞观年间', notes: '唐代胡商沿丝绸之路入长安，西市多胡姬酒肆。三勒浆出自西域，李白诗句可证。' },
   },
 
   {
@@ -118,6 +121,7 @@ export const NPCS: NpcDefinition[] = [
       '"你要是有胆量，改天随我走一趟西域——一路上的妖怪够你练手的。"',
     ],
     tradeItems: [],
+    bestiary: { source: '《新唐书·兵志》', era: '唐代', notes: '府兵制衰落后地方以募兵缉盗，民间出现专业缉私者。手握官牌可自行捉拿低罪逃犯。' },
     personalItem: { name: '赏金令牌', icon: '🎴', description: '官府发行的缉盗令牌', sellPrice: 150 },
   },
 
@@ -174,6 +178,7 @@ export const NPCS: NpcDefinition[] = [
         stats: { atk: 300, def: 50, hp: 500, crit: 30, critDmg: 80 },
       },
     },
+    bestiary: { source: '《西游记》第九回', era: '唐代·贞观年间', notes: '袁天罡族叔，长安西门卖卦为业。卦象灵验，泾河龙王曾因与其赌赛降雨时辰而触犯天条被斩。' },
     personalItem: { name: '占卜铜钱', icon: '🪙', description: '袁守城占卜用的铜钱，可转动命运之轮', sellPrice: 0 },
     moralDialogues: {
       good: ['先生功德无量，龙王冤魂不敢近身。西北有妖龙作祟……'],
@@ -221,6 +226,7 @@ export const NPCS: NpcDefinition[] = [
         stats: { atk: 220, def: 30, hp: 300, crit: 25, critDmg: 60 },
       },
     },
+    bestiary: { source: '《旧唐书·魏征传》及《西游记》第十回', era: '唐代·贞观年间', notes: '太宗朝名相，以敢谏闻名。西游演绎中受天命梦斩泾河龙王，又修书崔珏保唐王地府还阳。' },
     personalItem: { name: '斩龙剑柄碎片', icon: '⚔️', description: '魏征梦斩泾河龙王，剑柄断落之碎片', sellPrice: 200 },
     unlockCondition: { kind: 'explorationFlag', value: 1, compare: 'weizheng_unlocked' },
   },
@@ -249,6 +255,7 @@ export const NPCS: NpcDefinition[] = [
       '"足下屡次拜访袁守城，又挑战魏征丞相，想必不是寻常旅人。朕有一事相托：水陆大会之后，玄奘便要启程西去。若足下得闲，愿否替朕送一程？"',
       '"朕还阳那日，崔珏悄悄塞给朕一件东西——说是「日后取经人路过阴间时用的」。朕不知是什么，放在宫中已多年。若足下需要，朕可以赐你。"',
     ],
+    bestiary: { source: '《旧唐书·太宗本纪》及《西游记》第十回', era: '唐代·贞观年间', notes: '贞观之治开创者。西游中因龙王冤魂缠身入地府，崔珏改生死簿增寿二十年，还阳后兴水陆大会。' },
     personalItem: { name: '传国玉玺拓印', icon: '💎', description: '唐王御笔拓印，可作通行凭证', sellPrice: 800 },
     unlockCondition: { kind: 'explorationFlag', value: 1, compare: 'tangwang_unlocked' },
   },
@@ -277,6 +284,7 @@ export const NPCS: NpcDefinition[] = [
       '"唐王赐贫僧通关文牒，牒上写着：「南赡部洲大唐国奉天承运皇帝敕命：差往西天取经僧人玄奘。」有此牒在，各国不敢阻拦。足下若同行，牒上可添足下的名字。"',
       '"贫僧启程在即。长安城外，灞桥折柳，唐王亲自相送。足下若来送行，咱们便算有缘——西天路上，说不定能再见。"',
     ],
+    bestiary: { source: '《大唐大慈恩寺三藏法师传》及《西游记》', era: '唐代·贞观年间', notes: '俗名陈祎，贞观三年西行求法，往返十七年，译经75部。西游称其为金蝉子转世。' },
     personalItem: { name: '观音紫竹叶', icon: '🌿', description: '观音菩萨所赠紫竹叶，可辨妖邪', sellPrice: 0 },
     unlockCondition: { kind: 'explorationFlag', value: 1, compare: 'xuanzang_unlocked' },
   },
@@ -464,6 +472,7 @@ export const NPCS: NpcDefinition[] = [
         stats: { atk: 50, def: 200, hp: 800, crit: 5, critDmg: 20 },
       },
     },
+    bestiary: { source: '《西游记》第三回', era: '神话时代', notes: '东海龙王，四海龙王之首。孙悟空向其借定海神针，后奏表天庭讨伐大圣。' },
     personalItem: { name: '东海珊瑚枝', icon: '🐚', description: '龙宫珊瑚，至宝之一', sellPrice: 600 },
     moralDialogues: {
       good: ['贵客临东海！老夫备了珊瑚露一杯，不成敬意。'],
@@ -505,6 +514,7 @@ export const NPCS: NpcDefinition[] = [
       },
     },
     tradeItems: [],
+    bestiary: { source: '《西游记》第一回', era: '神话时代', notes: '孙悟空在花果山的旧部，混世四猴之一。通臂猿猴拿日月缩千山，晓阴阳会人事。' },
     personalItem: { name: '半熟蟠桃', icon: '🍑', description: '蟠桃会上遗落的半熟蟠桃，灵气尚存', sellPrice: 300 },
   },
 
@@ -571,6 +581,7 @@ export const NPCS: NpcDefinition[] = [
         stats: { atk: 200, def: 50, hp: 300, crit: 10, critDmg: 30 },
       },
     },
+    bestiary: { source: '《西游记》第十回', era: '唐代·贞观年间', notes: '大唐人，生前同魏征、李渊同阁，死后任阴司判官。西游中因魏征一信而改生死簿帮唐王还阳。' },
     personalItem: { name: '判官朱笔', icon: '🖋️', description: '崔珏以朱笔定人生死', sellPrice: 500 },
     moralDialogues: {
       good: ['阁下阳寿尚足，且生前积德，来世必有好报。这笔……我替您收着。'],
@@ -636,6 +647,7 @@ export const NPCS: NpcDefinition[] = [
         stats: { atk: 80, def: 80, hp: 1000, crit: 5, critDmg: 15 },
       },
     },
+    bestiary: { source: '《西游记》第二十四回', era: '神话时代', notes: '镇元大仙座下弟子，五庄观守道人参果树。道号为金蝉子转世所起：「清风明月」对列。' },
     tradeItems: [],
   },
   {
@@ -669,6 +681,7 @@ export const NPCS: NpcDefinition[] = [
         stats: { atk: 200, def: 100, hp: 800, crit: 25, critDmg: 50 },
       },
     },
+    bestiary: { source: '《西游记》第五十七回', era: '神话时代', notes: '混世四猴之一，善聆音能察理。化身为假孙悟空，连观音菩萨、天庭照妖镜亦难辨其真假。' },
     tradeItems: [],
   },
 

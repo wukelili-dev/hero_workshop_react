@@ -241,6 +241,13 @@ export interface NpcPersonalItem {
   sellPrice?: number;
 }
 
+/** NPC 图鉴（考据数据） */
+export interface NpcBestiary {
+  source: string;    // 出自
+  era: string;       // 时代/背景
+  notes: string;     // 补充注释
+}
+
 /** NPC 善恶对话（根据勇者善恶值档位显示不同对话） */
 export interface NpcMoralDialogue {
   good?: string[];     // 善恶值 ≥ +50
@@ -309,6 +316,9 @@ export interface NpcDefinition {
 
   /** 隐藏解锁条件 */
   unlockCondition?: { kind: string; value: number; compare: string };
+
+  /** 图鉴（考据数据） */
+  bestiary?: NpcBestiary;
 }
 
 export interface NpcTradeItem {
