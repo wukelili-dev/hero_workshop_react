@@ -146,7 +146,10 @@ export function loadGame(): boolean {
     if (!g.discoveredCreatures) missing.discoveredCreatures = [];
     if (!g.battleLogs) missing.battleLogs = [];
     if (!g.gameLogs) missing.gameLogs = [];
-    if (Object.keys(missing).length > 0) {
+    if (!g.mapBattles) missing.mapBattles = {};
+    if (g.hero && g.hero.moralValue === undefined) {
+      useGameStore.setState({ hero: { ...g.hero, moralValue: 0, factions: { human: 50, demon: 50, divine: 50 } } });
+    } else if (Object.keys(missing).length > 0) {
       useGameStore.setState(missing);
     }
 

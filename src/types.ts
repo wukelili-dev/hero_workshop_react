@@ -13,6 +13,16 @@ export const RARITY_COLOR: Record<Rarity, string> = {
   0: '#C0C0C0', 1: '#4CAF50', 2: '#2196F3', 3: '#9370DB', 4: '#FF9800',
 };
 
+// ── 善恶值档位 ──
+export type MoralLevel = 'saint' | 'good' | 'neutral' | 'evil' | 'demon';
+
+// ── 派系亲和度 ──
+export interface Factions {
+  human: number;   // 人族 0~100
+  demon: number;   // 妖族 0~100
+  divine: number;  // 仙族 0~100
+}
+
 // ── 装备 ──
 export type EquipmentType = 'weapon' | 'armor' | 'accessory' | 'consumable';
 
@@ -80,6 +90,8 @@ export interface HeroState {
   discoveredMonsters: string[];  // 已发现的怪物ID列表
   kills: number;              // 击杀数
   potions: number;  // 药水数量
+  moralValue: number;         // -100 ~ +100，初始 0
+  factions: Factions;         // 派系亲和度
 }
 
 export interface TeamMember {
@@ -201,6 +213,8 @@ export interface Monster {
   rarity?: Rarity;
   isBoss?: boolean;
   icon?: string;
+  /** 所属派系类型，影响派系亲和度加成 */
+  npcType?: 'normal' | 'demon' | 'human' | 'divine';
 }
 
 export interface GameMap {

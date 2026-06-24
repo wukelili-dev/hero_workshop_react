@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { useInventoryStore } from './useInventoryStore';
-import type { HeroState, Resources, Monster, Equipment } from '../types';
+import type { HeroState, Resources, Monster, Equipment, Factions, MoralLevel } from '../types';
 import { MAPS } from '../data/maps';
 import { executeBattle, type BattleLog, type Rewards } from '../engine/Combat';
 import { EXP_PILL_BY_ID } from '../data/inventory';
@@ -59,6 +59,7 @@ interface GameState {
   autoPotionThreshold: number;
   autoBattle: boolean;
   buildings: Record<string, number>;   // { "伐木场: 2, "铁矿": 1 }
+  mapBattles: Record<string, number>; // 各地图累计战斗次数
 }
 
 interface GameActions {
@@ -96,6 +97,8 @@ interface GameActions {
   usePotion: () => boolean;
   setAutoPotionThreshold: (val: number) => void;
   setAutoBattle: (v: boolean) => void;
+  changeMoral: (delta: number) => void;
+  getMoralLevel: () => MoralLevel;
 }
 
 // 中文材料名store resources key 映射
@@ -117,6 +120,8 @@ const initHero: HeroState = {
   discoveredMonsters: [],
   potions: 0,
   kills: 0,
+  moralValue: 0,
+  factions: { human: 50, demon: 50, divine: 50 },
 };
 
 const initRes: Resources = { wood: 0, iron: 0, hide: 0, stone: 0, herb: 0 };
@@ -213,6 +218,9 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   autoPotionThreshold: 0,
   autoBattle: false,
   buildings: {},   // 建筑数量统计，key=建筑名，value=数量
+  mapBattles: {},
+  moralValue: 0,
+  factions: { human: 50, demon: 50, divine: 50 },
 
 
   setHero: (p) => set((s) => ({ hero: { ...s.hero, ...p } })),
@@ -259,6 +267,9 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     autoPotionThreshold: 0,
     autoBattle: false,
     buildings: {},
+    mapBattles: {},
+    moralValue: 0,
+    factions: { human: 50, demon: 50, divine: 50 },
   }),
 
   addExp: (amt) => set((s) => {
@@ -388,6 +399,34 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       _autoBattleTimer = null;
     }
     set(() => ({ autoBattle: v }));
+  },
+
+  changeMoral: (delta: number) => {
+    const prev = get().hero.moralValue;
+    const next = Math.max(-100, Math.min(100, prev + delta));
+    const actualDelta = next - prev;
+    if (actualDelta === 0) return;
+    const factions = { ...get().hero.factions };
+    if (actualDelta > 0) {
+      // 行善：人族+，妖族-
+      factions.human = Math.min(100, factions.human + actualDelta * 0.5);
+      factions.demon = Math.max(0, factions.demon - actualDelta * 0.5);
+    } else {
+      // 作恶：妖族+，人族-
+      const absD = Math.abs(actualDelta);
+      factions.demon = Math.min(100, factions.demon + absD * 0.5);
+      factions.human = Math.max(0, factions.human - absD * 0.5);
+    }
+    set((s) => ({ hero: { ...s.hero, moralValue: next, factions } }));
+  },
+
+  getMoralLevel: (): MoralLevel => {
+    const v = get().hero.moralValue;
+    if (v >= 60) return 'saint';
+    if (v >= 30) return 'good';
+    if (v <= -60) return 'demon';
+    if (v <= -30) return 'evil';
+    return 'neutral';
   },
 
   addBuilding: (name) => set((s) => {

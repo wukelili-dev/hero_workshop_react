@@ -2,6 +2,7 @@
 // 参考 Python 版 game_core.py 的伤害公式和战斗逻辑
 import type { Monster, Equipment } from '../types';
 import { generateDrop } from './equipmentDrops';
+import { useGameStore } from '../store/useGameStore';
 
 export interface HeroStats {
   hp: number;
@@ -44,6 +45,27 @@ export function calculateDamage(attackerATK: number, defenderDEF: number, isCrit
   return Math.max(1, Math.floor(dmg));
 }
 
+/** 根据击杀的怪物名获取善恶变化值 */
+function _moralDeltaFromKill(monster: Monster): number {
+  const name = monster.name;
+  // 妖族（被杀）：善恶+，人族（被杀）：善恶-，仙族：轻微-
+  if (/蛇|狐|虎|狼|蝎|蝠|猴妖|蛛|蛊|猪精|龟|虾|蟹|鱼|鳖|蛙|蟾/.test(name)) return 10;
+  if (/唐兵|衙役|捕快|刺客|强盗|赌鬼|酒鬼|好色僧人|风流剑客/.test(name)) return -20;
+  if (/巡海夜叉|龟丞相|河神|土地|山神|判官|二郎|哪吒/.test(name)) return -5;
+  return 0;
+}
+
+/** 根据派系亲和度计算英雄对怪物的伤害加成倍率 */
+function _factionMultiplier(monster: Monster): number {
+  const factions = useGameStore.getState().factions;
+  const npcType = monster.npcType ?? 'normal';
+  if (npcType === 'human' && factions.human > 70) return 1.15;
+  if (npcType === 'human' && factions.human < 30) return 0.85;
+  if (npcType === 'demon' && factions.demon > 70) return 1.15;
+  if (npcType === 'demon' && factions.demon < 30) return 0.85;
+  return 1.0;
+}
+
 /**
  * 检查是否暴击
  */
@@ -83,7 +105,8 @@ export function executeBattle(
     // 玩家先手
     // 玩家攻击
     const heroCrit = checkCrit(heroStats.crit);
-    const heroDmg = calculateDamage(heroStats.atk, monster.def, heroCrit);
+    const baseHeroDmg = calculateDamage(heroStats.atk, monster.def, heroCrit);
+    const heroDmg = Math.floor(baseHeroDmg * _factionMultiplier(monster));
     monsterCurrentHP = Math.max(0, monsterCurrentHP - heroDmg);
     
     logs.push({
@@ -115,6 +138,14 @@ export function executeBattle(
   }
   
   const victory = monsterCurrentHP <= 0;
+
+  // 击杀后更新善恶值（仅在胜利时）
+  if (victory) {
+    const delta = _moralDeltaFromKill(monster);
+    if (delta !== 0) {
+      useGameStore.getState().changeMoral(delta);
+    }
+  }
   
   // 计算奖励
   const rewards: Rewards = {
