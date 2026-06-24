@@ -233,6 +233,28 @@ export interface GameMap {
 // ── NPC 系统 ──
 export type NpcType = 'merchant' | 'challenger' | 'flavor';
 
+/** NPC 随身物品 */
+export interface NpcPersonalItem {
+  name: string;
+  icon: string;
+  description: string;
+  sellPrice?: number;
+}
+
+/** NPC 善恶对话（根据勇者善恶值档位显示不同对话） */
+export interface NpcMoralDialogue {
+  good?: string[];     // 善恶值 ≥ +50
+  neutral?: string[];  // 善恶值 -49 ~ +49
+  evil?: string[];     // 善恶值 ≤ -50
+}
+
+/** NPC 对话集（部分新NPC使用，旧NPC仍用 greetings/chatDialogues） */
+export interface NpcDialogueSet {
+  greet?: string[];
+  chat?: string[];
+  challenge?: string[];
+}
+
 /** 名角专属掉落：击败后获得一件隐藏神装 */
 export interface NpcUniqueDrop {
   /** 获得时的文案 */
@@ -265,6 +287,28 @@ export interface NpcDefinition {
 
   /** 闲聊对话池 */
   chatDialogues?: string[];
+
+  /** 随身物品（击败/偷窃后可能获得） */
+  personalItem?: NpcPersonalItem;
+
+  /** 偷窃成功时附赠金币概率（默认0.2） */
+  stealGoldChance?: number;
+  /** 偷窃附赠金币最小值 */
+  stealGoldMin?: number;
+  /** 偷窃附赠金币最大值 */
+  stealGoldMax?: number;
+
+  /** 善恶对话（优先于普通闲聊显示） */
+  moralDialogues?: NpcMoralDialogue;
+
+  /** 新版对话集（与 greetings/chatDialogues 二选一） */
+  dialogues?: NpcDialogueSet;
+
+  /** 装备商品（部分新NPC使用） */
+  goods?: Array<{ id: string; name: string; cost: number; icon: string; heal?: number }>;
+
+  /** 隐藏解锁条件 */
+  unlockCondition?: { kind: string; value: number; compare: string };
 }
 
 export interface NpcTradeItem {

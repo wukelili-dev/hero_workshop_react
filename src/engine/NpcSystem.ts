@@ -6,7 +6,7 @@ import type { NpcDefinition } from '../types';
 import { useGameStore } from '../store/useGameStore';
 import { useNpcStore } from '../store/useNpcStore';
 import { useInventoryStore } from '../store/useInventoryStore';
-import { randomGreeting, randomDialogue } from '../data/npcs';
+import { randomGreeting, randomDialogue, NPCS } from '../data/npcs';
 
 type ActionResult =
   | { type: 'log'; message: string }
@@ -56,6 +56,32 @@ export function greetNpc(npc: NpcDefinition): ActionResult {
   return { type: 'log', message: `【${npc.title}】${npc.name}：「${line}」` };
 }
 
+/** 根据 unlockCondition 判断 NPC 是否已解锁 */
+export function isNpcUnlocked(npc: NpcDefinition): boolean {
+  const cond = npc.unlockCondition;
+  if (!cond) return true;
+  const state = useGameStore.getState();
+  const npcStore = useNpcStore.getState();
+  let curVal = 0;
+  switch (cond.kind) {
+    case 'level': curVal = state.hero.level; break;
+    case 'gold': curVal = state.hero.gold; break;
+    case 'moralValue': curVal = state.hero.moralValue; break;
+    case 'mapBattles': curVal = state.mapBattles?.[cond.compare] ?? 0; break; // compare field holds mapId for this kind
+    case 'defeatedNpc': curVal = npcStore.instances[cond.compare]?.defeatedCount ?? 0; break;
+    case 'faction': {
+      const f = state.hero.factions?.human ?? 50;
+      if (cond.compare === 'demon') curVal = state.hero.factions?.demon ?? 50;
+      else if (cond.compare === 'divine') curVal = state.hero.factions?.divine ?? 50;
+      else curVal = f;
+      break;
+    }
+    case 'explorationFlag': curVal = npcStore.explorationFlags[cond.compare] ? 1 : 0; break;
+    default: return true;
+  }
+  return curVal >= cond.value;
+}
+
 /** 玩家「交谈」 */
 export function chatNpc(npc: NpcDefinition): ActionResult {
   useNpcStore.getState().recordInteraction(npc.id);
@@ -67,8 +93,6 @@ export function chatNpc(npc: NpcDefinition): ActionResult {
     useNpcStore.getState().setExplorationFlag(key);
     (useNpcStore.getState().explorationFlags as any)[key] = String(cur + 1);
 
-    // 袁守城剧情链：听过魏征相关内容（随机对话中含"魏征"或"斩龙"）后解锁魏征
-    // 判断条件：本次对话随机到哪条——含"魏征"则解锁
     const dialogues = [
       '"你可知那泾河龙王为何被斩？"袁守城悠然道，"他与我打赌降雨时辰，私自改了玉帝旨意上的雨量——这便是欺天。魏征梦里斩龙，那天长安城上空乌云三日不散。"',
       '"唐王被龙王魂魄纠缠，一病不起。魏征修书一封，交与唐王带至阴间，其友崔珏乃酆都判官。崔珏阅后，私自添了二十年阳寿。唐王还阳后大开水陆大会——这便是玄奘法师西行的由头了。"',
@@ -104,6 +128,10 @@ export function chatNpc(npc: NpcDefinition): ActionResult {
       );
     }
   }
+
+  // ── 对话彩蛋：敖广 ↔ 崔珏 串联 ──
+  const crossLine = _checkCrossNpcDialogue(npc.id);
+  if (crossLine) return crossLine;
 
   const line = randomDialogue(npc);
   return { type: 'log', message: `【${npc.title}】${npc.name}：「${line}」` };
@@ -310,4 +338,58 @@ function tryTriggerGuanyin(location: string, npcId: string): ActionResult | null
     type: 'log',
     message: `试卦之时，一位白衣女子站在你身旁。\n观音开口道：「${dialogue}」${extra}`,
   };
+}
+
+// ── 跨NPC对话彩蛋：敖广 ↔ 崔珏 串联 ──
+const CROSS_DIALOGUE_CHAINS: Record<string, { triggerNpcId: string; checkKey: string; flagKey: string; line: string; notify?: { npcId: string; msg: string } }> = {
+  // 敖广提及崔珏 → 崔珏解锁隐藏对话
+  'donghai_aoguang_reveal': {
+    triggerNpcId: 'donghai_aoguang',
+    checkKey: 'aoguang_talks',
+    flagKey: 'aoguang_mentioned_cuijue',
+    line: '"那魏征在人间斩了泾河龙王，龙王魂魄到了地府找崔珏评理……咳咳，这事我不便多说。你若有机会见着崔判官，问问他泾河龙王的事。"',
+    notify: { npcId: 'diyu_cuijue', msg: '崔珏似乎感知到远处有人提及他……' },
+  },
+  // 崔珏回应敖广提问
+  'diyu_cuijue_reply': {
+    triggerNpcId: 'diyu_cuijue',
+    checkKey: 'cuijue_talks',
+    flagKey: 'cuijue_answered_aoguang',
+    line: '"泾河龙王的事……"崔珏沉默良久，"他确实是被人算计的。那个叫袁守城的术士算出了降雨时辰，故意让他触犯天条。魏征不过是递刀的人。"他抬头看了看天，"东海那位应该也知道真相，只不过不便明说。这枚龙鳞，你拿回去还给敖广吧。"',
+  },
+};
+
+function _checkCrossNpcDialogue(npcId: string): ActionResult | null {
+  const npcStore = useNpcStore.getState();
+  const gameStore = useGameStore.getState();
+
+  for (const [chainId, chain] of Object.entries(CROSS_DIALOGUE_CHAINS)) {
+    if (chain.triggerNpcId !== npcId) continue;
+    if (npcStore.explorationFlags[chain.flagKey]) continue; // already triggered
+
+    const cur = parseInt(npcStore.explorationFlags[chain.checkKey] as any || '0', 10) + 1;
+    npcStore.setExplorationFlag(chain.checkKey);
+    (npcStore.explorationFlags as any)[chain.checkKey] = String(cur);
+
+    // 敖广链：对话≥5次触发；崔珏链：需敖广已提及
+    if (chainId === 'donghai_aoguang_reveal' && cur < 5) continue;
+    if (chainId === 'diyu_cuijue_reply' && !npcStore.explorationFlags['aoguang_mentioned_cuijue'] && cur < 3) continue;
+
+    // 触发！
+    npcStore.setExplorationFlag(chain.flagKey);
+    (npcStore.explorationFlags as any)[chain.flagKey] = '1';
+
+    if (chain.notify) {
+      gameStore.addGameLog(`\n${chain.notify.msg}`);
+    }
+
+    const npc = _getNpcById(npcId);
+    const name = npc?.name ?? '???'; const title = npc?.title ?? 'NPC';
+    return { type: 'log', message: `【${title}】${name}：「${chain.line}」` };
+  }
+  return null;
+}
+
+function _getNpcById(npcId: string): NpcDefinition | undefined {
+  return NPCS.find(n => n.id === npcId);
 }

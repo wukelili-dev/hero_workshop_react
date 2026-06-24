@@ -10,7 +10,7 @@ import { getNpcsByMap, hasNpcs, NPCS } from '../../data/npcs';
 import type { NpcDefinition } from '../../types';
 import {
   greetNpc, chatNpc, inspectNpc, buyNpcTradeItem,
-  challengeNpc, giftNpc, stealNpc,
+  challengeNpc, giftNpc, stealNpc, isNpcUnlocked,
 } from '../../engine/NpcSystem';
 import {
   FaCommentDots, FaShop, FaSkullCrossbones, FaMagnifyingGlass,
@@ -284,10 +284,7 @@ export const NpcPanel: React.FC<NpcPanelProps> = ({ mapId }) => {
   const liuerNpc = NPCS.find(n => n.id === 'huaguo_liuermihou');
   const regularNpcs = getNpcsByMap(mapId).filter(n => {
     if (n.id === 'huaguo_liuermihou') return false;
-    // 剧情锁：魏征 / 唐王 / 玄奘 需对应事件解锁才显示
-    if (n.id === 'changan_weizheng') return !!explorationFlags['weizheng_unlocked'];
-    if (n.id === 'changan_tangwang') return !!explorationFlags['tangwang_unlocked'];
-    if (n.id === 'changan_xuanzang') return !!explorationFlags['xuanzang_unlocked'];
+    if (n.unlockCondition) return isNpcUnlocked(n);
     return true;
   });
   const isLiuerRevealed = explorationFlags['liuermi_explored'] ?? false;
