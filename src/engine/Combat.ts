@@ -45,16 +45,6 @@ export function calculateDamage(attackerATK: number, defenderDEF: number, isCrit
   return Math.max(1, Math.floor(dmg));
 }
 
-/** 根据击杀的怪物名获取善恶变化值 */
-function _moralDeltaFromKill(monster: Monster): number {
-  const name = monster.name;
-  // 妖族（被杀）：善恶+，人族（被杀）：善恶-，仙族：轻微-
-  if (/蛇|狐|虎|狼|蝎|蝠|猴妖|蛛|蛊|猪精|龟|虾|蟹|鱼|鳖|蛙|蟾/.test(name)) return 10;
-  if (/唐兵|衙役|捕快|刺客|强盗|赌鬼|酒鬼|好色僧人|风流剑客/.test(name)) return -20;
-  if (/巡海夜叉|龟丞相|河神|土地|山神|判官|二郎|哪吒/.test(name)) return -5;
-  return 0;
-}
-
 /** 根据派系亲和度计算英雄对怪物的伤害加成倍率 */
 function _factionMultiplier(monster: Monster): number {
   const factions = useGameStore.getState().factions;
@@ -139,13 +129,6 @@ export function executeBattle(
   
   const victory = monsterCurrentHP <= 0;
 
-  // 击杀后更新善恶值（仅在胜利时）
-  if (victory) {
-    const delta = _moralDeltaFromKill(monster);
-    if (delta !== 0) {
-      useGameStore.getState().changeMoral(delta);
-    }
-  }
   
   // 计算奖励
   const rewards: Rewards = {
