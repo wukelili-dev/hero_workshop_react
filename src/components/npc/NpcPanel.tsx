@@ -2,7 +2,7 @@
  * NpcPanel — NPC 展开式交互面板
  * 显示当前地图的 NPC 列表，点击展开操作面板
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../../store/useGameStore';
 import { useNpcStore } from '../../store/useNpcStore';
@@ -43,6 +43,7 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
 
   const isExpanded = expandedNpcId === npc.id;
   const inst = instances[npc.id];
+  const [showBestiary, setShowBestiary] = useState(false);
 
   const handleToggle = () => {
     if (!inst) initMapNpcs(npc.location);
@@ -188,7 +189,32 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
                   disabled={hero.hp <= 0}
                   onClick={doSteal}
                 />
+                {/* 图鉴按钮 */}
+                {npc.bestiary && (
+                  <button
+                    onClick={() => setShowBestiary(!showBestiary)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-medium transition-all bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200"
+                  >
+                    <span className="text-[10px]">📖</span>
+                    图鉴
+                  </button>
+                )}
               </div>
+
+              {/* 图鉴展开卡片 */}
+              {showBestiary && npc.bestiary && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs space-y-1.5">
+                  <div className="font-bold text-amber-900 text-sm">📜 {npc.name} · 图鉴</div>
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                    <div><span className="text-amber-600">派系：</span>{npc.type === 'human' ? '👤 人族' : ['demon','yaozu'].includes(npc.type) ? '👹 妖族' : '✨ 仙族'}</div>
+                    <div><span className="text-amber-600">位置：</span>{npc.location}</div>
+                    <div><span className="text-amber-600">出自：</span>{npc.bestiary.source}</div>
+                    <div><span className="text-amber-600">时代：</span>{npc.bestiary.era}</div>
+                  </div>
+                  <div className="text-amber-900 leading-relaxed pt-1 border-t border-amber-200">{npc.bestiary.notes}</div>
+                  <button onClick={()=>setShowBestiary(false)} className="text-amber-400 hover:text-amber-600 text-xs">✕ 收起图鉴</button>
+                </div>
+              )}
 
               {/* ── 挑战按钮（独立一行，更显眼） ── */}
               {hasStats && (
