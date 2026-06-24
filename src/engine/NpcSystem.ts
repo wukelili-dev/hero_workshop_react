@@ -84,6 +84,19 @@ export function greetNpc(npc: NpcDefinition): ActionResult {
     return { type: 'log', message: `【${npc.title}】${npc.name}：「${line}」` };
   }
 
+  // 泾河龙王冤案彩蛋 — 必须持有三件信物
+  const longwangFlagKey = 'jinghe_unlocked';
+  const flags = useNpcStore.getState().explorationFlags ?? {};
+  if (npc.id === 'changan_fortune' && !flags[longwangFlagKey]) {
+    const backpack = useGameStore.getState().hero?.backpack ?? [];
+    const names = new Set((backpack as any[]).map((i: any) => i.name));
+    if (names.has('占卜铜钱') && names.has('斩龙剑柄碎片') && names.has('泾河令牌')) {
+      useNpcStore.getState().setExplorationFlag(longwangFlagKey);
+      useGameStore.getState().addGameLog('🏆 彩蛋「泾河龙王冤案」触发！三件信物凑齐，龙王冤魂现身。');
+      return { type: 'log', message: '（袁守城手中铜钱尽数碎裂）三件信物……你凑齐了。龙王之冤，天不可瞒！' };
+    }
+  }
+
   store.recordInteraction(npc.id);
 
   // 记录袁守城对话次数
