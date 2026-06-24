@@ -369,6 +369,7 @@ export const CenterPanel: React.FC = () => {
         <div className="flex items-center gap-2 mb-2">
           <span className="text-lg">🧙</span>
           <span className="font-bold text-gray-900">{hero.name}</span>
+          {(() => { const t = useGameStore((s) => s.getMoralTitle)?.(); return t === '至圣' ? <span className="text-yellow-400 font-bold ml-1">✨ 至圣</span> : t === '魔王' ? <span className="text-red-500 font-bold ml-1">💀 魔王</span> : null; })()}
           <span className="text-sm text-blue-600 font-bold">Lv.{hero.level}</span>
         </div>
         <div className="space-y-0.5 text-sm">

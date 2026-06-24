@@ -37,6 +37,13 @@ interface NpcState {
   resetNpcs: () => void;
   /** 设置探索标记 */
   setExplorationFlag: (key: string) => void;
+  /** 偷窃失败计数 */
+  stealFailCounts: Record<string, number>;
+  incrementStealFail: (npcId: string) => void;
+  resetStealFails: (npcId: string) => void;
+  /** 赏金猎人击败次数 */
+  bountyWins: number;
+  setBountyWins: (n: number) => void;
 }
 
 function makeInstance(npcId: string): NpcInstance {
@@ -124,4 +131,23 @@ export const useNpcStore = create<NpcState>((set, get) => ({
   resetNpcs: () => {
     set({ instances: {}, expandedNpcId: null, explorationFlags: {} });
   },
+
+  stealFailCounts: {},
+  incrementStealFail: (npcId) => {
+    set((s) => {
+      const counts = { ...(s.stealFailCounts ?? {}) };
+      counts[npcId] = (counts[npcId] ?? 0) + 1;
+      return { stealFailCounts: counts };
+    });
+  },
+  resetStealFails: (npcId) => {
+    set((s) => {
+      const counts = { ...(s.stealFailCounts ?? {}) };
+      delete counts[npcId];
+      return { stealFailCounts: counts };
+    });
+  },
+
+  bountyWins: 0,
+  setBountyWins: (n) => set({ bountyWins: n }),
 }));

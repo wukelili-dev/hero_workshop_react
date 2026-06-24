@@ -273,6 +273,16 @@ export function challengeNpc(npc: NpcDefinition): ActionResult {
 
     let msg = npc.challengeReward.message;
 
+    // 赏金猎人认可彩蛋
+    if (npc.id === 'changan_biaotou') {
+      const wins = (npcStore.bountyWins ?? 0) + 1;
+      npcStore.setBountyWins(wins);
+      if (wins >= 3 && !npcStore.explorationFlags?.['bounty_approved']) {
+        npcStore.setExplorationFlag('bounty_approved');
+        state.addGameLog('🏆 彩蛋「赏金猎人认可」！赵镖头承认你更强，野图BOSS额外+5%掉落率。');
+      }
+    }
+
     // 首次击败名角 NPC → 掉落专属神装
     if (isFirstDefeat && npc.uniqueDrop) {
       const inv = useInventoryStore.getState();
@@ -344,6 +354,19 @@ export function stealNpc(
 
   // 2. 失败 → 战斗
   if (!success) {
+    // 神秘老者偷窃失败计数 → 彩蛋
+    if (npc.id === 'changan_mysterious') {
+      const npcStore = useNpcStore.getState();
+      npcStore.incrementStealFail(npc.id);
+      const failCount = npcStore.stealFailCounts?.[npc.id] ?? 0;
+      if (failCount >= 3 && npc.personalItem) {
+        const inv = useInventoryStore.getState();
+        inv.addNovelty(npc.personalItem.name, 1);
+        state.addGameLog('🏆 彩蛋「天机不可泄露」！神秘老者认输，赠予天机残卷。');
+        npcStore.resetStealFails(npc.id);
+        return { success: true, item: npc.personalItem, goldBonus: 0, stealRate };
+      }
+    }
     state.changeMoral(-15);
     state.addGameLog(`偷窃${npc.name}失败（成功率 ${(stealRate*100).toFixed(1)}%），进入战斗！善恶值 -15`);
     onBattle?.(npc);

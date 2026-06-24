@@ -99,6 +99,7 @@ interface GameActions {
   setAutoBattle: (v: boolean) => void;
   changeMoral: (delta: number) => void;
   getMoralLevel: () => MoralLevel;
+  getMoralTitle: () => string | null;
 }
 
 // 中文材料名store resources key 映射
@@ -427,6 +428,13 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     if (v <= -60) return 'demon';
     if (v <= -30) return 'evil';
     return 'neutral';
+  },
+
+  getMoralTitle: (): string | null => {
+    const v = get().hero.moralValue;
+    if (v >= 99) return '至圣';
+    if (v <= -99) return '魔王';
+    return null;
   },
 
   addBuilding: (name) => set((s) => {
