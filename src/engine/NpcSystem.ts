@@ -2,24 +2,51 @@
  * NpcSystem — NPC 交互逻辑
  * 交易/挑战/对话/送礼/偷窃 返回 action 结果
  */
-import type { NpcDefinition } from '../types';
+import type { NpcDefinition, NpcPersonalItem } from '../types';
 import { useGameStore } from '../store/useGameStore';
 import { useNpcStore } from '../store/useNpcStore';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { randomGreeting, randomDialogue, NPCS } from '../data/npcs';
+
+// ── 偷窃结果类型 ──
+export interface StealResult {
+  success: boolean;
+  item: NpcPersonalItem | null;
+  goldBonus: number;
+  stealRate: number;
+}
 
 type ActionResult =
   | { type: 'log'; message: string }
   | { type: 'trade'; items: { label: string; price: number; action: () => boolean }[] }
   | { type: 'battle_result'; victory: boolean; message: string; exp: number; gold: number };
 
-const STEAL_RULES: Record<string, { successRate: number; failDamage: number; failDialogue: string }> = {
-  '*': { successRate: 0.55, failDamage: 5, failDialogue: '你刚伸手就被发现了，只好讪讪缩回手。' },
-  challenger: { successRate: 0.3, failDamage: 25, failDialogue: '对方一把扣住你的手腕，力道大得你龇牙咧嘴！' },
-  donghai_dragon_king: { successRate: 0.1, failDamage: 80, failDialogue: '敖广龙目微睁，一股无形龙威将你震退三步！' },
-  difu_judge: { successRate: 0.15, failDamage: 60, failDialogue: '崔珏头也不抬，笔尖在生死簿上轻轻一敲——你顿觉魂魄不稳，急忙收手。' },
-  changan_fortune: { successRate: 0.2, failDamage: 40, failDialogue: '袁守城微微一笑："卦象说你今日有血光之灾——你看，这不就应了？"' },
-};
+const STEAL_FAIL_DAMAGE = 0; // 失败不再扣血，直接进战斗
+
+/** 根据 NPC id 前缀或特征推断阵营 */
+function _npcFaction(npc: NpcDefinition): 'human' | 'demon' | 'divine' {
+  if (npc.id.startsWith('yaozu_')) return 'demon';
+  if (npc.id.startsWith('xianzu_')) return 'divine';
+  // 按已知 NPC id 手动映射
+  const map: Record<string, 'human' | 'demon' | 'divine'> = {
+    'donghai_aoguang': 'divine',
+    'huaguo_tongbei': 'demon',
+    'huaguo_liuermihou': 'demon',
+    'wanshou_zhenyuan': 'divine',
+    'diyu_cuijue': 'divine',
+    'gaolao_gaotaigong': 'human',
+    'wuzhuangguan_qingfeng': 'divine',
+    'changan_guanyin': 'divine',
+    'tianting_nezha': 'divine',
+    'tianting_taibai': 'divine',
+    'difu_yanluo': 'divine',
+    'lishan_laomu': 'divine',
+    'erlang_erlangshen': 'divine',
+    'pangu': 'divine',
+    'taishang_laojun': 'divine',
+  };
+  return map[npc.id] ?? 'human';
+}
 
 const GIFT_REWARDS: Record<string, { minGold: number; returnGold: number; item: string; dialogue: string }> = {
   '*': { minGold: 50, returnGold: 0, item: '', dialogue: '无功不受禄——不过既然你诚心，这个你拿着！' },
@@ -204,6 +231,13 @@ export function challengeNpc(npc: NpcDefinition): ActionResult {
     state.addGold(npc.challengeReward.gold);
     state.addExp(npc.challengeReward.exp);
 
+    // 善恶值变化
+    const faction = _npcFaction(npc);
+    const moralDelta = faction === 'human' ? -20 : faction === 'demon' ? 10 : -5;
+    const moralLabel = faction === 'human' ? '击败人族' : faction === 'demon' ? '击败妖族' : '击败仙族';
+    state.changeMoral(moralDelta);
+    const moralSign = moralDelta >= 0 ? '+' : '';
+
     let msg = npc.challengeReward.message;
 
     // 首次击败名角 NPC → 掉落专属神装
@@ -259,33 +293,54 @@ export function giftNpc(npc: NpcDefinition): ActionResult {
   return { type: 'log', message: `你恭敬地奉上 ${rule.minGold} 两银子。\n【${npc.title}】${npc.name}：「${line}」${extra}` };
 }
 
-/** 玩家偷窃 */
-export function stealNpc(npc: NpcDefinition): ActionResult {
+/** 玩家偷窃 — 重构：偷随身物品，极低成功率，善恶值联动 */
+export function stealNpc(
+  npc: NpcDefinition,
+  onBattle?: (npc: NpcDefinition) => void,
+): StealResult {
   const state = useGameStore.getState();
   const hero = state.hero;
 
-  // 确定偷窃规则：优先精确匹配，再按 type 匹配，最后用 *
-  let rule = STEAL_RULES[npc.id];
-  if (!rule) rule = STEAL_RULES[npc.type];
-  if (!rule) rule = STEAL_RULES['*'];
-
+  // 1. 成功率计算（仅基于等级，无 dex 字段）
+  const stealRate = Math.min(
+    0.05 + hero.level * 0.008,
+    0.20
+  );
   const roll = Math.random();
-  const success = roll < rule.successRate;
+  const success = roll < stealRate;
 
-  useNpcStore.getState().recordInteraction(npc.id);
-
-  if (success) {
-    const stolenGold = Math.floor(20 + Math.random() * 50 + (npc.challengeStats?.hp ?? 0) * 0.1);
-    state.addGold(stolenGold);
-    const msg = `你趁${npc.name}不备，摸走了 ${stolenGold} 两银子！`;
-    state.addGameLog(msg);
-    return { type: 'log', message: msg };
-  } else {
-    if (rule.failDamage > 0) {
-      state.setHero({ hp: Math.max(0, hero.hp - rule.failDamage) });
-    }
-    return { type: 'log', message: rule.failDialogue };
+  // 2. 失败 → 战斗
+  if (!success) {
+    state.changeMoral(-15);
+    state.addGameLog(`偷窃${npc.name}失败（成功率 ${(stealRate*100).toFixed(1)}%），进入战斗！善恶值 -15`);
+    onBattle?.(npc);
+    return { success: false, item: null, goldBonus: 0, stealRate };
   }
+
+  // 3. 成功 → 偷到物品
+  const item = npc.personalItem ?? null;
+  const goldChance = npc.stealGoldChance ?? 0.2;
+  const goldMin = npc.stealGoldMin ?? 5;
+  const goldMax = npc.stealGoldMax ?? 20;
+  const goldBonus = Math.random() < goldChance
+    ? Math.floor(Math.random() * (goldMax - goldMin + 1)) + goldMin
+    : 0;
+
+  state.changeMoral(-15);
+  state.addGameLog(
+    `成功偷窃${npc.name}${item ? '，获得 ' + item.icon + item.name : ''}${goldBonus > 0 ? ' +' + goldBonus + 'G' : ''}`
+  );
+
+  // 奖励：物品进入背包，金币直接加
+  if (item) {
+    const inv = useInventoryStore.getState();
+    inv.addNovelty(item.name, 1);
+  }
+  if (goldBonus > 0) {
+    state.addGold(goldBonus);
+  }
+
+  return { success: true, item, goldBonus, stealRate };
 }
 
 /** 观音随机事件 */
