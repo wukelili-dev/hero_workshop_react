@@ -11,6 +11,7 @@ import type { NpcDefinition } from '../../types';
 import {
   greetNpc, chatNpc, inspectNpc, buyNpcTradeItem,
   challengeNpc, giftNpc, stealNpc, isNpcUnlocked,
+  type StealResult,
 } from '../../engine/NpcSystem';
 import {
   FaCommentDots, FaShop, FaSkullCrossbones, FaMagnifyingGlass,
@@ -79,9 +80,20 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
   };
 
   const doSteal = () => {
-    const r = stealNpc(npc);
-    if (r.type === 'log') addGameLog(r.message);
+    const result: StealResult = stealNpc(npc, () => doChallenge());
+    if (result.success) {
+      const parts: string[] = [];
+      if (result.item) parts.push(`获得 ${result.item.icon}${result.item.name}`);
+      if (result.goldBonus > 0) parts.push(`+${result.goldBonus}G`);
+      addGameLog(`🫳 偷窃成功！${parts.join('，')}（善恶值 -15）`);
+    }
+    // 失败由 stealNpc 内部触发 onBattle
   };
+
+  const stealRateDisplay = (() => {
+    const rate = Math.min(0.05 + (hero.level ?? 1) * 0.008, 0.20);
+    return (rate * 100).toFixed(1);
+  })();
 
   const hasTrades = (npc.tradeItems?.length ?? 0) > 0;
   const hasStats = npc.challengeStats != null;
@@ -171,7 +183,7 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
                 />
                 <ActionButton
                   icon={<FaHandSparkles />}
-                  label="偷窃"
+                  label={`偷窃(${stealRateDisplay}%)`}
                   color="rose"
                   disabled={hero.hp <= 0}
                   onClick={doSteal}
