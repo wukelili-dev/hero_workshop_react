@@ -61,6 +61,7 @@ export const MONSTERS: Record<string, Monster> = {
 
 // 地图数据
 export const MAPS: GameMap[] = [
+  { id: 'changan', name: '长安', minLevel: 0, unlockCost: 0, monsters: [], boss: MONSTERS['蝴蝶'], description: '大唐国都，天下繁华之所', isCity: true },
   { id: 'aolai', name: '傲来国', minLevel: 1, unlockCost: 0, monsters: [MONSTERS['蝴蝶'], MONSTERS['鹦鹉'], MONSTERS['龙虾'], MONSTERS['巨蟹']], boss: MONSTERS['九头精怪'] },
   { id: 'datangdong', name: '大唐东', minLevel: 11, unlockCost: 500, monsters: [MONSTERS['太监'], MONSTERS['失控的银甲唐兵'], MONSTERS['失控的金甲唐兵'], MONSTERS['唐兵统领']], boss: MONSTERS['千年蛇魅'] },
   { id: 'yangguan', name: '阳关', minLevel: 15, unlockCost: 1000, monsters: [MONSTERS['突厥弩手'], MONSTERS['波斯女刀客']], boss: MONSTERS['突厥弩王'] },

@@ -315,6 +315,9 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       // 递增击杀数
       set((s) => ({ hero: { ...s.hero, kills: s.hero.kills + 1 } }));
       
+      // 记录地图战斗次数
+      get().incrementMapBattles(get().currentMapId);
+
       // 自动药水（战胜后血量低于阈值时自动买药+喝药）
       _autoPotionIfNeeded();
     } else {
@@ -326,6 +329,12 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       _autoPotionIfNeeded();
     }
     return result;
+  },
+
+  incrementMapBattles: (mapId) => {
+    set((s) => ({
+      mapBattles: { ...(s.mapBattles ?? {}), [mapId]: ((s.mapBattles ?? {})[mapId] ?? 0) + 1 },
+    }));
   },
 
   buyPotion: () => {

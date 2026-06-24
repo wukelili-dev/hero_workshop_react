@@ -14,7 +14,7 @@ export const RARITY_COLOR: Record<Rarity, string> = {
 };
 
 // ── 装备 ──
-export type EquipmentType = 'weapon' | 'armor';
+export type EquipmentType = 'weapon' | 'armor' | 'accessory' | 'consumable';
 
 export interface Equipment {
   id: string;
@@ -212,6 +212,67 @@ export interface GameMap {
   boss: Monster;
   unlockCost: number;
   bgColor?: string;
+  /** 是否为城市地图（无怪物，显示 NPC） */
+  isCity?: boolean;
+}
+
+// ── NPC 系统 ──
+export type NpcType = 'merchant' | 'challenger' | 'flavor';
+
+/** 名角专属掉落：击败后获得一件隐藏神装 */
+export interface NpcUniqueDrop {
+  /** 获得时的文案 */
+  message: string;
+  /** 掉落的装备（含完整 stats） */
+  equipment: Equipment;
+}
+
+/** NPC 静态定义（from data/npcs.ts） */
+export interface NpcDefinition {
+  id: string;
+  name: string;
+  title: string;               // "铁匠铺掌柜"
+  type: NpcType;
+  location: string;             // map ID
+  description: string;
+  avatarEmoji: string;          // "🔨"
+  greetings: string[];          // 随机选取一句作为首次对话
+
+  /** 商人：可售卖的物品列表 */
+  tradeItems?: NpcTradeItem[];
+
+  /** 挑战者：战斗属性 */
+  challengeStats?: { hp: number; atk: number; def: number };
+  /** 挑战者：胜利奖励 */
+  challengeReward?: { exp: number; gold: number; message: string };
+
+  /** 名角专属掉落：击败后获得一件隐藏神装（仅首次胜利掉落） */
+  uniqueDrop?: NpcUniqueDrop;
+
+  /** 闲聊对话池 */
+  chatDialogues?: string[];
+}
+
+export interface NpcTradeItem {
+  label: string;                // 显示名
+  type: 'equipment' | 'potion' | 'material' | 'novelty';
+  price: number;
+  /** 如果是材料，对应资源 key */
+  resourceKey?: string;
+  /** 如果是药水，购买时触发的数量 */
+  potionCount?: number;
+  /** 对话前缀 */
+  dialogue?: string;
+}
+
+/** NPC 运行时实例状态 */
+export interface NpcInstance {
+  npcId: string;
+  state: 'idle' | 'defeated';
+  defeatedCount: number;
+  lastInteractedAt: number;
+  /** 是否已听过问候语 */
+  greeted: boolean;
 }
 
 // ── 酒馆 ──

@@ -6,6 +6,7 @@ import { useGameStore, startBuildingTimer } from '../store/useGameStore';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useRanchStore } from '../store/useRanchStore';
 import { useFactoryStore } from '../store/useFactoryStore';
+import { useNpcStore } from '../store/useNpcStore';
 
 const SAVE_KEY = 'hero_workshop_save_v1';
 
@@ -25,6 +26,8 @@ export function saveGame(): boolean {
     const ranchState = useRanchStore.getState();
     const factoryState = useFactoryStore.getState();
 
+    const npcState = useNpcStore.getState();
+
     const saveData = {
       version: 'v2',
       timestamp: Date.now(),
@@ -41,6 +44,8 @@ export function saveGame(): boolean {
       discoveredCreatures: gameState.discoveredCreatures,
       // 建筑统计
       buildings: gameState.buildings,
+      // NPC 状态
+      npcInstances: npcState.instances,
       inventory: {
         weapons: invState.weapons,
         armors: invState.armors,
@@ -89,6 +94,11 @@ export function loadGame(): boolean {
 
     // v2 新增字段
     if (data.farmPlots) gameStore.setFarmPlots(data.farmPlots);
+
+    // NPC 状态
+    if (data.npcInstances) {
+      useNpcStore.setState({ instances: data.npcInstances });
+    }
 
     // 图鉴数据
     if (data.discoveredMonsters) {
