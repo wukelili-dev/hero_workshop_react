@@ -213,28 +213,40 @@ export function buyNpcTradeItem(npc: NpcDefinition, itemIdx: number): ActionResu
   if (!item) return { type: 'log', message: '无可购买之物。' };
 
   const state = useGameStore.getState();
-  const price = item.price;
-  if (state.hero.gold < price) {
+  const npcStore = useNpcStore.getState();
+
+  // 亲密度折扣
+  const discount = npcStore.getAffinityDiscount(npc.id);
+  const actualPrice = Math.ceil(item.price * discount);
+
+  if (state.hero.gold < actualPrice) {
     return { type: 'log', message: '你囊中羞涩，只好作罢。' };
   }
 
-  state.addGold(-price);
+  // 金币流动：玩家 → NPC
+  state.addGold(-actualPrice);
+  npcStore.modifyNpcGold(npc.id, actualPrice);
+  npcStore.modifyNpcAffinity(npc.id, 1);
+
   const dialogue = item.dialogue ?? '一手交钱一手交货。';
+  const discountNote = discount < 1 ? `（亲密度折扣：${Math.round((1-discount)*100)}%OFF，实付${actualPrice}G）` : '';
+
+  const costMsg = `花费 ${actualPrice} 金币${discountNote}`;
 
   if (item.type === 'potion') {
     const count = item.potionCount ?? 1;
     state.setHero({ potions: (state.hero.potions ?? 0) + count });
-    state.addGameLog(`从${npc.name}处购得 ${item.label}，花费 ${price} 金币`);
+    state.addGameLog(`从${npc.name}处购得 ${item.label}，${costMsg}`);
     return { type: 'log', message: `【${npc.title}】${npc.name}：「${dialogue}」` };
   }
 
   if (item.type === 'material' && item.resourceKey) {
     state.addResource(item.resourceKey, 10);
-    state.addGameLog(`从${npc.name}处购得 ${item.label}，花费 ${price} 金币`);
+    state.addGameLog(`从${npc.name}处购得 ${item.label}，${costMsg}`);
     return { type: 'log', message: `【${npc.title}】${npc.name}：「${dialogue}」` };
   }
 
-  state.addGameLog(`从${npc.name}处购得 ${item.label}，花费 ${price} 金币`);
+  state.addGameLog(`从${npc.name}处购得 ${item.label}，${costMsg}`);
   return { type: 'log', message: `【${npc.title}】${npc.name}：「${dialogue}」` };
 }
 
@@ -261,8 +273,17 @@ export function challengeNpc(npc: NpcDefinition): ActionResult {
     const isFirstDefeat = !inst || inst.defeatedCount === 0;
 
     npcStore.setDefeated(npc.id);
-    state.addGold(npc.challengeReward.gold);
+    // 挑战奖励金币从NPC钱包扣除
+    const rewardGold = npc.challengeReward.gold;
+    const npcBalance = npcStore.getNpcGold(npc.id);
+    const actualReward = Math.min(rewardGold, npcBalance);
+    state.addGold(actualReward);
+    npcStore.modifyNpcGold(npc.id, -actualReward);
+    if (actualReward < rewardGold) {
+      state.addGameLog(`${npc.name}的荷包不够鼓，只付了 ${actualReward}G（本应 ${rewardGold}G）。`);
+    }
     state.addExp(npc.challengeReward.exp);
+    npcStore.modifyNpcAffinity(npc.id, -15);
 
     // 善恶值变化
     const faction = _npcFaction(npc);
@@ -316,6 +337,7 @@ export function challengeNpc(npc: NpcDefinition): ActionResult {
 export function giftNpc(npc: NpcDefinition): ActionResult {
   const state = useGameStore.getState();
   const hero = state.hero;
+  const npcStore = useNpcStore.getState();
   const npcId = npc.id;
 
   // 查找匹配的送礼规则
@@ -326,14 +348,20 @@ export function giftNpc(npc: NpcDefinition): ActionResult {
     return { type: 'log', message: `你摸了摸口袋——没有 ${rule.minGold} 金，这点小钱拿不出手。` };
   }
 
+  // 金币流向：玩家 → NPC 钱包
   state.addGold(-rule.minGold);
+  npcStore.modifyNpcGold(npc.id, rule.minGold);
+  // 亲密度：每100G +1
+  const affinityGain = Math.max(1, Math.floor(rule.minGold / 100));
+  npcStore.modifyNpcAffinity(npc.id, affinityGain);
+
   if (rule.returnGold > 0) state.addGold(rule.returnGold);
   if (rule.item) state.addGameLog(`收到 ${rule.item}`);
 
   const line = rule.dialogue;
-  useNpcStore.getState().recordInteraction(npc.id);
+  npcStore.recordInteraction(npc.id);
   const extra = rule.item ? `\n（获得 ${rule.item}）` : '';
-  return { type: 'log', message: `你恭敬地奉上 ${rule.minGold} 两银子。\n【${npc.title}】${npc.name}：「${line}」${extra}` };
+  return { type: 'log', message: `你恭敬地奉上 ${rule.minGold} 两银子。${npc.name}荷包鼓了 ${rule.minGold}G❤️+${affinityGain}\n【${npc.title}】${npc.name}：「${line}」${extra}` };
 }
 
 /** 玩家偷窃 — 重构：偷随身物品，极低成功率，善恶值联动 */
@@ -351,6 +379,7 @@ export function stealNpc(
   );
   const roll = Math.random();
   const success = roll < stealRate;
+  const npcStore = useNpcStore.getState();
 
   // 2. 失败 → 战斗
   if (!success) {
@@ -368,32 +397,37 @@ export function stealNpc(
       }
     }
     state.changeMoral(-15);
-    state.addGameLog(`偷窃${npc.name}失败（成功率 ${(stealRate*100).toFixed(1)}%），进入战斗！善恶值 -15`);
+    npcStore.modifyNpcAffinity(npc.id, -10);
+    state.addGameLog(`偷窃${npc.name}失败（成功率 ${(stealRate*100).toFixed(1)}%），进入战斗！善恶值 -15，亲密度 -10`);
     onBattle?.(npc);
     return { success: false, item: null, goldBonus: 0, stealRate };
   }
 
-  // 3. 成功 → 偷到物品
+  // 3. 成功 → 偷到物品 + NPC钱包里的金币
   const item = npc.personalItem ?? null;
-  const goldChance = npc.stealGoldChance ?? 0.2;
-  const goldMin = npc.stealGoldMin ?? 5;
-  const goldMax = npc.stealGoldMax ?? 20;
-  const goldBonus = Math.random() < goldChance
-    ? Math.floor(Math.random() * (goldMax - goldMin + 1)) + goldMin
+  // 从NPC钱包窃取金币（最多偷钱包余额的30%或500G，取较小值）
+  const npcWallet = npcStore.getNpcGold(npc.id);
+  const stealGoldMax = Math.min(Math.floor(npcWallet * 0.3), 500);
+  const goldBonus = stealGoldMax > 0
+    ? Math.floor(Math.random() * stealGoldMax) + 1
     : 0;
+  if (goldBonus > 0) {
+    npcStore.modifyNpcGold(npc.id, -goldBonus);
+    state.addGold(goldBonus);
+  }
+
+  // 亲密度下降
+  npcStore.modifyNpcAffinity(npc.id, -20);
 
   state.changeMoral(-15);
   state.addGameLog(
-    `成功偷窃${npc.name}${item ? '，获得 ' + item.icon + item.name : ''}${goldBonus > 0 ? ' +' + goldBonus + 'G' : ''}`
+    `🫳 成功偷窃${npc.name}${item ? '，获得 ' + item.icon + item.name : ''}${goldBonus > 0 ? ' +' + goldBonus + 'G' : '（钱包空空）'}`
   );
 
-  // 奖励：物品进入背包，金币直接加
+  // 奖励：物品进入背包
   if (item) {
     const inv = useInventoryStore.getState();
     inv.addNovelty(item.name, 1);
-  }
-  if (goldBonus > 0) {
-    state.addGold(goldBonus);
   }
 
   return { success: true, item, goldBonus, stealRate };

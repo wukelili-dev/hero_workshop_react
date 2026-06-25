@@ -15,6 +15,7 @@ export const NPCS: NpcDefinition[] = [
     title: '铁匠铺掌柜',
     type: 'merchant',
     location: 'changan',
+    initialGold: 500,
     avatarEmoji: '\uD83D\uDD28',
     description: '铺子门口挂着一对铜环，"张记铁铺"的招牌被烟火熏得发亮。\n满墙挂的刀枪剑戟寒光闪闪。',
     greetings: [
@@ -46,6 +47,7 @@ export const NPCS: NpcDefinition[] = [
     title: '回春堂药铺掌柜',
     type: 'merchant',
     location: 'changan',
+    initialGold: 300,
     avatarEmoji: '\uD83C\uDF3F',
     description: '药铺里弥漫着淡淡的草药香，\n一排排药柜上贴着蝇头小楷写的药名。',
     greetings: [
@@ -77,6 +79,7 @@ export const NPCS: NpcDefinition[] = [
     title: '胡姬酒肆老板娘',
     type: 'merchant',
     location: 'changan',
+    initialGold: 200,
     avatarEmoji: '\uD83C\uDF77',
     description: '酒肆里传来琵琶声和西域歌舞，\n空气中飘着葡萄酒的甘醇和孜然的香气。',
     greetings: [
@@ -106,6 +109,7 @@ export const NPCS: NpcDefinition[] = [
     title: '龙门镖局总镖头',
     type: 'challenger',
     location: 'changan',
+    initialGold: 800,
     avatarEmoji: '\u2694\uFE0F',
     description: '一条八尺高的汉子，腰插雁翎刀，\n太阳穴高高鼓起，一看便是内外兼修的高手。',
     greetings: [
@@ -131,6 +135,7 @@ export const NPCS: NpcDefinition[] = [
     title: '长安城有名的卜卦先生',
     type: 'flavor',
     location: 'changan',
+    initialGold: 150,
     avatarEmoji: '\uD83D\uDD2E',
     description: '一个仙风道骨的老道，布幡上写着\n"袖藏乾坤，卦定生死"八个大字。',
     greetings: [
@@ -194,6 +199,7 @@ export const NPCS: NpcDefinition[] = [
     title: '大唐丞相，梦中斩龙之人',
     type: 'challenger',
     location: 'changan',
+    initialGold: 2000,
     avatarEmoji: '⚖️',
     description: '大唐丞相，铁面无私。\n曾于梦中受唐太宗之托，\n却不由自主拔剑斩了泾河龙王。',
     greetings: [
@@ -238,6 +244,7 @@ export const NPCS: NpcDefinition[] = [
     title: '大唐天子，水陆大会发起人',
     type: 'flavor',
     location: 'changan',
+    initialGold: 10000,
     avatarEmoji: '🏯',
     description: '大唐天子李世民，\n因泾河龙王索命而病倒入冥，\n还阳后开水陆大会超度亡灵。',
     greetings: [
@@ -267,6 +274,7 @@ export const NPCS: NpcDefinition[] = [
     title: '大唐御弟，水陆大会讲经法师',
     type: 'flavor',
     location: 'changan',
+    initialGold: 50,
     avatarEmoji: '🪷',
     description: '本是金山寺和尚，\n被唐太宗认作御弟，\n受命西去取经。\n（水陆大会事件完成后现身）',
     greetings: [

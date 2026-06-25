@@ -150,4 +150,73 @@ export const useNpcStore = create<NpcState>((set, get) => ({
 
   bountyWins: 0,
   setBountyWins: (n) => set({ bountyWins: n }),
-}));
+
+  // ── 金币系统 ──
+  getNpcGold: (npcId) => {
+    const inst = get().instances[npcId];
+    if (inst) return inst.gold;
+    const npcDef = NPCS.find(n => n.id === npcId);
+    return npcDef?.initialGold ?? 0;
+  },
+  modifyNpcGold: (npcId, delta) => {
+    const state = get();
+    const inst = state.instances[npcId];
+    if (!inst) {
+      const npcDef = NPCS.find(n => n.id === npcId);
+      const newInst = makeInstance(npcId);
+      const newGold = Math.max(0, newInst.gold + delta);
+      set((s) => ({ instances: { ...s.instances, [npcId]: { ...newInst, gold: newGold } } }));
+      return newGold;
+    }
+    const newGold = Math.max(0, inst.gold + delta);
+    set((s) => ({
+      instances: {
+        ...s.instances,
+        [npcId]: { ...inst, gold: newGold },
+      },
+    }));
+    return newGold;
+  },
+  setNpcGold: (npcId, amount) => {
+    const state = get();
+    const inst = state.instances[npcId];
+    if (!inst) {
+      const newInst = makeInstance(npcId);
+      set((s) => ({ instances: { ...s.instances, [npcId]: { ...newInst, gold: amount } } }));
+      return;
+    }
+    set((s) => ({ instances: { ...s.instances, [npcId]: { ...inst, gold: amount } } }));
+  },
+
+  // ── 亲密度系统 ──
+  getNpcAffinity: (npcId) => {
+    const inst = get().instances[npcId];
+    if (inst) return inst.affinity;
+    return 0;
+  },
+  modifyNpcAffinity: (npcId, delta) => {
+    const state = get();
+    const inst = state.instances[npcId];
+    if (!inst) {
+      const newInst = makeInstance(npcId);
+      const newAff = Math.max(0, Math.min(100, 0 + delta));
+      set((s) => ({ instances: { ...s.instances, [npcId]: { ...newInst, affinity: newAff } } }));
+      return;
+    }
+    const newAff = Math.max(0, Math.min(100, inst.affinity + delta));
+    set((s) => ({
+      instances: {
+        ...s.instances,
+        [npcId]: { ...inst, affinity: newAff },
+      },
+    }));
+  },
+  getAffinityDiscount: (npcId) => {
+    const aff = get().getNpcAffinity(npcId);
+    if (aff >= 100) return 0.50;
+    if (aff >= 80) return 0.70;
+    if (aff >= 50) return 0.80;
+    if (aff >= 20) return 0.90;
+    return 1.0;
+  },
+});

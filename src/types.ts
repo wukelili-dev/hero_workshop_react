@@ -319,6 +319,9 @@ export interface NpcDefinition {
 
   /** 图鉴（考据数据） */
   bestiary?: NpcBestiary;
+
+  /** 初始金币（用于NPC经济系统） */
+  initialGold?: number;
 }
 
 export interface NpcTradeItem {
@@ -341,6 +344,10 @@ export interface NpcInstance {
   lastInteractedAt: number;
   /** 是否已听过问候语 */
   greeted: boolean;
+  /** 运行时钱包余额（初始=initialGold） */
+  gold: number;
+  /** 亲密度 0~100 */
+  affinity: number;
 }
 
 // ── 酒馆 ──

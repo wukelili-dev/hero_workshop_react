@@ -40,6 +40,9 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
   const setExpanded = useNpcStore((s) => s.setExpanded);
   const instances = useNpcStore((s) => s.instances);
   const initMapNpcs = useNpcStore((s) => s.initMapNpcs);
+  const getNpcGold = useNpcStore((s) => s.getNpcGold);
+  const getNpcAffinity = useNpcStore((s) => s.getNpcAffinity);
+  const getAffinityDiscount = useNpcStore((s) => s.getAffinityDiscount);
 
   const isExpanded = expandedNpcId === npc.id;
   const inst = instances[npc.id];
@@ -90,6 +93,11 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
     }
     // 失败由 stealNpc 内部触发 onBattle
   };
+
+  const npcGold = getNpcGold(npc.id);
+  const npcAffinity = getNpcAffinity(npc.id);
+  const discount = getAffinityDiscount(npc.id);
+  const isBroken = npcGold <= 0;
 
   const stealRateDisplay = (() => {
     const rate = Math.min(0.05 + (hero.level ?? 1) * 0.008, 0.20);
@@ -150,6 +158,28 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
                   {npc.description}
                 </div>
               )}
+
+              {/* ── 金币 + 亲密度 ── */}
+              <div className="flex items-center gap-3 text-[11px]">
+                <span className={`flex items-center gap-1 ${isBroken ? 'text-red-400' : 'text-amber-600'}`}>
+                  <FaCoins className="text-[10px]" />
+                  {npcGold}G
+                  {isBroken && <span className="text-red-400 ml-0.5">(空)</span>}
+                </span>
+                <span className="flex items-center gap-1 text-pink-600">
+                  <span>❤️</span>
+                  <div className="w-16 h-2 bg-pink-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-pink-400 rounded-full transition-all duration-500"
+                      style={{ width: `${npcAffinity}%` }}
+                    />
+                  </div>
+                  <span className="text-pink-500 text-[10px]">{npcAffinity}</span>
+                </span>
+                {discount < 1 && (
+                  <span className="text-green-600 font-medium">{Math.round((1 - discount) * 100)}%OFF</span>
+                )}
+              </div>
 
               {/* 已击败标记 */}
               {isDefeated && (
@@ -252,15 +282,22 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
                       </div>
                       <button
                         onClick={() => doBuy(idx)}
-                        disabled={hero.gold < item.price}
+                        disabled={hero.gold < Math.ceil(item.price * discount)}
                         className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium transition-colors shrink-0 ${
-                          hero.gold >= item.price
+                          hero.gold >= Math.ceil(item.price * discount)
                             ? 'bg-amber-500 text-white hover:bg-amber-600'
                             : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                         }`}
                       >
                         <FaCoins className="text-[10px]" />
-                        {item.price}
+                        {discount < 1 ? (
+                          <>
+                            <span className="line-through text-[10px] opacity-60">{item.price}</span>
+                            {Math.ceil(item.price * discount)}
+                          </>
+                        ) : (
+                          item.price
+                        )}
                       </button>
                     </div>
                   ))}
