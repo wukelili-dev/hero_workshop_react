@@ -90,6 +90,7 @@ export interface HeroState {
   discoveredMonsters: string[];  // 已发现的怪物ID列表
   kills: number;              // 击杀数
   potions: number;  // 药水数量
+  backpack?: Array<{ name: string; icon?: string; description?: string }>;
   moralValue: number;         // -100 ~ +100，初始 0
   factions: Factions;         // 派系亲和度
 }
@@ -322,6 +323,9 @@ export interface NpcDefinition {
 
   /** 初始金币（用于NPC经济系统） */
   initialGold?: number;
+
+  /** 偷窃难度修正（0~1，0=普通，0.5=困难，0.8=极难） */
+  stealDifficulty?: number;
 }
 
 export interface NpcTradeItem {

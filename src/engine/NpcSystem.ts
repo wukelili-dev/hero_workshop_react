@@ -21,8 +21,6 @@ type ActionResult =
   | { type: 'trade'; items: { label: string; price: number; action: () => boolean }[] }
   | { type: 'battle_result'; victory: boolean; message: string; exp: number; gold: number };
 
-const STEAL_FAIL_DAMAGE = 0; // 失败不再扣血，直接进战斗
-
 /** 根据当前善恶值选择合适的道德对话 */
 function _getMoralDialogue(npc: NpcDefinition): string | null {
   const morals = npc.moralDialogues;
@@ -288,9 +286,7 @@ export function challengeNpc(npc: NpcDefinition): ActionResult {
     // 善恶值变化
     const faction = _npcFaction(npc);
     const moralDelta = faction === 'human' ? -20 : faction === 'demon' ? 10 : -5;
-    const moralLabel = faction === 'human' ? '击败人族' : faction === 'demon' ? '击败妖族' : '击败仙族';
     state.changeMoral(moralDelta);
-    const moralSign = moralDelta >= 0 ? '+' : '';
 
     let msg = npc.challengeReward.message;
 
@@ -372,11 +368,10 @@ export function stealNpc(
   const state = useGameStore.getState();
   const hero = state.hero;
 
-  // 1. 成功率计算（仅基于等级，无 dex 字段）
-  const stealRate = Math.min(
-    0.05 + hero.level * 0.008,
-    0.20
-  );
+  // 1. 成功率计算：基础 + 等级加成 - NPC 难度修正
+  const baseRate = 0.05 + hero.level * 0.008;
+  const difficultyMod = npc.stealDifficulty ?? 0; // 默认普通难度
+  const stealRate = Math.max(0.02, Math.min(baseRate * (1 - difficultyMod), 0.20));
   const roll = Math.random();
   const success = roll < stealRate;
   const npcStore = useNpcStore.getState();
@@ -441,11 +436,9 @@ const GUANYIN_DIALOGUES = [
   '"你要去西天？还早。等你真正准备好了，会有人来找你的。"',
 ];
 
-const GUANYIN_REWARD_DIALOGUES = 5; // 第5次触发时给净瓶甘露
 function tryTriggerGuanyin(location: string, npcId: string): ActionResult | null {
   const gameState = useGameStore.getState();
   const npcStore = useNpcStore.getState();
-  const invStore = useInventoryStore.getState();
 
   // 必须与袁守城对话10次以上 + 在长安 + 等级>=55
   if (npcId !== 'changan_fortune') return null;

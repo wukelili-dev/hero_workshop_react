@@ -25,6 +25,8 @@ export interface Rewards {
   gold: number;
   drops: Array<{ itemId: string; quantity: number }>;
   equipment: Equipment[];  // 掉落的装备
+  potions?: number;
+  resources?: Record<string, number>;
 }
 
 /**
@@ -47,7 +49,7 @@ export function calculateDamage(attackerATK: number, defenderDEF: number, isCrit
 
 /** 根据派系亲和度计算英雄对怪物的伤害加成倍率 */
 function _factionMultiplier(monster: Monster): number {
-  const factions = useGameStore.getState().factions;
+  const factions = useGameStore.getState().hero.factions;
   const npcType = monster.npcType ?? 'normal';
   if (npcType === 'human' && factions.human > 70) return 1.15;
   if (npcType === 'human' && factions.human < 30) return 0.85;
@@ -136,6 +138,8 @@ export function executeBattle(
     gold: victory ? monster.goldReward : 0,
     drops: [],
     equipment: [],
+    potions: 0,
+    resources: {},
   };
   
   // 计算掉落（材料）

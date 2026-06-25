@@ -21,14 +21,14 @@ import { FaCoins } from 'react-icons/fa';
 // ── 展开/收起动画 ──
 const expandVariants = {
   collapsed: { height: 0, opacity: 0 },
-  expanded: { height: 'auto', opacity: 1, transition: { duration: 0.3, ease: 'easeOut' } },
+  expanded: { height: 'auto', opacity: 1, transition: { duration: 0.3, ease: 'easeOut' as const } },
 };
 
 const cardVariants = {
   hidden: { opacity: 0, y: 12 },
   visible: (i: number) => ({
     opacity: 1, y: 0,
-    transition: { delay: i * 0.07, duration: 0.3, ease: 'easeOut' },
+    transition: { delay: i * 0.07, duration: 0.3, ease: 'easeOut' as const },
   }),
 };
 
@@ -229,7 +229,7 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs space-y-1.5">
                   <div className="font-bold text-amber-900 text-sm">📜 {npc.name} · 图鉴</div>
                   <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-                    <div><span className="text-amber-600">派系：</span>{npc.type === 'human' ? '👤 人族' : ['demon','yaozu'].includes(npc.type) ? '👹 妖族' : '✨ 仙族'}</div>
+                    <div><span className="text-amber-600">派系：</span>{npc.id.startsWith('yaozu_') || npc.id.includes('huaguo') ? '👹 妖族' : npc.id.startsWith('xianzu_') || npc.id.includes('guanyin') || npc.id.includes('tianting') || npc.id.includes('difu') ? '✨ 仙族' : '👤 人族'}</div>
                     <div><span className="text-amber-600">位置：</span>{npc.location}</div>
                     <div><span className="text-amber-600">出自：</span>{npc.bestiary.source}</div>
                     <div><span className="text-amber-600">时代：</span>{npc.bestiary.era}</div>

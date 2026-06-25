@@ -5,16 +5,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import { useGameStore } from '../../store/useGameStore';
-import { useNpcStore } from '../../store/useNpcStore';
 import { MAPS } from '../../data/maps';
-import { getNpcsByMap, hasNpcs } from '../../data/npcs';
+import { hasNpcs } from '../../data/npcs';
 import { formatNumber } from '../../data/constants';
 import { RARITY_NAME, RARITY_COLOR } from '../../types';
 import type { Monster } from '../../types';
 import type { BattleLog, Rewards } from '../../engine/Combat';
 import { FaSkullCrossbones, FaBomb, FaShield, FaUsers } from 'react-icons/fa6';
 import { AnimatedNumber } from '../../hooks/useCountUp';
-import { NpcPanel, NpcBadge } from '../npc/NpcPanel';
+import { NpcPanel } from '../npc/NpcPanel';
 
 type TeamTab = 'hero' | 'teammate' | 'all';
 type BattlePhase = 'idle' | 'fighting' | 'result';
@@ -31,20 +30,6 @@ const EMPTY_LOGS: BattleLog[] = [];
 const cardVariants: Variants = {
   hidden: { opacity: 0, y: 18 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
-};
-
-const enemyVariants: Variants = {
-  hidden: { opacity: 0, x: 20 },
-  visible: (i: number) => ({
-    opacity: 1,
-    x: 0,
-    transition: { delay: i * 0.08, duration: 0.3, ease: 'easeOut' },
-  }),
-};
-
-const resultVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.92 },
-  visible: { opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 260, damping: 20 } },
 };
 
 export const CenterPanel: React.FC = () => {
@@ -154,8 +139,6 @@ export const CenterPanel: React.FC = () => {
     }
   }, [hero.hp, fightMonster, clearAnimTimer, resetBattleState]);
 
-  const handleConfirmResult = () => resetBattleState();
-
   const currentMap = MAPS.find(m => m.id === currentMapId);
 
   const getRarityColor = (r: number | undefined): string =>
@@ -190,8 +173,8 @@ export const CenterPanel: React.FC = () => {
           <div className="font-medium text-gray-700">⚔️ {fightingMonster?.name ?? '战斗进行中…'}</div>
           <div className="max-h-24 overflow-y-auto" ref={logsRef}>
             {battleLogs.map((log, i) => (
-              <div key={i} className={log.isPlayer ? 'text-blue-600' : 'text-red-600'}>
-                {log.text}
+              <div key={i} className={log.attacker === '勇者' ? 'text-blue-600' : 'text-red-600'}>
+                {log.description}
               </div>
             ))}
           </div>

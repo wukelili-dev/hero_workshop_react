@@ -46,6 +46,8 @@ interface GameState {
   currentMapId: string;
   unlockedMaps: string[];
   currentEnemies: Monster[];
+  moralValue: number;
+  factions: Factions;
   isRunning: boolean;
   farmPlots: { plantId: string | null; plantedAt: number | null; lastHarvest: number | null; accumulatedGold: number }[];
   tavernRoster: TavernRecruit[];
@@ -93,6 +95,7 @@ interface GameActions {
   addDiscoveredPlant: (id: string) => void;
   addDiscoveredCreature: (id: string) => void;
   addBuilding: (name: string) => void;
+  incrementMapBattles: (mapId: string) => void;
   buyPotion: () => boolean;
   usePotion: () => boolean;
   setAutoPotionThreshold: (val: number) => void;
@@ -343,7 +346,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     return result;
   },
 
-  incrementMapBattles: (mapId) => {
+  incrementMapBattles: (mapId: string) => {
     set((s) => ({
       mapBattles: { ...(s.mapBattles ?? {}), [mapId]: ((s.mapBattles ?? {})[mapId] ?? 0) + 1 },
     }));
