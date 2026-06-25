@@ -186,7 +186,7 @@ export const NPCS: NpcDefinition[] = [
         name: '通天神铁',
         tier: 13,
         rarity: 4,
-        stats: { atk: 888, def: 150, hp: 1500, crit: 40, critDmg: 150 },
+        stats: { atk: 880, def: 140, hp: 1400, crit: 38, critDmg: 145 },
       },
     },
     bestiary: { source: '《西游记》第九回', era: '唐代·贞观年间', notes: '袁天罡族叔，长安西门卖卦为业。卦象灵验，泾河龙王曾因与其赌赛降雨时辰而触犯天条被斩。' },
@@ -1016,7 +1016,7 @@ export const NPCS: NpcDefinition[] = [
     challengeReward: { exp: 200, gold: 300, message: '牛魔王拄着混铁棍，单膝跪地："好汉！老夫服了！这根牛角你拿去，算我的敬意！"' },
     uniqueDrop: {
       message: '牛魔王断裂的一截牛角落入你手中，隐隐发烫——那是火焰山千年地火的余温。',
-      equipment: { id: 'niumo_horn', name: '牛魔王角', type: 'weapon', tier: 11, rarity: 4, stats: { atk: 280, def: 60, hp: 400, crit: 20, critDmg: 50 } },
+      equipment: { id: 'niumo_horn', name: '牛魔王角', type: 'weapon', tier: 13, rarity: 4, stats: { atk: 950, def: 180, hp: 2000, crit: 45, critDmg: 180 } },
     },
     tradeItems: [],
     personalItem: { name: '混铁棍碎片', icon: '🔧', description: '牛魔王混铁棍的碎片，有万钧之力', sellPrice: 400 },
@@ -1214,7 +1214,7 @@ export const NPCS: NpcDefinition[] = [
     challengeReward: { exp: 250, gold: 350, message: '二郎神收枪而立，眼中竟有几分欣赏："好！你的身手，值得我认真出手。这枚三尖两刃刀碎片你拿走！"' },
     uniqueDrop: {
       message: '二郎神三尖两刃刀上的一枚刀镡脱落，入手竟微微震动——那是神器的一角。',
-      equipment: { id: 'erlang_daoxin', name: '二郎刀镡', type: 'weapon', tier: 11, rarity: 4, stats: { atk: 260, def: 40, hp: 300, crit: 25, critDmg: 55 } },
+      equipment: { id: 'erlang_daoxin', name: '二郎刀镡', type: 'weapon', tier: 13, rarity: 4, stats: { atk: 920, def: 160, hp: 1800, crit: 50, critDmg: 170 } },
     },
     tradeItems: [],
     personalItem: { name: '啸天犬毛', icon: '🐶', description: '哮天犬脱落的狗毛，灵气逼人', sellPrice: 100 },
@@ -1244,7 +1244,7 @@ export const NPCS: NpcDefinition[] = [
     challengeReward: { exp: 0, gold: 0, message: '盘古缓缓站起身，巨人般的身影遮蔽了天空："你的勇气……我收到了。这枚盘古斧的碎片你拿去——它或许会指引你找到答案。"' },
     uniqueDrop: {
       message: '一枚巨大的斧刃碎片从天而降，没入你的身体。你感到自己继承了开天辟地的力量的一角。',
-      equipment: { id: 'pangu_axe', name: '盘古斧片', type: 'weapon', tier: 12, rarity: 4, stats: { atk: 500, def: 100, hp: 1000, crit: 30, critDmg: 100 } },
+      equipment: { id: 'pangu_axe', name: '盘古斧片', type: 'weapon', tier: 14, rarity: 4, stats: { atk: 1200, def: 250, hp: 3000, crit: 55, critDmg: 220 } },
     },
     tradeItems: [],
     personalItem: { name: '混沌石', icon: '💎', description: '开天辟地前就存在的混沌石，天地之始', sellPrice: 0 },
