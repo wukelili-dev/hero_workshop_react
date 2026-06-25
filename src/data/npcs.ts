@@ -306,6 +306,37 @@ export const NPCS: NpcDefinition[] = [
     unlockCondition: { kind: 'explorationFlag', value: 1, compare: 'xuanzang_unlocked' },
   },
 
+  // ── 长安 · 神秘老者 ──
+  {
+    id: 'changan_mysterious',
+    name: '神秘老者',
+    title: '街头角落的神秘人物',
+    type: 'flavor',
+    location: 'changan',
+    initialGold: 30,
+    stealDifficulty: 0.9, // 天机不可泄露，几乎不可能偷到
+    avatarEmoji: '🧓',
+    description: '街角阴影中坐着一位老者，披着破旧的斗篷，面前的布幡上写着「天机不可泄露」。他似乎对周围的一切都了如指掌……',
+    greetings: [
+      '嘘……别出声。老夫在看一样东西。',
+      '你不是路过的吧？你是来找老夫的。',
+      '天机不可泄露……但老夫看你有缘，坐下聊聊？',
+    ],
+    chatDialogues: [
+      '"这长安城每天过的人，比你一辈子见的都多。可老夫只记住了一个人——袁守城。那家伙，太聪明了。"',
+      '"你知道袁守城给龙王算卦那天，老夫在哪吗？就在他对面。他看见我了，但他没说。他知道老夫知道他知道。"神秘老者眯起眼睛，"聪明人之间，不用说话。"',
+      '"魏征梦中斩龙，你以为他真是在做梦？他醒着呢。只是不能让人知道他在醒着。"神秘老者冷笑，"朝廷里的刀，从来不是在梦里砍的。"',
+      '"你问老夫是谁？老夫谁也不是。就是个看热闹的。看了六十年，热闹还没看完。"',
+      '"你想要老夫的东西？"神秘老者把斗篷裹紧了些，"偷是偷不走的。问嘛……得看缘分。"',
+    ],
+    challengeStats: { hp: 9999, atk: 300, def: 120 },
+    challengeReward: { exp: 80, gold: 100, message: '神秘老者收起布幡，淡淡一笑："年轻人，火气不小。老夫该走了，这残卷送你——算你赢了。"' },
+    tradeItems: [
+      { name: '天机残卷', price: 888, icon: '📜', description: '似乎记载着不该被凡人看到的秘密……售价888两，买了你就知道了' },
+    ],
+    personalItem: { name: '天机残卷', icon: '📜', description: '一张泛黄的残卷，上面密密麻麻写满了凡人看不懂的文字', sellPrice: 0 },
+  },
+
   //
 
   // ═══════════════════════════════════════
