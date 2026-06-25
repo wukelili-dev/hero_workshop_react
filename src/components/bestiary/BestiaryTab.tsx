@@ -381,6 +381,7 @@ export const BestiaryTab: React.FC = () => {
             })}
           </div>
         )}
+      </div>
     </Tooltip.Provider>
   );
 };
