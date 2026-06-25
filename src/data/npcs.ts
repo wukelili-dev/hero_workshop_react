@@ -83,7 +83,6 @@ export const NPCS: NpcDefinition[] = [
     location: 'changan',
     initialGold: 200,
     stealDifficulty: 0.1, // 普通商人
-    initialGold: 200,
     avatarEmoji: '\uD83C\uDF77',
     description: '酒肆里传来琵琶声和西域歌舞，\n空气中飘着葡萄酒的甘醇和孜然的香气。',
     greetings: [
@@ -105,6 +104,7 @@ export const NPCS: NpcDefinition[] = [
     challengeStats: { hp: 1300, atk: 60, def: 38 },
     challengeReward: { exp: 25, gold: 35, message: '胡姬笑着退后一步："郎君好身手～这壶西域葡萄酒算奴家请的，可别忘了常来坐坐～"' },
     bestiary: { source: '《酉阳杂俎·卷十二·酒食》', era: '唐代·贞观年间', notes: '唐代胡商沿丝绸之路入长安，西市多胡姬酒肆。三勒浆出自西域，李白诗句可证。' },
+    personalItem: { name: '龟兹琵琶拨片', icon: '🎵', description: '胡姬祖传的龟兹国老琵琶拨片，象牙所制，据说弹出的曲子能让天上的飞鸟停下', sellPrice: 120 },
   },
 
   {
