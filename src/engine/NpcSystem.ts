@@ -2,11 +2,12 @@
  * NpcSystem — NPC 交互逻辑
  * 交易/挑战/对话/送礼/偷窃 返回 action 结果
  */
-import type { NpcDefinition, NpcPersonalItem } from '../types';
+import type { NpcDefinition, NpcPersonalItem, Monster } from '../types';
 import { useGameStore } from '../store/useGameStore';
 import { useNpcStore } from '../store/useNpcStore';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { randomGreeting, randomDialogue, NPCS } from '../data/npcs';
+import { executeBattle, type HeroStats } from './Combat';
 
 // ── 偷窃结果类型 ──
 export interface StealResult {
@@ -360,27 +361,26 @@ export function giftNpc(npc: NpcDefinition): ActionResult {
   return { type: 'log', message: `你恭敬地奉上 ${rule.minGold} 两银子。${npc.name}荷包鼓了 ${rule.minGold}G❤️+${affinityGain}\n【${npc.title}】${npc.name}：「${line}」${extra}` };
 }
 
-/** 玩家偷窃 — 重构：偷随身物品，极低成功率，善恶值联动 */
+/** 玩家偷窃 — 重构：偷随身物品，极低成功率，善恶值联动。
+ *  失败 → executeBattle 真打；胜则拿 NPC 全部金币+随机物品，败则残血复活 */
 export function stealNpc(
   npc: NpcDefinition,
-  onBattle?: (npc: NpcDefinition) => void,
-): StealResult {
+): StealResult & { battleResult?: { victory: boolean; logs: string[]; rewardsGold: number; heroHpLeft: number; itemStolen?: NpcPersonalItem } } {
   const state = useGameStore.getState();
   const hero = state.hero;
 
   // 1. 成功率计算：基础 + 等级加成 - NPC 难度修正
   const baseRate = 0.05 + hero.level * 0.008;
-  const difficultyMod = npc.stealDifficulty ?? 0; // 默认普通难度
+  const difficultyMod = npc.stealDifficulty ?? 0;
   const stealRate = Math.max(0.02, Math.min(baseRate * (1 - difficultyMod), 0.20));
   const roll = Math.random();
   const success = roll < stealRate;
   const npcStore = useNpcStore.getState();
 
-  // 2. 失败 → 战斗
+  // 2. 失败 → 触发真战斗，胜获全金+随机物品，败残血复活
   if (!success) {
     // 神秘老者偷窃失败计数 → 彩蛋
     if (npc.id === 'changan_mysterious') {
-      const npcStore = useNpcStore.getState();
       npcStore.incrementStealFail(npc.id);
       const failCount = npcStore.stealFailCounts?.[npc.id] ?? 0;
       if (failCount >= 3 && npc.personalItem) {
@@ -391,11 +391,90 @@ export function stealNpc(
         return { success: true, item: npc.personalItem, goldBonus: 0, stealRate };
       }
     }
+
     state.changeMoral(-15);
     npcStore.modifyNpcAffinity(npc.id, -10);
-    state.addGameLog(`偷窃${npc.name}失败（成功率 ${(stealRate*100).toFixed(1)}%），进入战斗！善恶值 -15，亲密度 -10`);
-    onBattle?.(npc);
-    return { success: false, item: null, goldBonus: 0, stealRate };
+    state.addGameLog(`🤫 偷窃${npc.name}失手（成功率 ${(stealRate*100).toFixed(1)}%）！${npc.name}大怒，亮出兵器要与你拼个死活！善恶值 -15，亲密度 -10`);
+
+    // 构建 NPC 怪物数据 → 调用 executeBattle 真打
+    const stats = npc.challengeStats;
+    const npcMonster: Monster = {
+      id: `npc_battle_${npc.id}`,
+      name: npc.name,
+      hp: stats?.hp ?? 500,
+      atk: stats?.atk ?? 50,
+      def: stats?.def ?? 30,
+      expReward: npc.challengeReward?.exp ?? 0,
+      goldReward: npc.challengeReward?.gold ?? 0,
+      drops: [],
+    };
+
+    const heroStats: HeroStats = { hp: hero.hp, atk: hero.atk, def: hero.def, crit: hero.critRate };
+    const combatResult = executeBattle(heroStats, [], npcMonster);
+
+    if (combatResult.victory) {
+      // 胜利 → 拿走 NPC 全部金币 + 随机物品
+      const npcBalance = npcStore.getNpcGold(npc.id);
+      const goldTaken = npcBalance;
+      if (goldTaken > 0) {
+        npcStore.modifyNpcGold(npc.id, -goldTaken);
+        state.addGold(goldTaken);
+      }
+      if (combatResult.rewards.exp > 0) state.addExp(combatResult.rewards.exp);
+
+      // 随机拿走一件 NPC 物品（personalItem 或 tradeItems 中随机选一个）
+      let itemStolen: NpcPersonalItem | undefined;
+      const lootPool: { name: string; icon: string; description: string; sellPrice: number }[] = [];
+      if (npc.personalItem) lootPool.push(npc.personalItem);
+      for (const ti of (npc.tradeItems ?? [])) {
+        if (ti.icon && ti.description) {
+          lootPool.push({ name: ti.name, icon: ti.icon, description: ti.description ?? '', sellPrice: 0 });
+        }
+      }
+      if (lootPool.length > 0) {
+        const loot = lootPool[Math.floor(Math.random() * lootPool.length)];
+        itemStolen = { name: loot.name, icon: loot.icon, description: loot.description, sellPrice: loot.sellPrice };
+        const inv = useInventoryStore.getState();
+        inv.addNovelty(loot.name, 1);
+      }
+
+      npcStore.modifyNpcAffinity(npc.id, -20);
+      const goldMsg = goldTaken > 0 ? ` +${goldTaken}G` : '';
+      const itemMsg = itemStolen ? ` 获得 ${itemStolen.icon}${itemStolen.name}` : '';
+      state.addGameLog(`⚔️ 偷窃败露后血战${npc.name}取胜！${goldMsg}${itemMsg}（亲密度 -20）`);
+
+      return {
+        success: false,
+        item: null,
+        goldBonus: 0,
+        stealRate,
+        battleResult: {
+          victory: true,
+          logs: combatResult.logs.map(l => l.description),
+          rewardsGold: goldTaken,
+          heroHpLeft: combatResult.heroFinalHp,
+          itemStolen,
+        },
+      };
+    } else {
+      // 战败 → 残血复活（1 HP）
+      state.setHero({ hp: 1 });
+      npcStore.modifyNpcAffinity(npc.id, -25);
+      state.addGameLog(`💀 偷窃${npc.name}败露后不敌，被打得只剩一口气…残血复活（HP=1），亲密度 -25`);
+
+      return {
+        success: false,
+        item: null,
+        goldBonus: 0,
+        stealRate,
+        battleResult: {
+          victory: false,
+          logs: combatResult.logs.map(l => l.description),
+          rewardsGold: 0,
+          heroHpLeft: 1,
+        },
+      };
+    }
   }
 
   // 3. 成功 → 偷到物品 + NPC钱包里的金币

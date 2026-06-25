@@ -83,8 +83,7 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
   };
 
   const doSteal = () => {
-    // NpcSystem 内完成所有 log 输出、金币/亲密度变化、善恶值变化
-    stealNpc(npc, () => doChallenge());
+    stealNpc(npc);
   };
 
   const npcGold = getNpcGold(npc.id);
