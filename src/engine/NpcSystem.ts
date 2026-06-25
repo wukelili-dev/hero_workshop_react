@@ -498,11 +498,11 @@ export function stealNpc(
 
   // 3. 成功 → 偷到物品 + NPC钱包里的金币
   const item = npc.personalItem ?? null;
-  // 从NPC钱包窃取金币（最多偷钱包余额的30%或500G，取较小值）
+  // 从NPC钱包窃取金币（随机 0%~50%）
   const npcWallet = npcStore.getNpcGold(npc.id);
-  const stealGoldMax = Math.min(Math.floor(npcWallet * 0.3), 500);
-  const goldBonus = stealGoldMax > 0
-    ? Math.floor(Math.random() * stealGoldMax) + 1
+  const stealPct = Math.random() * 0.5; // 0%~50%
+  const goldBonus = npcWallet > 0
+    ? Math.floor(npcWallet * stealPct)
     : 0;
   if (goldBonus > 0) {
     npcStore.modifyNpcGold(npc.id, -goldBonus);
