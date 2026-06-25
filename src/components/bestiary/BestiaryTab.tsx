@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { FaBookOpen, FaGift, FaSeedling, FaPaw } from 'react-icons/fa6';
+import { FaBookOpen, FaGift, FaSeedling, FaPaw, FaUser } from 'react-icons/fa6';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { useGameStore } from '../../store/useGameStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
@@ -8,6 +8,7 @@ import type { Monster } from '../../types';
 import { NOVELTY_ITEMS, NOVELTY_RARITY_COLORS, NOVELTY_RARITY_NAMES } from '../../data/inventory';
 import { PLANTS_CATALOG, PLANT_RARITY_COLORS, PLANT_RARITY_NAMES } from '../../data/plants';
 import { RANCH_CATALOG } from '../../data/ranch';
+import { NPCS } from '../../data/npcs';
 
 const ALL_MONSTERS: Monster[] = MAPS.flatMap((m) => [...(m.monsters ?? []), ...(m.boss ? [m.boss] : [])]);
 
@@ -44,13 +45,14 @@ const MONSTER_ICON_MAP: Record<string, React.ReactNode> = {
 };
 const DEFAULT_MONSTER_ICON: React.ReactNode = <span>👹</span>;
 
-type TabKey = 'monster' | 'novelty' | 'plant' | 'creature';
+type TabKey = 'monster' | 'novelty' | 'plant' | 'creature' | 'npc';
 
 const TABS = [
   { key: 'monster' as const, label: '怪物', icon: <FaBookOpen /> },
   { key: 'novelty' as const, label: '杂货', icon: <FaGift /> },
   { key: 'plant' as const, label: '植物', icon: <FaSeedling /> },
   { key: 'creature' as const, label: '动物', icon: <FaPaw /> },
+  { key: 'npc' as const, label: '人物', icon: <FaUser /> },
 ];
 
 export const BestiaryTab: React.FC = () => {
@@ -61,6 +63,7 @@ export const BestiaryTab: React.FC = () => {
   const discoveredNovelties = useGameStore((s) => s.discoveredNovelties) || [];
   const discoveredPlants = useGameStore((s) => s.discoveredPlants) || [];
   const discoveredCreatures = useGameStore((s) => s.discoveredCreatures) || [];
+  const discoveredNpcs = useGameStore((s) => s.discoveredNpcs) || [];
   const novelties = useInventoryStore((s) => s.novelties) || {};
 
   const discoveredMonsterSet = useMemo(
@@ -80,6 +83,7 @@ export const BestiaryTab: React.FC = () => {
             {activeTab === 'novelty' && `已发现 ${discoveredNovelties.length} / ${NOVELTY_ITEMS.length}`}
             {activeTab === 'plant' && `已种植 ${discoveredPlants.length} / ${PLANTS_CATALOG.length}`}
             {activeTab === 'creature' && `已饲养 ${discoveredCreatures.length} / ${RANCH_CATALOG.length}`}
+            {activeTab === 'npc' && `已邂逅 ${(discoveredNpcs || []).length} / ${NPCS.length}`}
           </span>
         </div>
 
@@ -322,7 +326,61 @@ export const BestiaryTab: React.FC = () => {
             })}
           </div>
         )}
-      </div>
+
+        {/* 人物 Tab */}
+        {activeTab === 'npc' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {NPCS.map((npc) => {
+              const discovered = (discoveredNpcs || []).includes(npc.id);
+              const icon = npc.avatarEmoji || '👤';
+              return (
+                <div
+                  key={npc.id}
+                  className={`rounded-lg border p-3 transition-all duration-200 hover:shadow-md ${
+                    discovered
+                      ? npc.challengeStats
+                        ? 'bg-gradient-to-br from-purple-50 via-indigo-100 to-blue-100 border-2 border-purple-400 shadow-purple-400/40 shadow-lg'
+                        : 'bg-white border-gray-200 hover:border-blue-300 hover:scale-[1.02]'
+                      : 'bg-gray-100 border-gray-200 opacity-60'
+                  }`}
+                  style={npc.challengeStats && discovered ? { boxShadow: '0 0 12px 2px rgba(147,51,234,0.5)' } : {}}
+                >
+                  {discovered ? (
+                    <>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-xl w-8 h-8 flex items-center justify-center shrink-0">{icon}</span>
+                        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                          <span className="font-bold text-sm text-gray-800">{npc.name}</span>
+                          {npc.challengeStats && (
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-gradient-to-r from-purple-500 to-indigo-400 text-white font-bold shadow-sm">⚔ 可挑战</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-600 mb-1">{npc.title}</div>
+                      {npc.bestiary && (
+                        <div className="text-[10px] text-gray-400 mt-1">
+                          出处：{npc.bestiary.source}<br/>
+                          年代：{npc.bestiary.era}<br/>
+                          {npc.bestiary.notes}
+                        </div>
+                      )}
+                      {npc.challengeStats && (
+                        <div className="text-[10px] text-gray-500 mt-1">
+                          HP：{npc.challengeStats.hp}　ATK：{npc.challengeStats.atk}　DEF：{npc.challengeStats.def}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-20 text-gray-400 text-lg font-mono gap-1">
+                      <span className="text-2xl opacity-40">👤</span>
+                      未邂逅
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
     </Tooltip.Provider>
   );
 };

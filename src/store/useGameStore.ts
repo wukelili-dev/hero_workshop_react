@@ -6,6 +6,7 @@ import { executeBattle, type BattleLog, type Rewards } from '../engine/Combat';
 import { EXP_PILL_BY_ID } from '../data/inventory';
 import { PLANTS_CATALOG } from '../data/plants';
 import { RANCH_CATALOG } from '../data/ranch';
+import { NPCS } from '../data/npcs';
 import { generateTavernRoster, type TavernRecruit } from '../data/tavern';
 import { BUILDING_CONFIGS, BUILDING_OUTPUTS } from '../data/buildings';
 
@@ -58,6 +59,7 @@ interface GameState {
   discoveredNovelties: string[];
   discoveredPlants: string[];
   discoveredCreatures: string[];
+  discoveredNpcs: string[];
   autoPotionThreshold: number;
   autoBattle: boolean;
   buildings: Record<string, number>;   // { "伐木场: 2, "铁矿": 1 }
@@ -94,6 +96,7 @@ interface GameActions {
   addDiscoveredNovelty: (name: string) => void;
   addDiscoveredPlant: (id: string) => void;
   addDiscoveredCreature: (id: string) => void;
+  addDiscoveredNpc: (id: string) => void;
   addBuilding: (name: string) => void;
   incrementMapBattles: (mapId: string) => void;
   buyPotion: () => boolean;
@@ -219,6 +222,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   discoveredNovelties: [],
   discoveredPlants: [],
   discoveredCreatures: [],
+  discoveredNpcs: [],
   autoPotionThreshold: 0,
   autoBattle: false,
   buildings: {},   // 建筑数量统计，key=建筑名，value=数量
@@ -268,6 +272,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     discoveredNovelties: [],
     discoveredPlants: [],
     discoveredCreatures: [],
+    discoveredNpcs: [],
     autoPotionThreshold: 0,
     autoBattle: false,
     buildings: {},
@@ -720,5 +725,15 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const hhmmss = new Date(now).toTimeString().slice(0, 8);
     get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${name}`);
     return { discoveredCreatures: [...list, id] };
+  }),
+  addDiscoveredNpc: (id) => set((s) => {
+    const list = s.discoveredNpcs || [];
+    if (list.includes(id)) return {};
+    const npc = NPCS.find(n => n.id === id);
+    const name = npc ? npc.name : id;
+    const now = Date.now();
+    const hhmmss = new Date(now).toTimeString().slice(0, 8);
+    get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${name}`);
+    return { discoveredNpcs: [...list, id] };
   }),
 }));

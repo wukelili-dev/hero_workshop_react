@@ -50,6 +50,11 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
   const handleToggle = () => {
     if (!inst) initMapNpcs(npc.location);
     setExpanded(isExpanded ? null : npc.id);
+    // 首次展开时触发图鉴发现
+    if (!isExpanded) {
+      const addDiscoveredNpc = useGameStore.getState().addDiscoveredNpc;
+      addDiscoveredNpc(npc.id);
+    }
   };
 
   const doGreet = () => {
