@@ -44,10 +44,29 @@ interface NpcState {
   /** 赏金猎人击败次数 */
   bountyWins: number;
   setBountyWins: (n: number) => void;
+
+  // ── 金币系统 ──
+  getNpcGold: (npcId: string) => number;
+  modifyNpcGold: (npcId: string, delta: number) => number;
+  setNpcGold: (npcId: string, amount: number) => void;
+
+  // ── 亲密度系统 ──
+  getNpcAffinity: (npcId: string) => number;
+  modifyNpcAffinity: (npcId: string, delta: number) => void;
+  getAffinityDiscount: (npcId: string) => number;
 }
 
 function makeInstance(npcId: string): NpcInstance {
-  return { npcId, state: 'idle', defeatedCount: 0, lastInteractedAt: 0, greeted: false };
+  const npcDef = NPCS.find(n => n.id === npcId);
+  return {
+    npcId,
+    state: 'idle',
+    defeatedCount: 0,
+    lastInteractedAt: 0,
+    greeted: false,
+    gold: npcDef?.initialGold ?? 0,
+    affinity: 0,
+  };
 }
 
 export const useNpcStore = create<NpcState>((set, get) => ({

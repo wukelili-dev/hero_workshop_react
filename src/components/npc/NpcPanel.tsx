@@ -11,7 +11,6 @@ import type { NpcDefinition } from '../../types';
 import {
   greetNpc, chatNpc, inspectNpc, buyNpcTradeItem,
   challengeNpc, giftNpc, stealNpc, isNpcUnlocked,
-  type StealResult,
 } from '../../engine/NpcSystem';
 import {
   FaCommentDots, FaShop, FaSkullCrossbones, FaMagnifyingGlass,
@@ -84,14 +83,8 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
   };
 
   const doSteal = () => {
-    const result: StealResult = stealNpc(npc, () => doChallenge());
-    if (result.success) {
-      const parts: string[] = [];
-      if (result.item) parts.push(`获得 ${result.item.icon}${result.item.name}`);
-      if (result.goldBonus > 0) parts.push(`+${result.goldBonus}G`);
-      addGameLog(`🫳 偷窃成功！${parts.join('，')}（善恶值 -15）`);
-    }
-    // 失败由 stealNpc 内部触发 onBattle
+    // NpcSystem 内完成所有 log 输出、金币/亲密度变化、善恶值变化
+    stealNpc(npc, () => doChallenge());
   };
 
   const npcGold = getNpcGold(npc.id);
