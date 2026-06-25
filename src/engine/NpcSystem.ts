@@ -17,6 +17,19 @@ export interface StealResult {
   stealRate: number;
 }
 
+/** Box-Muller 正态分布随机数 */
+function normalRandom(mean: number, stdDev: number): number {
+  let u1 = 0, u2 = 0;
+  while (u1 === 0) u1 = Math.random();
+  while (u2 === 0) u2 = Math.random();
+  return mean + stdDev * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+}
+
+/** 偷窃金币比例：正态分布 ~N(0.235, 0.1)，clamp [0, 0.5] */
+function stealGoldPct(): number {
+  return Math.max(0, Math.min(0.5, normalRandom(0.235, 0.1)));
+}
+
 type ActionResult =
   | { type: 'log'; message: string }
   | { type: 'trade'; items: { label: string; price: number; action: () => boolean }[] }
@@ -498,11 +511,10 @@ export function stealNpc(
 
   // 3. 成功 → 偷到物品 + NPC钱包里的金币
   const item = npc.personalItem ?? null;
-  // 从NPC钱包窃取金币（随机 0%~50%）
+  // 从NPC钱包窃取金币（正态分布 ~N(23.5%, 10%)，clamp 0%~50%）
   const npcWallet = npcStore.getNpcGold(npc.id);
-  const stealPct = Math.random() * 0.5; // 0%~50%
   const goldBonus = npcWallet > 0
-    ? Math.floor(npcWallet * stealPct)
+    ? Math.floor(npcWallet * stealGoldPct())
     : 0;
   if (goldBonus > 0) {
     npcStore.modifyNpcGold(npc.id, -goldBonus);
