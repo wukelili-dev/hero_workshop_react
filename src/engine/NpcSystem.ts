@@ -249,7 +249,7 @@ export function buyNpcTradeItem(npc: NpcDefinition, itemIdx: number): ActionResu
   return { type: 'log', message: `【${npc.title}】${npc.name}：「${dialogue}」` };
 }
 
-/** 玩家挑战 */
+/** 玩家挑战 — 使用 executeBattle 统一战斗逻辑，与野怪一致 */
 export function challengeNpc(npc: NpcDefinition): ActionResult {
   const stats = npc.challengeStats;
   if (!stats) return { type: 'log', message: `${npc.name}没有要与你动手的意思。` };
@@ -257,22 +257,30 @@ export function challengeNpc(npc: NpcDefinition): ActionResult {
 
   const state = useGameStore.getState();
   const hero = state.hero;
+  const npcStore = useNpcStore.getState();
 
-  const heroEffectiveAtk = Math.max(1, hero.atk - stats.def / 2);
-  const npcEffectiveAtk = Math.max(1, stats.atk - hero.def / 2);
+  // 构建 Monster → executeBattle
+  const npcMonster: Monster = {
+    id: `npc_challenge_${npc.id}`,
+    name: npc.name,
+    hp: stats.hp,
+    atk: stats.atk,
+    def: stats.def,
+    expReward: npc.challengeReward.exp,
+    goldReward: npc.challengeReward.gold,
+    drops: [],
+  };
 
-  const heroRounds = Math.ceil(stats.hp / heroEffectiveAtk);
-  const npcRounds = Math.ceil(hero.hp / npcEffectiveAtk);
+  const heroStats: HeroStats = { hp: hero.hp, atk: hero.atk, def: hero.def, crit: hero.critRate };
+  const result = executeBattle(heroStats, [], npcMonster);
 
-  const victory = heroRounds <= npcRounds;
-
-  if (victory) {
-    const npcStore = useNpcStore.getState();
+  if (result.victory) {
     const inst = npcStore.getInstance(npc.id);
     const isFirstDefeat = !inst || inst.defeatedCount === 0;
 
     npcStore.setDefeated(npc.id);
-    // 挑战奖励金币从NPC钱包扣除
+
+    // 奖励金币从 NPC 钱包扣除
     const rewardGold = npc.challengeReward.gold;
     const npcBalance = npcStore.getNpcGold(npc.id);
     const actualReward = Math.min(rewardGold, npcBalance);
@@ -282,6 +290,7 @@ export function challengeNpc(npc: NpcDefinition): ActionResult {
       state.addGameLog(`${npc.name}的荷包不够鼓，只付了 ${actualReward}G（本应 ${rewardGold}G）。`);
     }
     state.addExp(npc.challengeReward.exp);
+    state.setHp(result.heroFinalHp);
     npcStore.modifyNpcAffinity(npc.id, -15);
 
     // 善恶值变化
@@ -309,7 +318,7 @@ export function challengeNpc(npc: NpcDefinition): ActionResult {
       state.addGameLog(`\n⚡首次击败【${npc.name}】！获得隐藏神装【${npc.uniqueDrop.equipment.name}】⚡`);
     }
 
-    // 魏征剧情链：与魏征对话一次后解锁唐王
+    // 魏征剧情链
     if (npc.id === 'changan_weizheng') {
       const f = useNpcStore.getState().explorationFlags;
       if (!f['tangwang_unlocked']) {
@@ -321,12 +330,21 @@ export function challengeNpc(npc: NpcDefinition): ActionResult {
       }
     }
 
-    state.addGameLog(`挑战${npc.name}胜利！${msg}\n 获得 ${npc.challengeReward.exp} 经验，${npc.challengeReward.gold} 金币`);
-    return { type: 'battle_result', victory: true, message: msg, exp: npc.challengeReward.exp, gold: npc.challengeReward.gold };
+    // 出战报日志
+    for (const log of result.logs) {
+      state.addGameLog(log.description);
+    }
+    state.addGameLog(`挑战${npc.name}胜利！${msg}\n 获得 ${npc.challengeReward.exp} 经验，${actualReward} 金币`);
+    return { type: 'log', message: '' };
   } else {
-    state.setHero({ hp: Math.max(0, hero.hp - npcRounds)});
-    state.addGameLog(`你被${npc.name}击败了……修养一番再来吧。`);
-    return { type: 'battle_result', victory: false, message: '你被击败了……修养一番再来吧。', exp: 0, gold: 0 };
+    // 战败 → 50% HP 复活（对齐野怪逻辑）
+    const reviveHp = Math.floor(hero.maxHp * 0.5);
+    state.setHero({ hp: reviveHp });
+    for (const log of result.logs) {
+      state.addGameLog(log.description);
+    }
+    state.addGameLog(`你被${npc.name}击败了…自动复活至 50% HP（${reviveHp}/${hero.maxHp}）。修养一番再来吧。`);
+    return { type: 'log', message: '' };
   }
 }
 
@@ -457,10 +475,11 @@ export function stealNpc(
         },
       };
     } else {
-      // 战败 → 残血复活（1 HP）
-      state.setHero({ hp: 1 });
+      // 战败 → 50% HP 复活（对齐野怪逻辑）
+      const reviveHp = Math.floor(hero.maxHp * 0.5);
+      state.setHero({ hp: reviveHp });
       npcStore.modifyNpcAffinity(npc.id, -25);
-      state.addGameLog(`💀 偷窃${npc.name}败露后不敌，被打得只剩一口气…残血复活（HP=1），亲密度 -25`);
+      state.addGameLog(`💀 偷窃${npc.name}败露后不敌，被打得只剩一口气…自动复活至 50% HP（${reviveHp}/${hero.maxHp}），亲密度 -25`);
 
       return {
         success: false,
@@ -471,7 +490,7 @@ export function stealNpc(
           victory: false,
           logs: combatResult.logs.map(l => l.description),
           rewardsGold: 0,
-          heroHpLeft: 1,
+          heroHpLeft: reviveHp,
         },
       };
     }
