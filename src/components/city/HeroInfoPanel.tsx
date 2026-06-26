@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { useGameStore } from '../../store/useGameStore';
 import { formatNumber } from '../../data/constants';
 import { AnimatedNumber } from '../../hooks/useCountUp';
-import { FaHeart, FaBolt, FaShield, FaSword, FaStar } from 'react-icons/fa6';
+import { FaHeart, FaBolt, FaShield, FaStar } from 'react-icons/fa6';
 
 export const HeroInfoPanel: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
@@ -59,7 +59,7 @@ export const HeroInfoPanel: React.FC = () => {
           <span className="text-gray-400">{formatNumber(hero.maxHp)}</span>
         </div>
         <div className="flex items-center gap-1 text-gray-600">
-          <FaSword className="text-red-600 text-[10px]" />
+          <span className="text-red-600 text-[10px]">⚔️</span>
           <span className="font-medium">{formatNumber(hero.atk)}</span>
         </div>
         <div className="flex items-center gap-1 text-gray-600">
