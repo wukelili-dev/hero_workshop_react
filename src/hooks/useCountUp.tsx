@@ -33,7 +33,8 @@ export function useCountUp(end: number, duration: number = 500): number {
   return count;
 }
 
-export function AnimatedNumber({ value, duration = 500 }: { value: number; duration?: number }) {
-  const display = useCountUp(value, duration);
+export function AnimatedNumber({ value, duration = 500 }: { value: number | undefined; duration?: number }) {
+  const safeValue = value ?? 0;
+  const display = useCountUp(safeValue, duration);
   return <>{display.toLocaleString()}</>;
 }
