@@ -89,7 +89,9 @@ const NpcCardCompact: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, 
   const isBroken = npcGold <= 0;
 
   const stealRateDisplay = (() => {
-    const rate = Math.min(0.05 + (hero.level ?? 1) * 0.008, 0.20);
+    const baseRate = 0.05 + (hero.level ?? 1) * 0.008;
+    const difficultyMod = npc.stealDifficulty ?? 0;
+    const rate = Math.max(0.02, Math.min(baseRate * (1 - difficultyMod), 0.20));
     return (rate * 100).toFixed(1);
   })();
 
@@ -148,7 +150,7 @@ const NpcCardCompact: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, 
                   {npcGold}G
                 </span>
                 <span className="flex items-center gap-0.5 text-pink-600">
-                  <span>❤️</span>
+                  <span className="text-[9px] font-medium">亲密度</span>
                   <span className="text-pink-500 text-[9px]">{npcAffinity}</span>
                 </span>
                 {discount < 1 && (

@@ -97,7 +97,9 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
   const isBroken = npcGold <= 0;
 
   const stealRateDisplay = (() => {
-    const rate = Math.min(0.05 + (hero.level ?? 1) * 0.008, 0.20);
+    const baseRate = 0.05 + (hero.level ?? 1) * 0.008;
+    const difficultyMod = npc.stealDifficulty ?? 0;
+    const rate = Math.max(0.02, Math.min(baseRate * (1 - difficultyMod), 0.20));
     return (rate * 100).toFixed(1);
   })();
 
@@ -164,7 +166,7 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
                   {isBroken && <span className="text-red-400 ml-0.5">(空)</span>}
                 </span>
                 <span className="flex items-center gap-1 text-pink-600">
-                  <span>❤️</span>
+                  <span className="text-[10px] font-medium">亲密度</span>
                   <div className="w-16 h-2 bg-pink-100 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-pink-400 rounded-full transition-all duration-500"
