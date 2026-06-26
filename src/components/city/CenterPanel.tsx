@@ -447,6 +447,7 @@ export const CenterPanel: React.FC = () => {
       </div>
 
       {/* NPC 面板（所有有NPC的地图都显示） */}
+      {hasNpcs(currentMapId) && <NpcPanel mapId={currentMapId} />}
       {/* 战斗区域（仅非城市地图） */}
       {!currentMap?.isCity && battleSection}
     </div>

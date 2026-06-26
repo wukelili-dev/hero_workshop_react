@@ -7,7 +7,6 @@ import { TabBar } from './TabBar';
 import { MainCityPanel } from '../city/MainCityPanel';
 import { CenterPanel } from '../city/CenterPanel';
 import { GameLogPanel } from '../city/GameLogPanel';
-import { NpcPanelCompact } from '../npc/NpcPanelCompact';
 import { WeaponTab } from '../equipment/WeaponTab';
 import { ArmorTab } from '../equipment/ArmorTab';
 import { NoveltyTab } from '../novelty/NoveltyTab';
@@ -144,14 +143,9 @@ export const AppShell: React.FC = () => {
           transition={{ duration: 0.4, delay: 0.4 }}
           className="flex-[2_0_0] min-w-0 flex flex-col overflow-hidden"
         >
-          {/* 右上：NPC面板 + 杂项日志 */}
+          {/* 右上：日志 */}
           <div className="flex-1 min-h-0 flex flex-col border-b border-gray-200">
-            <div className="max-h-[45%] overflow-y-auto">
-              <NpcPanelCompact />
-            </div>
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <GameLogPanel />
-            </div>
+            <GameLogPanel />
           </div>
           {/* 右下：Tab栏 + 内容 */}
           <div className="flex-1 min-h-0 flex flex-col">
