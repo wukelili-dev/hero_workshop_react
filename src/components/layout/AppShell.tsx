@@ -146,7 +146,9 @@ export const AppShell: React.FC = () => {
         >
           {/* 右上：NPC面板 + 杂项日志 */}
           <div className="flex-1 min-h-0 flex flex-col border-b border-gray-200">
-            <NpcPanelCompact />
+            <div className="max-h-[45%] overflow-y-auto">
+              <NpcPanelCompact />
+            </div>
             <div className="flex-1 min-h-0 overflow-hidden">
               <GameLogPanel />
             </div>
