@@ -6,11 +6,12 @@ import { TopBar } from './TopBar';
 import { TabBar } from './TabBar';
 import { MainCityPanel } from '../city/MainCityPanel';
 import { CenterPanel } from '../city/CenterPanel';
-import { LogPanel } from '../city/LogPanel';
+import { HeroInfoPanel } from '../city/HeroInfoPanel';
+import { GameLogPanel } from '../city/GameLogPanel';
 import { WeaponTab } from '../equipment/WeaponTab';
 import { ArmorTab } from '../equipment/ArmorTab';
 import { NoveltyTab } from '../novelty/NoveltyTab';
-import { ExpPillTab } from '../expPill/ExpPillTab';
+
 import { InventoryTab } from '../inventory/InventoryTab';
 import { MaterialsTab } from '../materials/MaterialsTab';
 import { TavernTab } from '../tavern/TavernTab';
@@ -29,14 +30,13 @@ import {
 } from 'react-icons/fa6';
 import { FaGift, FaCube, FaHammer, FaSkullCrossbones } from 'react-icons/fa';
 
-export type TabId = 'weapon' | 'armor' | 'novelty' | 'expPill' | 'inventory' | 'materials' | 'tavern' | 'farm' | 'factory' | 'ranch' | 'forge' | 'bestiary';
+export type TabId = 'weapon' | 'armor' | 'novelty' | 'inventory' | 'materials' | 'tavern' | 'farm' | 'factory' | 'ranch' | 'forge' | 'bestiary';
 type MobileView = 'city' | 'combat' | TabId;
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode; description: string }[] = [
   { id: 'weapon', label: '武器', icon: <FaBomb />, description: '购买和装备武器' },
   { id: 'armor', label: '护甲', icon: <FaShieldHalved />, description: '购买和装备护甲' },
   { id: 'novelty', label: '杂货', icon: <FaGift />, description: '购买各类杂货道具' },
-  { id: 'expPill', label: '经验丹', icon: <FaFlask />, description: '购买经验丹提升等级' },
   { id: 'inventory', label: '背包', icon: <FaBagShopping />, description: '查看和管理背包物品' },
   { id: 'materials', label: '材料', icon: <FaCube />, description: '查看材料库存' },
   { id: 'tavern', label: '酒馆', icon: <FaBeerMugEmpty />, description: '招募英雄和刷新英雄' },
@@ -93,7 +93,7 @@ export const AppShell: React.FC = () => {
       case 'weapon': return <WeaponTab />;
       case 'armor': return <ArmorTab />;
       case 'novelty': return <NoveltyTab />;
-      case 'expPill': return <ExpPillTab />;
+
       case 'inventory': return <InventoryTab />;
       case 'materials': return <MaterialsTab />;
       case 'tavern': return <TavernTab />;
@@ -135,28 +135,38 @@ export const AppShell: React.FC = () => {
           transition={{ duration: 0.4, delay: 0.25 }}
           className="flex-[3_0_0] min-w-0 overflow-y-auto border-r border-gray-200/70 bg-white/90 flex flex-col"
         >
-          <div className="flex-1 overflow-y-auto"><CenterPanel /></div>
-          <LogPanel />
+          <CenterPanel />
         </motion.div>
+        {/* 右侧：人物/日志(上) + Tab内容(下) */}
         <motion.div
           initial={{ opacity: 0, x: 30 }}
           animate={showApp ? { opacity: 1, x: 0 } : {}}
           transition={{ duration: 0.4, delay: 0.4 }}
-          className="flex-[4_0_0] min-w-0 flex flex-col overflow-hidden"
+          className="flex-[2_0_0] min-w-0 flex flex-col overflow-hidden"
         >
-          <TabBar tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
-          <div className="flex-1 overflow-y-auto p-4">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.25, ease: 'easeOut' }}
-              >
-                {renderTab()}
-              </motion.div>
-            </AnimatePresence>
+          {/* 右上：人物信息 + 杂项日志 */}
+          <div className="flex-1 min-h-0 flex flex-col border-b border-gray-200">
+            <HeroInfoPanel />
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <GameLogPanel />
+            </div>
+          </div>
+          {/* 右下：Tab栏 + 内容 */}
+          <div className="flex-1 min-h-0 flex flex-col">
+            <TabBar tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
+            <div className="flex-1 overflow-y-auto p-3">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.25, ease: 'easeOut' }}
+                >
+                  {renderTab()}
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
         </motion.div>
       </div>

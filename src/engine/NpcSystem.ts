@@ -258,6 +258,30 @@ export function buyNpcTradeItem(npc: NpcDefinition, itemIdx: number): ActionResu
     return { type: 'log', message: `【${npc.title}】${npc.name}：「${dialogue}」` };
   }
 
+  // 经验丹处理（立即使用，不进背包）
+  if (item.type === 'novelty' && item.label.includes('经验丹')) {
+    let expGain = 0;
+    if (item.label.includes('小经验丹')) expGain = 100;
+    else if (item.label.includes('中经验丹')) expGain = 500;
+    else if (item.label.includes('大经验丹')) expGain = 2000;
+    
+    if (expGain > 0) {
+      state.addExp(expGain);
+      state.addGameLog(`从${npc.name}处购得 ${item.label}，服下后获得 ${expGain} 经验！${costMsg}`);
+      return { type: 'log', message: `【${npc.title}】${npc.name}：「${dialogue}」` };
+    }
+  }
+
+  // 杂货物品进入背包
+  if (item.type === 'novelty') {
+    const inv = useInventoryStore.getState();
+    // 从 label 提取物品名称（去掉 [杂货] 等后缀）
+    const itemName = item.label.split('[')[0].trim();
+    inv.addNovelty(itemName, 1);
+    state.addGameLog(`从${npc.name}处购得 ${item.label}，已放入背包。${costMsg}`);
+    return { type: 'log', message: `【${npc.title}】${npc.name}：「${dialogue}」` };
+  }
+
   state.addGameLog(`从${npc.name}处购得 ${item.label}，${costMsg}`);
   return { type: 'log', message: `【${npc.title}】${npc.name}：「${dialogue}」` };
 }
@@ -453,13 +477,14 @@ export function stealNpc(
       }
       if (combatResult.rewards.exp > 0) state.addExp(combatResult.rewards.exp);
 
-      // 随机拿走一件 NPC 物品（personalItem 或 tradeItems 中随机选一个）
+      // 随机拿走一件 NPC 物品（personalItem 或 tradeItems 中的杂货/经验丹中随机选一个）
       let itemStolen: NpcPersonalItem | undefined;
       const lootPool: { name: string; icon: string; description: string; sellPrice: number }[] = [];
       if (npc.personalItem) lootPool.push(npc.personalItem);
       for (const ti of (npc.tradeItems ?? [])) {
-        if (ti.icon && ti.description) {
-          lootPool.push({ name: ti.name, icon: ti.icon, description: ti.description ?? '', sellPrice: 0 });
+        // 只偷杂货类物品（有 name/icon/description 的）
+        if (ti.type === 'novelty' && ti.name && ti.icon && ti.description) {
+          lootPool.push({ name: ti.name, icon: ti.icon, description: ti.description, sellPrice: Math.floor(ti.price * 0.5) });
         }
       }
       if (lootPool.length > 0) {
