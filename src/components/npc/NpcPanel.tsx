@@ -3,6 +3,7 @@
  * 显示当前地图的 NPC 列表，点击展开操作面板
  */
 import React, { useState } from 'react';
+import { GiftModal } from './GiftModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../../store/useGameStore';
 import { useNpcStore } from '../../store/useNpcStore';
@@ -10,7 +11,7 @@ import { getNpcsByMap, hasNpcs, NPCS } from '../../data/npcs';
 import type { NpcDefinition } from '../../types';
 import {
   greetNpc, chatNpc, inspectNpc, buyNpcTradeItem,
-  challengeNpc, giftNpc, stealNpc, isNpcUnlocked,
+  challengeNpc, stealNpc, isNpcUnlocked,
 } from '../../engine/NpcSystem';
 import {
   FaCommentDots, FaShop, FaSkullCrossbones, FaMagnifyingGlass,
@@ -46,6 +47,7 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
   const isExpanded = expandedNpcId === npc.id;
   const inst = instances[npc.id];
   const [showBestiary, setShowBestiary] = useState(false);
+  const [showGift, setShowGift] = useState(false);
 
   const handleToggle = () => {
     if (!inst) initMapNpcs(npc.location);
@@ -83,8 +85,7 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
   };
 
   const doGift = () => {
-    const r = giftNpc(npc);
-    if (r.type === 'log') addGameLog(r.message);
+    setShowGift(true);
   };
 
   const doSteal = () => {
@@ -301,6 +302,10 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
                     </div>
                   ))}
                 </div>
+              )}
+              {/* 送礼弹窗 */}
+              {showGift && (
+                <GiftModal npc={npc} onClose={() => setShowGift(false)} />
               )}
             </div>
           </motion.div>

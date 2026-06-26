@@ -10,8 +10,9 @@ import { getNpcsByMap, hasNpcs, NPCS } from '../../data/npcs';
 import type { NpcDefinition } from '../../types';
 import {
   greetNpc, chatNpc, buyNpcTradeItem,
-  challengeNpc, giftNpc, stealNpc, isNpcUnlocked,
+  challengeNpc, stealNpc, isNpcUnlocked,
 } from '../../engine/NpcSystem';
+import { GiftModal } from './GiftModal';
 import {
   FaCommentDots, FaShop, FaSkullCrossbones,
   FaGift, FaHandSparkles,
@@ -44,6 +45,7 @@ const NpcCardCompact: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, 
 
   const isExpanded = expandedNpcId === npc.id;
   const inst = instances[npc.id];
+  const [showGift, setShowGift] = useState(false);
 
   const handleToggle = () => {
     if (!inst) initMapNpcs(npc.location);
@@ -75,8 +77,7 @@ const NpcCardCompact: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, 
   };
 
   const doGift = () => {
-    const r = giftNpc(npc);
-    if (r.type === 'log') addGameLog(r.message);
+    setShowGift(true);
   };
 
   const doSteal = () => {
@@ -206,6 +207,10 @@ const NpcCardCompact: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, 
                     </div>
                   ))}
                 </div>
+              )}
+              {/* 送礼弹窗 */}
+              {showGift && (
+                <GiftModal npc={npc} onClose={() => setShowGift(false)} />
               )}
             </div>
           </motion.div>

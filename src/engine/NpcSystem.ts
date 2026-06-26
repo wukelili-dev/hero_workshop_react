@@ -385,25 +385,81 @@ export function challengeNpc(npc: NpcDefinition): ActionResult {
   }
 }
 
-/** 玩家送礼 */
-export function giftNpc(npc: NpcDefinition): ActionResult {
+interface GiftItem { name: string; count: number; }
+
+/** 玩家送礼
+ * @param npc - NPC对象
+ * @param customGold - 自定义金币金额（可选，默认0）
+ * @param items - 选择的物品列表（可选）
+ */
+export function giftNpc(
+  npc: NpcDefinition,
+  customGold: number = 0,
+  items?: GiftItem[],
+): ActionResult {
   const state = useGameStore.getState();
   const hero = state.hero;
   const npcStore = useNpcStore.getState();
+  const invStore = useInventoryStore.getState();
   const npcId = npc.id;
 
-  // 查找匹配的送礼规则
-  let rule = GIFT_REWARDS[npcId] ?? GIFT_REWARDS['*'];
-  if (!rule) return { type: 'log', message: '对方婉拒了你的好意。' };
+  // 查找匹配的送礼规则（仅用于固定规则NPC）
+  const rule = GIFT_REWARDS[npcId] ?? GIFT_REWARDS['*'];
 
+  // 自定义送礼模式
+  if (customGold > 0 || (items && items.length > 0)) {
+    if (hero.gold < customGold) {
+      return { type: 'log', message: '你摸了摸口袋——金币不够。' };
+    }
+
+    // 扣除玩家金币
+    if (customGold > 0) {
+      state.addGold(-customGold);
+      npcStore.modifyNpcGold(npc.id, customGold);
+    }
+
+    // 扣除玩家物品
+    if (items && items.length > 0) {
+      for (const item of items) {
+        const removed = invStore.removeNovelty(item.name, item.count);
+        if (!removed) {
+          state.addGameLog(`⚠ ${item.name} 数量不足，改为赠送其他物品。`);
+        }
+      }
+    }
+
+    // 计算亲密度：金币/50 + 物品数*5
+    const affinityGain = Math.max(1, Math.floor(customGold / 50) + (items?.length ?? 0) * 5);
+    npcStore.modifyNpcAffinity(npc.id, affinityGain);
+    npcStore.recordInteraction(npc.id);
+
+    const goldPart = customGold > 0 ? `${customGold}G` : '';
+    const itemPart = items && items.length > 0 ? items.map(i => `${i.name}×${i.count}`).join('、') : '';
+    const giftDesc = [goldPart, itemPart].filter(Boolean).join(' + ');
+
+    const giftLines = [
+      '「礼物？客官太客气了！」',
+      '「哎呀，这怎么好意思呢～」',
+      '「这可是老身的荣幸！」',
+      '「郎君有心了，奴家记下这份情了。」',
+    ];
+    const line = giftLines[Math.floor(Math.random() * giftLines.length)];
+
+    return {
+      type: 'log',
+      message: `你送上了${giftDesc}。${npc.name}收下礼物后，${affinityGain}颗心在跳动～
+【${npc.title}】${npc.name}：${line}`,
+    };
+  }
+
+  // 固定规则送礼（兼容旧调用）
+  if (!rule) return { type: 'log', message: '对方婉拒了你的好意。' };
   if (hero.gold < rule.minGold) {
     return { type: 'log', message: `你摸了摸口袋——没有 ${rule.minGold} 金，这点小钱拿不出手。` };
   }
 
-  // 金币流向：玩家 → NPC 钱包
   state.addGold(-rule.minGold);
   npcStore.modifyNpcGold(npc.id, rule.minGold);
-  // 亲密度：每100G +1
   const affinityGain = Math.max(1, Math.floor(rule.minGold / 100));
   npcStore.modifyNpcAffinity(npc.id, affinityGain);
 
