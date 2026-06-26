@@ -247,7 +247,11 @@ export function buyNpcTradeItem(npc: NpcDefinition, itemIdx: number): ActionResu
 
   if (item.type === 'potion') {
     const count = item.potionCount ?? 1;
-    state.setHero({ potions: (state.hero.potions ?? 0) + count });
+    // 提取物品名称（去掉[xxx]后缀）用于背包显示
+    const name = item.label.replace(/\s*\[.*?\]/, '').trim();
+    const inv = useInventoryStore.getState();
+    inv.addNovelty(item.label, count); // 背包：使用完整label作为key以区分不同药水
+    state.setHero({ potions: (state.hero.potions ?? 0) + count }); // 快捷栏同步
     state.addGameLog(`从${npc.name}处购得 ${item.label}，${costMsg}`);
     return { type: 'log', message: `【${npc.title}】${npc.name}：「${dialogue}」` };
   }
