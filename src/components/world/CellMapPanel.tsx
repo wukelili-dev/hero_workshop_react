@@ -49,7 +49,7 @@ export const CellMapPanel: React.FC<CellMapPanelProps> = ({
     if (isNeighbor && !isCurrent) opacity = 0.7;
 
     return {
-      background: terrain.gradient,
+      background: terrain?.gradient ?? 'linear-gradient(135deg, #ccc 0%, #999 100%)',
       opacity,
       border: isCurrent ? '3px solid #FFD700' : isNeighbor ? '2px dashed #FFF' : '1px solid #666',
       transform: isHovered ? 'scale(1.05)' : 'scale(1)',
@@ -196,7 +196,14 @@ export const CellMapPanel: React.FC<CellMapPanelProps> = ({
   const renderCellDetail = () => {
     if (!selectedCell) return null;
 
-    const terrain = TERRAIN_CONFIG[selectedCell.terrain];
+    const terrain = TERRAIN_CONFIG[selectedCell.terrain] ?? {
+      name: '未知地形',
+      color: '#888',
+      gradient: 'linear-gradient(135deg, #ccc 0%, #999 100%)',
+      moveCost: 1,
+      encounterRate: 0,
+      description: '神秘的地形',
+    };
     const isRevealed = revealedCells.includes(selectedCell.id) || selectedCell.isRevealed;
     const isCurrent = selectedCell.id === currentCellId;
     const isNeighbor = neighbors.includes(selectedCell.id);
