@@ -83,7 +83,7 @@ export const CellMapPanel: React.FC<CellMapPanelProps> = ({
     } else if (neighbors.includes(cell.id)) {
       // 点击相邻格子：移动
       const cost = calcMoveCost(currentCellId, cell.id);
-      if (window.confirm(`移动到 ${TERRAIN_CONFIG[cell.terrain].name}？\n消耗 ${cost} 天`)) {
+      if (window.confirm(`移动到 ${TERRAIN_CONFIG[cell.terrain]?.name ?? '未知地形'}？\n消耗 ${cost} 天`)) {
         onMoveToCell(cell.id);
       }
     } else {
@@ -127,7 +127,7 @@ export const CellMapPanel: React.FC<CellMapPanelProps> = ({
               position: 'relative',
               boxShadow: style.border.includes('FFD700') ? '0 0 15px #FFD700' : '0 2px 4px rgba(0,0,0,0.3)',
             }}
-            title={`${cell.id} (${cell.x}, ${cell.y}) - ${TERRAIN_CONFIG[cell.terrain].name}`}
+            title={`${cell.id} (${cell.x}, ${cell.y}) - ${TERRAIN_CONFIG[cell.terrain]?.name ?? '未知'}`}
           >
             {/* 地形名称 */}
             <div style={{ 
@@ -138,7 +138,7 @@ export const CellMapPanel: React.FC<CellMapPanelProps> = ({
               top: 2,
               left: 2,
             }}>
-              {TERRAIN_CONFIG[cell.terrain].name.slice(0, 2)}
+              {(TERRAIN_CONFIG[cell.terrain]?.name ?? '未知').slice(0, 2)}
             </div>
 
             {/* 图标 */}
@@ -422,7 +422,7 @@ export const CellMapPanel: React.FC<CellMapPanelProps> = ({
         color: '#CCC',
       }}>
         <div style={{ marginBottom: 4 }}>📊 等级范围：Lv.{CENTRAL_PLAIN_REGION.levelRange[0]} - {CENTRAL_PLAIN_REGION.levelRange[1]}</div>
-        <div style={{ marginBottom: 4 }}>📍 当前位置：{currentCell?.id}（{currentCell ? TERRAIN_CONFIG[currentCell.terrain].name : '未知'}）</div>
+        <div style={{ marginBottom: 4 }}>📍 当前位置：{currentCell?.id}（{currentCell ? (TERRAIN_CONFIG[currentCell.terrain]?.name ?? '未知') : '未知'}）</div>
         <div>🗺️ 已探索：{revealedCells.length + (currentCell ? 1 : 0)} / {CENTRAL_PLAIN_CELLS.length} 格子</div>
       </div>
 
