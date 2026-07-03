@@ -19,7 +19,7 @@ import { FactoryTab } from '../factory/FactoryTab';
 import { RanchTab } from '../ranch/RanchTab';
 import { ForgeTab } from '../forge/ForgeTab';
 import { BestiaryTab } from '../bestiary/BestiaryTab';
-import { CellMapPanel } from '../world/CellMapPanel';
+import { ThreeMapPanel } from '../world/ThreeMapPanel';
 import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils';
 
 // Icon imports
@@ -109,7 +109,7 @@ export const AppShell: React.FC = () => {
       case 'forge': return <ForgeTab />;
       case 'bestiary': return <BestiaryTab />;
       case 'world': return (
-    <CellMapPanel
+    <ThreeMapPanel
       currentCellId={currentCellId}
       revealedCells={revealedCells}
       onMoveToCell={(cellId) => {
