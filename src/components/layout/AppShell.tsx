@@ -19,7 +19,7 @@ import { FactoryTab } from '../factory/FactoryTab';
 import { RanchTab } from '../ranch/RanchTab';
 import { ForgeTab } from '../forge/ForgeTab';
 import { BestiaryTab } from '../bestiary/BestiaryTab';
-import { WorldMapPanel } from '../world/WorldMapPanel';
+import { CellMapPanel } from '../world/CellMapPanel';
 import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils';
 
 // Icon imports
@@ -63,6 +63,10 @@ export const AppShell: React.FC = () => {
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [saveMeta, setSaveMeta] = useState<ReturnType<typeof getSaveMeta>>(null);
   const [showApp, setShowApp] = useState(false);
+  // 地图状态
+  const [currentCellId, setCurrentCellId] = useState<string>('cp_3_0'); // 起始位置：长安城
+  const [revealedCells, setRevealedCells] = useState<string[]>(['cp_3_0']); // 已探索的格子
+
 
   useEffect(() => {
     const t = setTimeout(() => setShowApp(true), 30);
@@ -104,7 +108,20 @@ export const AppShell: React.FC = () => {
       case 'ranch': return <RanchTab />;
       case 'forge': return <ForgeTab />;
       case 'bestiary': return <BestiaryTab />;
-      case 'world': return <WorldMapPanel />;
+      case 'world': return (
+    <CellMapPanel
+      currentCellId={currentCellId}
+      revealedCells={revealedCells}
+      onMoveToCell={(cellId) => {
+        setCurrentCellId(cellId);
+        setRevealedCells(prev => [...prev, cellId]);
+      }}
+      onCellFeatureClick={(feature, cell) => {
+        console.log('Feature click:', feature, cell);
+        // TODO: 处理格子内容点击（NPC对话、战斗、事件等）
+      }}
+    />
+  );
     }
   };
 
