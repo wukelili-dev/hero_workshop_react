@@ -19,6 +19,7 @@ import { FactoryTab } from '../factory/FactoryTab';
 import { RanchTab } from '../ranch/RanchTab';
 import { ForgeTab } from '../forge/ForgeTab';
 import { BestiaryTab } from '../bestiary/BestiaryTab';
+import { WorldMapPanel } from '../world/WorldMapPanel';
 import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils';
 
 // Icon imports
@@ -27,9 +28,9 @@ import {
   FaBeerMugEmpty, FaWheatAwn, FaIndustry, FaPaw,
   FaBookOpen, FaCity, FaFloppyDisk, FaFolderOpen, FaCircleQuestion,
 } from 'react-icons/fa6';
-import { FaGift, FaCube, FaHammer, FaSkullCrossbones } from 'react-icons/fa';
+import { FaGift, FaCube, FaHammer, FaSkullCrossbones, FaMap } from 'react-icons/fa';
 
-export type TabId = 'weapon' | 'armor' | 'novelty' | 'inventory' | 'materials' | 'tavern' | 'farm' | 'factory' | 'ranch' | 'forge' | 'bestiary';
+export type TabId = 'weapon' | 'armor' | 'novelty' | 'inventory' | 'materials' | 'tavern' | 'farm' | 'factory' | 'ranch' | 'forge' | 'bestiary' | 'world';
 type MobileView = 'city' | 'combat' | TabId;
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode; description: string }[] = [
@@ -44,11 +45,13 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode; description: stri
   { id: 'ranch', label: '牧场', icon: <FaPaw />, description: '养殖生物获取资源' },
   { id: 'forge', label: '锻造', icon: <FaHammer />, description: '合成高级装备' },
   { id: 'bestiary', label: '图鉴', icon: <FaBookOpen />, description: '查看已击败的怪物' },
+  { id: 'world', label: '世界', icon: <FaMap />, description: '查看世界地图和移动' },
 ];
 
 const MOBILE_NAV: { id: MobileView; label: string; icon: React.ReactNode }[] = [
   { id: 'city', label: '主城', icon: <FaCity /> },
   { id: 'combat', label: '战斗', icon: <FaSkullCrossbones /> },
+  { id: 'world', label: '世界', icon: <FaMap /> },
   { id: 'inventory', label: '背包', icon: <FaBagShopping /> },
   { id: 'forge', label: '锻造', icon: <FaHammer /> },
   { id: 'ranch', label: '牧场', icon: <FaPaw /> },
@@ -101,6 +104,7 @@ export const AppShell: React.FC = () => {
       case 'ranch': return <RanchTab />;
       case 'forge': return <ForgeTab />;
       case 'bestiary': return <BestiaryTab />;
+      case 'world': return <WorldMapPanel />;
     }
   };
 
