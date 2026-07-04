@@ -1,6 +1,5 @@
-// ============ 等距菱形 2.5D 地图面板（SVG 精确命中版）============
-// 黑框白格子 + 玩家位置标记 + 迷雾
-// 用 SVG polygon 做点击区，hit-test 精确到菱形边界，无空隙
+// ============ 方格平面地图（极简黑白版）============
+// 白格子 = 已探索 | 灰格子 = 迷雾 | 黑色粗边框
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import {
@@ -13,28 +12,19 @@ import {
   type CellFeature,
 } from '../../data/cellMap';
 
-interface IsoMapProps {
+interface GridMapProps {
   currentCellId: string;
   revealedCells: string[];
   onMoveToCell: (cellId: string) => void;
   onCellFeatureClick: (feature: CellFeature, cell: MapCell) => void;
 }
 
-// ───── 尺寸 ─────
-const TILE_W = 80;
-const TILE_H = 48;
-const HW = TILE_W / 2;
-const HH = TILE_H / 2;
-const PAD = 20; // SVG 边距
+const CELL_SIZE = 64;
+const GAP = 2;
+const GRID_COLS = 7;
+const GRID_ROWS = 7;
 
-function toIso(cx: number, cy: number) {
-  return { x: (cx - cy) * HW, y: (cx + cy) * HH };
-}
-
-// 菱形 4 个顶点（相对格子左上角）
-const DIAMOND_PTS = `${HW},0 ${TILE_W},${HH} ${HW},${TILE_H} 0,${HH}`;
-
-export const IsometricMapPanel: React.FC<IsoMapProps> = ({
+export const IsometricMapPanel: React.FC<GridMapProps> = ({
   currentCellId,
   revealedCells,
   onMoveToCell,
@@ -56,10 +46,10 @@ export const IsometricMapPanel: React.FC<IsoMapProps> = ({
       const w = container.clientWidth;
       const h = container.clientHeight;
       if (w <= 0 || h <= 0) return;
-      const mapW = 6 * TILE_W + 2 * HW + 2 * PAD;
-      const mapH = 6 * TILE_H + 2 * HH + 2 * PAD;
-      const s = Math.min(w / mapW, h / mapH, 1.4);
-      setScale(Math.max(0.4, s));
+      const mapW = GRID_COLS * (CELL_SIZE + GAP);
+      const mapH = GRID_ROWS * (CELL_SIZE + GAP);
+      const s = Math.min(w / mapW, h / mapH, 1.5);
+      setScale(Math.max(0.3, s));
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -67,26 +57,8 @@ export const IsometricMapPanel: React.FC<IsoMapProps> = ({
     return () => ro.disconnect();
   }, []);
 
-  // ── 预计算格子等距坐标 + SVG 坐标 ──
-  const cellData = useMemo(() => {
-    return CENTRAL_PLAIN_CELLS.map(cell => {
-      const iso = toIso(cell.x, cell.y);
-      // SVG 坐标：以左上角为原点，需要偏移使格子居中
-      const ox = PAD + HW + iso.x; // 格子中心 X
-      const oy = PAD + HH + iso.y; // 格子中心 Y
-      // 菱形 4 顶点的绝对 SVG 坐标
-      const pts = [
-        `${ox - HW},${oy - HH}`, // top
-        `${ox + HW},${oy}`,      // right
-        `${ox},${oy + HH}`,      // bottom
-        `${ox - HW},${oy}`,      // left
-      ].join(' ');
-      return { cell, ox, oy, pts };
-    });
-  }, []);
-
-  const MAP_W = 6 * TILE_W + 2 * HW + 2 * PAD;
-  const MAP_H = 6 * TILE_H + 2 * HH + 2 * PAD;
+  const mapPixelW = GRID_COLS * (CELL_SIZE + GAP);
+  const mapPixelH = GRID_ROWS * (CELL_SIZE + GAP);
 
   // ── 点击处理 ──
   const handleCellClick = useCallback((cellId: string) => {
@@ -121,7 +93,7 @@ export const IsometricMapPanel: React.FC<IsoMapProps> = ({
       }} onClick={() => setSelectedCell(null)}>
         <div style={{
           background: '#fff', borderRadius: 8, padding: 20, maxWidth: 360, width: '90%',
-          border: '1px solid #000',
+          border: '2px solid #000',
         }} onClick={e => e.stopPropagation()}>
           <h2 style={{ margin: '0 0 12px 0', fontSize: 16, color: '#000' }}>
             {selectedCell.id}
@@ -165,94 +137,96 @@ export const IsometricMapPanel: React.FC<IsoMapProps> = ({
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: '#f5f5f5',
       }}>
-        <svg
-          width={MAP_W * scale}
-          height={MAP_H * scale}
-          viewBox={`0 0 ${MAP_W} ${MAP_H}`}
-          style={{ display: 'block' }}
-        >
-          {cellData.map(({ cell, ox, oy, pts }) => {
+        <div style={{
+          position: 'relative',
+          width: mapPixelW * scale,
+          height: mapPixelH * scale,
+        }}>
+          {CENTRAL_PLAIN_CELLS.map(cell => {
             const isRevealed = revealedCells.includes(cell.id) || cell.isRevealed;
             const isCurrent = cell.id === currentCellId;
             const isHovered = hoveredCell === cell.id;
             const isNeighbor = (neighbors as string[]).includes(cell.id);
             const hasFeature = cell.features.length > 0;
 
-            // 填充色
-            let fill = '#ffffff';
+            const left = cell.x * (CELL_SIZE + GAP) * scale;
+            const top = cell.y * (CELL_SIZE + GAP) * scale;
+            const size = CELL_SIZE * scale;
+
+            // 背景色
+            let bg = '#ffffff';
             if (!isRevealed) {
-              fill = isHovered ? '#d0d0d0' : '#e0e0e0';
+              bg = isHovered ? '#b0b0b0' : '#c8c8c8';
             } else if (isHovered) {
-              fill = '#e8e8e8';
+              bg = '#e0e0e0';
             }
 
             // 边框
-            const stroke = isNeighbor && !isCurrent ? '#333' : '#000';
-            const strokeWidth = isNeighbor && !isCurrent ? 1.5 : 1;
+            const border = isCurrent ? '3px solid #000'
+              : isNeighbor ? '2px solid #555'
+              : '2px solid #000';
 
             return (
-              <g key={cell.id}>
-                {/* 菱形主体（点击+hover） */}
-                <polygon
-                  points={pts}
-                  fill={fill}
-                  stroke={stroke}
-                  strokeWidth={strokeWidth}
-                  style={{ cursor: 'pointer', transition: 'fill 0.1s' }}
-                  onClick={() => handleCellClick(cell.id)}
-                  onMouseEnter={() => setHoveredCell(cell.id)}
-                  onMouseLeave={() => setHoveredCell(null)}
-                />
-
-                {/* 未探索：斜线纹理 */}
-                {!isRevealed && (
-                  <polygon
-                    points={pts}
-                    fill="url(#fogPattern)"
-                    pointerEvents="none"
-                  />
-                )}
-
-                {/* 玩家位置：黑色小菱形 */}
+              <div key={cell.id}
+                onClick={() => handleCellClick(cell.id)}
+                onMouseEnter={() => setHoveredCell(cell.id)}
+                onMouseLeave={() => setHoveredCell(null)}
+                style={{
+                  position: 'absolute',
+                  left, top, width: size, height: size,
+                  background: bg,
+                  border,
+                  cursor: 'pointer',
+                  transition: 'background 0.1s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxSizing: 'border-box',
+                }}
+              >
+                {/* 玩家位置：黑色实心方块 */}
                 {isCurrent && (
-                  <polygon
-                    points={`${ox - 6},${oy} ${ox},${oy - 4} ${ox + 6},${oy} ${ox},${oy + 4}`}
-                    fill="#000"
-                    pointerEvents="none"
-                  />
+                  <div style={{
+                    width: size * 0.3, height: size * 0.3,
+                    background: '#000',
+                  }} />
                 )}
 
                 {/* 特征提示：黑色小圆点 */}
                 {hasFeature && !isCurrent && isRevealed && (
-                  <circle cx={ox} cy={oy} r={3} fill="#000" pointerEvents="none" />
+                  <div style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: '#000',
+                  }} />
                 )}
 
-                {/* 格子坐标 */}
-                <text
-                  x={ox} y={oy + 14}
-                  textAnchor="middle"
-                  fontSize={7}
-                  fill="#bbb"
-                  fontFamily="monospace"
-                  pointerEvents="none"
-                >
+                {/* 迷雾斜线 */}
+                {!isRevealed && (
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    backgroundImage: 'repeating-linear-gradient(45deg, transparent 0 4px, rgba(0,0,0,0.08) 4px 8px)',
+                    pointerEvents: 'none',
+                  }} />
+                )}
+
+                {/* 坐标 */}
+                <span style={{
+                  position: 'absolute',
+                  bottom: 2, right: 3,
+                  fontSize: Math.max(7, size * 0.12),
+                  color: '#999',
+                  fontFamily: 'monospace',
+                  pointerEvents: 'none',
+                }}>
                   {cell.x},{cell.y}
-                </text>
-              </g>
+                </span>
+              </div>
             );
           })}
-
-          {/* 斜线纹理定义 */}
-          <defs>
-            <pattern id="fogPattern" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-              <rect width="6" height="6" fill="#e0e0e0" />
-              <line x1="0" y1="0" x2="0" y2="6" stroke="#bbb" strokeWidth="1.5" />
-            </pattern>
-          </defs>
-        </svg>
+        </div>
       </div>
 
-      {/* 图例（右上角） */}
+      {/* 图例 */}
       <div style={{
         position: 'absolute', top: 8, right: 8,
         background: 'rgba(255,255,255,0.95)',
@@ -265,22 +239,23 @@ export const IsometricMapPanel: React.FC<IsoMapProps> = ({
         pointerEvents: 'none',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <svg width="16" height="10"><polygon points="8,0 16,5 8,10 0,5" fill="#fff" stroke="#000" strokeWidth="1" /></svg>
+          <div style={{ width: 14, height: 10, background: '#fff', border: '2px solid #000' }} />
           <span>已探索</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <svg width="16" height="10"><polygon points="8,0 16,5 8,10 0,5" fill="url(#fogLegend)" stroke="#000" strokeWidth="1" /></svg>
+          <div style={{ width: 14, height: 10, background: '#c8c8c8', border: '2px solid #000', backgroundImage: 'repeating-linear-gradient(45deg, transparent 0 2px, rgba(0,0,0,0.08) 2px 4px)' }} />
           <span>未探索</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <svg width="16" height="10"><polygon points="8,0 16,5 8,10 0,5" fill="#fff" stroke="#000" strokeWidth="1" /><polygon points="5,5 8,3 11,5 8,7" fill="#000" /></svg>
+          <div style={{ width: 14, height: 10, background: '#fff', border: '3px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 4, height: 4, background: '#000' }} />
+          </div>
           <span>当前</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <svg width="16" height="10"><polygon points="8,0 16,5 8,10 0,5" fill="#fff" stroke="#333" strokeWidth="1.5" /><circle cx="8" cy="5" r="1.5" fill="#000" /></svg>
+          <div style={{ width: 14, height: 10, background: '#fff', border: '2px solid #555' }} />
           <span>可移动</span>
         </div>
-        <svg width="0" height="0"><defs><pattern id="fogLegend" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)"><rect width="4" height="4" fill="#e0e0e0" /><line x1="0" y1="0" x2="0" y2="4" stroke="#bbb" strokeWidth="1" /></pattern></defs></svg>
       </div>
 
       {/* 状态栏 */}
@@ -291,7 +266,7 @@ export const IsometricMapPanel: React.FC<IsoMapProps> = ({
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         fontSize: 11, color: '#333', fontFamily: 'monospace',
       }}>
-        <span style={{ color: '#000' }}>◉ {currentCellId}</span>
+        <span style={{ color: '#000' }}>■ {currentCellId}</span>
         <span>{revealedCells.length}/{CENTRAL_PLAIN_CELLS.length}</span>
         <span style={{ color: '#666' }}>
           {hoveredCell ? `${hoveredCell}` : '点击格子查看/移动'}
