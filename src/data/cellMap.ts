@@ -347,5 +347,6 @@ export function calcMoveCost(fromId: string, toId: string): number {
   const to = getCellById(toId);
   if (!from || !to) return 999;
   
-  return TERRAIN_CONFIG[to.terrain].moveCost;
+  const t = TERRAIN_CONFIG[to.terrain];
+  return t ? t.moveCost : 1;
 }
