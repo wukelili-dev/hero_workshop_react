@@ -145,7 +145,7 @@ export const IsometricMapPanel: React.FC<IsoMapProps> = ({
   const MAP_H = 6 * TILE_H + 2 * HH;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f5f5f5' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f5f5f5', position: 'relative' }}>
       <div ref={containerRef} style={{
         flex: 1, overflow: 'hidden', position: 'relative',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -246,6 +246,54 @@ export const IsometricMapPanel: React.FC<IsoMapProps> = ({
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* 图例（右上角） */}
+      <div style={{
+        position: 'absolute', top: 8, right: 8,
+        background: 'rgba(255,255,255,0.95)',
+        border: '1px solid #000',
+        padding: '6px 8px',
+        fontSize: 10, color: '#000',
+        fontFamily: 'monospace',
+        lineHeight: 1.6,
+        zIndex: 2000,
+        pointerEvents: 'none',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{
+            width: 14, height: 8, clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+            background: '#fff', boxShadow: 'inset 0 0 0 1px #000',
+          }} />
+          <span>已探索</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{
+            width: 14, height: 8, clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+            background: 'repeating-linear-gradient(45deg, #ccc 0 1.5px, #f5f5f5 1.5px 3px)',
+          }} />
+          <span>未探索</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{
+            width: 14, height: 8, clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+            background: '#fff', boxShadow: 'inset 0 0 0 1px #000',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <div style={{ width: 4, height: 4, clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)', background: '#000' }} />
+          </div>
+          <span>当前</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{
+            width: 14, height: 8, clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+            background: '#fff', boxShadow: 'inset 0 0 0 1.5px #333',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <div style={{ width: 3, height: 3, borderRadius: '50%', background: '#000' }} />
+          </div>
+          <span>可移动</span>
         </div>
       </div>
 
