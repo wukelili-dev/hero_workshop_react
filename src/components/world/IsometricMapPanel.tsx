@@ -466,6 +466,40 @@ function getFeatureIcon(feature: CellFeature, size = 28): string {
   return getOrCreateIcon(`feature_${feature.type}_${size}`, fn, size);
 }
 
+// ─── 玩家头像（人物剪影）───
+
+function getPlayerAvatar(size = 32): string {
+  return getOrCreateIcon('player_avatar', (ctx, s) => {
+    // 背景圆
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    ctx.arc(s * 0.5, s * 0.5, s * 0.48, 0, Math.PI * 2);
+    ctx.fill();
+    // 身体（深色斗篷）
+    ctx.fillStyle = '#3a1a1a';
+    ctx.beginPath();
+    ctx.arc(s * 0.5, s * 0.75, s * 0.25, Math.PI, 0);
+    ctx.fill();
+    // 头（肤色）
+    ctx.fillStyle = '#e0c090';
+    ctx.beginPath();
+    ctx.arc(s * 0.5, s * 0.4, s * 0.16, 0, Math.PI * 2);
+    ctx.fill();
+    // 斗笠（深色）
+    ctx.fillStyle = '#2a1a1a';
+    ctx.beginPath();
+    ctx.ellipse(s * 0.5, s * 0.28, s * 0.22, s * 0.05, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // 斗笠顶部
+    ctx.beginPath();
+    ctx.arc(s * 0.5, s * 0.25, s * 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    // 斗笠边阴影
+    ctx.fillStyle = '#1a0a0a';
+    ctx.fillRect(s * 0.25, s * 0.28, s * 0.5, 2);
+  }, size);
+}
+
 // ───── 主组件 ─────
 
 export const IsometricMapPanel: React.FC<IsoMapProps> = ({
@@ -490,10 +524,10 @@ export const IsometricMapPanel: React.FC<IsoMapProps> = ({
       const w = container.clientWidth;
       const h = container.clientHeight;
       if (w <= 0 || h <= 0) return;
-      // 地图设计尺寸
-      const mapW = 6 * TILE_W; // (maxX-minX)*HW*2 = 6*TILE_W
-      const mapH = 6 * TILE_H + TILE_H * 0.5; // 加上一点余量
-      const s = Math.min(w / mapW, h / mapH, 1.2);
+      // 地图设计尺寸（含左右上下各 1 个半格 padding）
+      const mapW = 6 * TILE_W + 2 * HW; // 504
+      const mapH = 6 * TILE_H + 2 * HH; // 308
+      const s = Math.min(w / mapW, h / mapH, 1.4);
       setScale(Math.max(0.4, s));
     };
     fit();
@@ -584,11 +618,9 @@ export const IsometricMapPanel: React.FC<IsoMapProps> = ({
     );
   };
 
-  // ── 单选地图区域居中偏移 ──
-  // 地图中心在 (cx=3, cy=3) → iso(3,3) = (0, 6*HH)
-  // 居中：让地图中心在容器中心
-  const mapOffsetX = 0;  // 通过父容器 flex 居中
-  const mapOffsetY = 0;
+  // ── 地图设计尺寸常量（用于外层 wrapper） ──
+  const MAP_W = 6 * TILE_W + 2 * HW; // 504
+  const MAP_H = 6 * TILE_H + 2 * HH; // 308
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0c0c1a' }}>
@@ -597,18 +629,13 @@ export const IsometricMapPanel: React.FC<IsoMapProps> = ({
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: 'radial-gradient(ellipse at center, #141428 0%, #0a0a16 70%)',
       }}>
+        {/* 地图 wrapper：固定设计尺寸，靠 transform scale 缩放 */}
         <div style={{
           position: 'relative',
+          width: MAP_W, height: MAP_H,
           transform: `scale(${scale})`,
           transformOrigin: 'center center',
-          width: TILE_W, height: TILE_H, // placeholder, children are positioned absolutely
         }}>
-          {/* 等距地图区域 */}
-          <div style={{
-            position: 'absolute',
-            left: '50%', top: '50%',
-            transform: 'translate(-50%, -60%)',
-          }}>
             {CENTRAL_PLAIN_CELLS.map(cell => {
               const iso = cellPositions[cell.id];
               if (!iso) return null;
@@ -626,8 +653,8 @@ export const IsometricMapPanel: React.FC<IsoMapProps> = ({
                   onMouseLeave={() => setHoveredCell(null)}
                   style={{
                     position: 'absolute',
-                    left: iso.x,
-                    top: iso.y - (cell.elevation || 0) * 4,
+                    left: MAP_W / 2 + iso.x - HW,
+                    top: HH + iso.y - (cell.elevation || 0) * 4,
                     width: TILE_W, height: TILE_H,
                     cursor: 'pointer',
                     zIndex: 1000 + (cell.elevation || 0) + (isCurrent ? 100 : 0),
@@ -737,24 +764,22 @@ export const IsometricMapPanel: React.FC<IsoMapProps> = ({
                         opacity: 0.6,
                         animation: 'isoGoldPulse 2s ease-in-out infinite',
                       }} />
-                      {/* 头像 */}
+                      {/* 头像（Canvas 绘制）*/}
                       <div style={{
                         position: 'absolute',
-                        left: '50%', top: -16,
+                        left: '50%', top: -22,
                         transform: 'translateX(-50%)',
-                        width: 20, height: 20,
+                        width: 26, height: 26,
                         borderRadius: '50%',
                         border: '2px solid #FFD700',
-                        background: '#FFD700',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        backgroundColor: '#FFD700',
+                        backgroundImage: `url(${getPlayerAvatar(26)})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
                         zIndex: 5,
                         boxShadow: '0 0 8px rgba(255,215,0,0.5)',
-                        fontSize: 12,
-                        color: '#000',
                         animation: 'isoAvatarFloat 2.5s ease-in-out infinite',
-                      }}>
-                        🧑
-                      </div>
+                      }} />
                     </>
                   )}
 
@@ -774,7 +799,6 @@ export const IsometricMapPanel: React.FC<IsoMapProps> = ({
             })}
           </div>
         </div>
-      </div>
 
       {/* 底部状态栏 */}
       <div style={{
