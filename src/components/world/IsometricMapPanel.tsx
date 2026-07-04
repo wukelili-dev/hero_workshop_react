@@ -60,16 +60,11 @@ export const IsometricMapPanel: React.FC<GridMapProps> = ({
   const mapPixelW = GRID_COLS * (CELL_SIZE + GAP);
   const mapPixelH = GRID_ROWS * (CELL_SIZE + GAP);
 
-  // ── 点击处理 ──
+  // ── 点击处理：点相邻格直接移动，无弹窗 ──
   const handleCellClick = useCallback((cellId: string) => {
-    const cell = getCellById(cellId);
-    if (!cell) return;
-    if (cellId === currentCellId) return; // 点自己不做事
+    if (cellId === currentCellId) return;
     if ((neighbors as string[]).includes(cellId)) {
-      const cost = calcMoveCost(currentCellId, cellId);
-      if (window.confirm(`移动到 ${TERRAIN_CONFIG[cell.terrain]?.name ?? '未知'}？\n消耗 ${cost} 天`)) {
-        onMoveToCell(cellId);
-      }
+      onMoveToCell(cellId);
     }
   }, [currentCellId, neighbors, onMoveToCell]);
 
