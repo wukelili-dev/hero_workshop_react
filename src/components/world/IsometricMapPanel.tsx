@@ -1,5 +1,6 @@
-// ============ 方格平面地图（极简黑白版）============
+// ============ 方格平面地图（左信息+右格子 联动版）============
 // 白格子 = 已探索 | 灰格子 = 迷雾 | 黑色粗边框
+// hover 格子 → 左侧实时显示地块信息，不需要弹窗
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import {
@@ -19,7 +20,7 @@ interface GridMapProps {
   onCellFeatureClick: (feature: CellFeature, cell: MapCell) => void;
 }
 
-const CELL_SIZE = 64;
+const CELL_SIZE = 56;
 const GAP = 2;
 const GRID_COLS = 7;
 const GRID_ROWS = 7;
@@ -31,8 +32,7 @@ export const IsometricMapPanel: React.FC<GridMapProps> = ({
   onCellFeatureClick,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [selectedCell, setSelectedCell] = useState<MapCell | null>(null);
-  const [hoveredCell, setHoveredCell] = useState<string | null>(null);
+  const [hoveredCell, setHoveredCell] = useState<MapCell | null>(null);
   const [scale, setScale] = useState(1);
 
   const currentCell = getCellById(currentCellId);
@@ -48,7 +48,7 @@ export const IsometricMapPanel: React.FC<GridMapProps> = ({
       if (w <= 0 || h <= 0) return;
       const mapW = GRID_COLS * (CELL_SIZE + GAP);
       const mapH = GRID_ROWS * (CELL_SIZE + GAP);
-      const s = Math.min(w / mapW, h / mapH, 1.5);
+      const s = Math.min(w / mapW, h / mapH, 1.3);
       setScale(Math.max(0.3, s));
     };
     fit();
@@ -64,74 +64,111 @@ export const IsometricMapPanel: React.FC<GridMapProps> = ({
   const handleCellClick = useCallback((cellId: string) => {
     const cell = getCellById(cellId);
     if (!cell) return;
-    if (cellId === currentCellId) {
-      setSelectedCell(cell);
-    } else if ((neighbors as string[]).includes(cellId)) {
+    if (cellId === currentCellId) return; // 点自己不做事
+    if ((neighbors as string[]).includes(cellId)) {
       const cost = calcMoveCost(currentCellId, cellId);
       if (window.confirm(`移动到 ${TERRAIN_CONFIG[cell.terrain]?.name ?? '未知'}？\n消耗 ${cost} 天`)) {
         onMoveToCell(cellId);
       }
-    } else {
-      setSelectedCell(cell);
     }
   }, [currentCellId, neighbors, onMoveToCell]);
 
-  // ── 详情弹窗 ──
-  const renderDetail = () => {
-    if (!selectedCell) return null;
-    const t = TERRAIN_CONFIG[selectedCell.terrain] ?? {
+  // ── 左侧信息面板显示的格子（hover 优先，否则显示当前格） ──
+  const displayCell = hoveredCell ?? currentCell;
+
+  // ── 左侧信息面板 ──
+  const renderInfoPanel = () => {
+    if (!displayCell) return null;
+    const t = TERRAIN_CONFIG[displayCell.terrain] ?? {
       name: '未知', color: '#888', moveCost: 1, encounterRate: 0, description: '',
     };
-    const isRevealed = revealedCells.includes(selectedCell.id) || selectedCell.isRevealed;
-    const isCurrent = selectedCell.id === currentCellId;
-    const isNeighbor = (neighbors as string[]).includes(selectedCell.id);
+    const isRevealed = revealedCells.includes(displayCell.id) || displayCell.isRevealed;
+    const isCurrent = displayCell.id === currentCellId;
+    const isNeighbor = (neighbors as string[]).includes(displayCell.id);
+    const canMove = isNeighbor && !isCurrent;
+
     return (
       <div style={{
-        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.7)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-      }} onClick={() => setSelectedCell(null)}>
-        <div style={{
-          background: '#fff', borderRadius: 8, padding: 20, maxWidth: 360, width: '90%',
-          border: '2px solid #000',
-        }} onClick={e => e.stopPropagation()}>
-          <h2 style={{ margin: '0 0 12px 0', fontSize: 16, color: '#000' }}>
-            {selectedCell.id}
-          </h2>
-          <div style={{ color: '#333', fontSize: 13, marginBottom: 8 }}>地形：{t.name}</div>
-          <div style={{ color: '#666', fontSize: 12, marginBottom: 12 }}>{t.description}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 12, color: '#444' }}>
-            <div>移动：{t.moveCost} 天</div>
-            <div>遇敌：{Math.round((t.encounterRate || 0) * 100)}%</div>
-            <div>海拔：{selectedCell.elevation || 0}</div>
-            <div>状态：<span style={{ color: isRevealed ? '#000' : '#999' }}>{isRevealed ? '已探索' : '未探索'}</span></div>
-          </div>
-          {selectedCell.features.length > 0 && (
-            <div style={{ marginTop: 12, padding: 8, background: '#f5f5f5', borderRadius: 4 }}>
-              {selectedCell.features.map((f, i) => (
-                <div key={i} style={{ fontSize: 12, padding: '2px 0' }}>
-                  <b>{f.label}</b>
-                  {f.description && <span style={{ color: '#666' }}> — {f.description}</span>}
-                </div>
-              ))}
-            </div>
-          )}
-          {isNeighbor && !isCurrent && (
-            <button onClick={() => { onMoveToCell(selectedCell.id); setSelectedCell(null); }}
-              style={{
-                width: '100%', marginTop: 12, padding: 8,
-                background: '#000', border: 'none', borderRadius: 4,
-                color: '#fff', cursor: 'pointer', fontSize: 13,
-              }}
-            >移动至此</button>
-          )}
+        width: '100%', height: '100%',
+        background: '#fff',
+        borderRight: '2px solid #000',
+        padding: 12,
+        display: 'flex', flexDirection: 'column',
+        fontSize: 12, color: '#000', fontFamily: 'monospace',
+        overflowY: 'auto',
+      }}>
+        {/* 格子 ID + 状态 */}
+        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
+          {displayCell.id}
+          <span style={{ marginLeft: 8, fontSize: 11, color: isRevealed ? '#000' : '#999' }}>
+            {isRevealed ? '已探索' : '未探索'}
+          </span>
+          {isCurrent && <span style={{ marginLeft: 4, fontSize: 11, color: '#000', fontWeight: 700 }}>[当前]</span>}
+          {canMove && <span style={{ marginLeft: 4, fontSize: 11, color: '#555' }}>[可移动]</span>}
         </div>
+
+        {/* 地形 */}
+        <div style={{ marginBottom: 4 }}>地形：{t.name}</div>
+        <div style={{ color: '#666', marginBottom: 8, lineHeight: 1.5 }}>{t.description}</div>
+
+        {/* 数值 */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginBottom: 8 }}>
+          <div>移动：{t.moveCost} 天</div>
+          <div>遇敌：{Math.round((t.encounterRate || 0) * 100)}%</div>
+          <div>海拔：{displayCell.elevation || 0}</div>
+          <div>坐标：{displayCell.x}, {displayCell.y}</div>
+        </div>
+
+        {/* 特征列表 */}
+        {isRevealed && displayCell.features.length > 0 && (
+          <div style={{ marginTop: 4 }}>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>地标：</div>
+            {displayCell.features.map((f, i) => (
+              <div key={i} style={{
+                padding: '4px 6px', marginBottom: 3,
+                background: '#f5f5f5', borderLeft: '3px solid #000',
+                fontSize: 11,
+              }}>
+                <b>{f.label}</b>
+                {f.description && <div style={{ color: '#666', marginTop: 2 }}>{f.description}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!isRevealed && (
+          <div style={{ color: '#999', fontStyle: 'italic', marginTop: 8 }}>
+            迷雾覆盖，尚未探索
+          </div>
+        )}
+
+        {/* 移动按钮 */}
+        {canMove && (
+          <button
+            onClick={() => handleCellClick(displayCell.id)}
+            style={{
+              marginTop: 'auto', padding: '8px 0',
+              background: '#000', border: 'none', borderRadius: 4,
+              color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 700,
+            }}
+          >
+            移动至此（{calcMoveCost(currentCellId, displayCell.id)} 天）
+          </button>
+        )}
+
+        {/* 提示 */}
+        {!hoveredCell && !isNeighbor && !isCurrent && (
+          <div style={{ marginTop: 'auto', color: '#999', fontSize: 10 }}>
+            悬停格子查看信息
+          </div>
+        )}
       </div>
     );
   };
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f5f5f5', position: 'relative' }}>
+  // ── 右侧格子地图 ──
+  const renderGrid = () => {
+    return (
       <div ref={containerRef} style={{
         flex: 1, overflow: 'hidden', position: 'relative',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -145,7 +182,7 @@ export const IsometricMapPanel: React.FC<GridMapProps> = ({
           {CENTRAL_PLAIN_CELLS.map(cell => {
             const isRevealed = revealedCells.includes(cell.id) || cell.isRevealed;
             const isCurrent = cell.id === currentCellId;
-            const isHovered = hoveredCell === cell.id;
+            const isHovered = hoveredCell?.id === cell.id;
             const isNeighbor = (neighbors as string[]).includes(cell.id);
             const hasFeature = cell.features.length > 0;
 
@@ -158,7 +195,7 @@ export const IsometricMapPanel: React.FC<GridMapProps> = ({
             if (!isRevealed) {
               bg = isHovered ? '#b0b0b0' : '#c8c8c8';
             } else if (isHovered) {
-              bg = '#e0e0e0';
+              bg = '#d0d0d0';
             }
 
             // 边框
@@ -169,7 +206,7 @@ export const IsometricMapPanel: React.FC<GridMapProps> = ({
             return (
               <div key={cell.id}
                 onClick={() => handleCellClick(cell.id)}
-                onMouseEnter={() => setHoveredCell(cell.id)}
+                onMouseEnter={() => setHoveredCell(cell)}
                 onMouseLeave={() => setHoveredCell(null)}
                 style={{
                   position: 'absolute',
@@ -177,7 +214,7 @@ export const IsometricMapPanel: React.FC<GridMapProps> = ({
                   background: bg,
                   border,
                   cursor: 'pointer',
-                  transition: 'background 0.1s',
+                  transition: 'background 0.08s',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -212,7 +249,7 @@ export const IsometricMapPanel: React.FC<GridMapProps> = ({
                 {/* 坐标 */}
                 <span style={{
                   position: 'absolute',
-                  bottom: 2, right: 3,
+                  bottom: 1, right: 2,
                   fontSize: Math.max(7, size * 0.12),
                   color: '#999',
                   fontFamily: 'monospace',
@@ -225,55 +262,67 @@ export const IsometricMapPanel: React.FC<GridMapProps> = ({
           })}
         </div>
       </div>
+    );
+  };
 
-      {/* 图例 */}
+  return (
+    <div style={{ display: 'flex', height: '100%', background: '#f5f5f5', position: 'relative' }}>
+      {/* 左侧：地块信息（hover 联动） */}
+      <div style={{ flex: '0 0 38%', maxWidth: 200, minWidth: 120, overflow: 'hidden' }}>
+        {renderInfoPanel()}
+      </div>
+
+      {/* 右侧：格子地图 */}
+      {renderGrid()}
+
+      {/* 图例（右上角浮层） */}
       <div style={{
-        position: 'absolute', top: 8, right: 8,
+        position: 'absolute', top: 6, right: 6,
         background: 'rgba(255,255,255,0.95)',
         border: '1px solid #000',
-        padding: '6px 8px',
-        fontSize: 10, color: '#000',
+        padding: '5px 7px',
+        fontSize: 9, color: '#000',
         fontFamily: 'monospace',
-        lineHeight: 1.6,
+        lineHeight: 1.5,
         zIndex: 2000,
         pointerEvents: 'none',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <div style={{ width: 14, height: 10, background: '#fff', border: '2px solid #000' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <div style={{ width: 12, height: 9, background: '#fff', border: '2px solid #000' }} />
           <span>已探索</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <div style={{ width: 14, height: 10, background: '#c8c8c8', border: '2px solid #000', backgroundImage: 'repeating-linear-gradient(45deg, transparent 0 2px, rgba(0,0,0,0.08) 2px 4px)' }} />
-          <span>未探索</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <div style={{ width: 12, height: 9, background: '#c8c8c8', border: '2px solid #000' }} />
+          <span>迷雾</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <div style={{ width: 14, height: 10, background: '#fff', border: '3px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <div style={{ width: 12, height: 9, background: '#fff', border: '3px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ width: 4, height: 4, background: '#000' }} />
           </div>
           <span>当前</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <div style={{ width: 14, height: 10, background: '#fff', border: '2px solid #555' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <div style={{ width: 12, height: 9, background: '#fff', border: '2px solid #555' }} />
           <span>可移动</span>
         </div>
       </div>
 
       {/* 状态栏 */}
       <div style={{
-        padding: '6px 10px',
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        padding: '4px 8px',
         background: '#fff',
         borderTop: '1px solid #000',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        fontSize: 11, color: '#333', fontFamily: 'monospace',
+        fontSize: 10, color: '#333', fontFamily: 'monospace',
+        zIndex: 2000,
       }}>
         <span style={{ color: '#000' }}>■ {currentCellId}</span>
         <span>{revealedCells.length}/{CENTRAL_PLAIN_CELLS.length}</span>
         <span style={{ color: '#666' }}>
-          {hoveredCell ? `${hoveredCell}` : '点击格子查看/移动'}
+          {hoveredCell ? hoveredCell.id : '悬停查看 · 点击移动'}
         </span>
       </div>
-
-      {renderDetail()}
     </div>
   );
 };
