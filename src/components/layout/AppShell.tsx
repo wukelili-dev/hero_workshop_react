@@ -118,8 +118,8 @@ export const AppShell: React.FC = () => {
       }}
       onCellFeatureClick={(feature, cell) => {
         console.log('Feature click:', feature, cell);
-        // TODO: 处理格子内容点击（NPC对话、战斗、事件等）
       }}
+      onClose={() => setActiveTab('weapon')}
     />
   );
     }

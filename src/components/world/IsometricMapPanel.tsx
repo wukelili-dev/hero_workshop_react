@@ -18,6 +18,7 @@ interface GridMapProps {
   revealedCells: string[];
   onMoveToCell: (cellId: string) => void;
   onCellFeatureClick: (feature: CellFeature, cell: MapCell) => void;
+  onClose?: () => void; // 返回按钮回调
 }
 
 const CELL_SIZE = 56;
@@ -30,6 +31,7 @@ export const IsometricMapPanel: React.FC<GridMapProps> = ({
   revealedCells,
   onMoveToCell,
   onCellFeatureClick,
+  onClose,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredCell, setHoveredCell] = useState<MapCell | null>(null);
@@ -261,8 +263,30 @@ export const IsometricMapPanel: React.FC<GridMapProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', height: '100%', background: '#f5f5f5', position: 'relative' }}>
-      {/* 左侧：地块信息（hover 联动） */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f5f5f5', position: 'relative' }}>
+      {/* 顶部 Tab 栏（仅全屏模式显示） */}
+      {onClose && (
+        <div style={{
+          flex: '0 0 36px',
+          background: '#fff',
+          borderBottom: '1px solid #000',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 12px',
+          fontSize: 12, fontFamily: 'monospace',
+        }}>
+          <span style={{ fontWeight: 700 }}>世界地图</span>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '4px 12px',
+              background: '#000', border: 'none', borderRadius: 4,
+              color: '#fff', cursor: 'pointer', fontSize: 11,
+            }}
+          >返回</button>
+        </div>
+      )}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      {/* 左侧：地块信息 */}
       <div style={{ flex: '0 0 38%', maxWidth: 200, minWidth: 120, overflow: 'hidden' }}>
         {renderInfoPanel()}
       </div>
@@ -317,6 +341,8 @@ export const IsometricMapPanel: React.FC<GridMapProps> = ({
         <span style={{ color: '#666' }}>
           {hoveredCell ? hoveredCell.id : '悬停查看 · 点击移动'}
         </span>
+      </div>
+
       </div>
     </div>
   );
