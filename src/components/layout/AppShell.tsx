@@ -139,54 +139,77 @@ export const AppShell: React.FC = () => {
       {/* Top bar */}
       <TopBar />
 
-      {/* === 桌面端：三栏布局 === */}
-      <div className="hidden md:flex flex-1 overflow-hidden">
-        <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          animate={showApp ? { opacity: 1, x: 0 } : {}}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="flex-[2_0_0] min-w-0 overflow-y-auto border-r border-gray-200/70 bg-gradient-to-b from-gray-50/80 to-gray-100/40"
-        >
-          <MainCityPanel />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={showApp ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.4, delay: 0.25 }}
-          className="flex-[3_0_0] min-w-0 overflow-y-auto border-r border-gray-200/70 bg-white/90 flex flex-col"
-        >
-          <CenterPanel />
-        </motion.div>
-        {/* 右侧：人物/日志(上) + Tab内容(下) */}
-        <motion.div
-          initial={{ opacity: 0, x: 30 }}
-          animate={showApp ? { opacity: 1, x: 0 } : {}}
-          transition={{ duration: 0.4, delay: 0.4 }}
-          className="flex-[2_0_0] min-w-0 flex flex-col overflow-hidden"
-        >
-          {/* 右上：日志 */}
-          <div className="flex-1 min-h-0 flex flex-col border-b border-gray-200">
-            <GameLogPanel />
-          </div>
-          {/* 右下：Tab栏 + 内容 */}
-          <div className="flex-1 min-h-0 flex flex-col">
-            <TabBar tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
-            <div className="flex-1 overflow-y-auto p-3">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeTab}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.25, ease: 'easeOut' }}
-                >
-                  {renderTab()}
-                </motion.div>
-              </AnimatePresence>
+      {/* === 桌面端布局 === */}
+      {activeTab === 'world' ? (
+        /* 地图模式：左栏主城 + 大地图占满剩余空间 */
+        <div className="hidden md:flex flex-1 overflow-hidden">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={showApp ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="flex-[2_0_0] min-w-0 overflow-y-auto border-r border-gray-200/70 bg-gradient-to-b from-gray-50/80 to-gray-100/40"
+          >
+            <MainCityPanel />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={showApp ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="flex-[5_0_0] min-w-0 overflow-hidden"
+          >
+            {renderTab()}
+          </motion.div>
+        </div>
+      ) : (
+        /* 默认三栏布局 */
+        <div className="hidden md:flex flex-1 overflow-hidden">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={showApp ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="flex-[2_0_0] min-w-0 overflow-y-auto border-r border-gray-200/70 bg-gradient-to-b from-gray-50/80 to-gray-100/40"
+          >
+            <MainCityPanel />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={showApp ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.4, delay: 0.25 }}
+            className="flex-[3_0_0] min-w-0 overflow-y-auto border-r border-gray-200/70 bg-white/90 flex flex-col"
+          >
+            <CenterPanel />
+          </motion.div>
+          {/* 右侧：人物/日志(上) + Tab内容(下) */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={showApp ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.4, delay: 0.4 }}
+            className="flex-[2_0_0] min-w-0 flex flex-col overflow-hidden"
+          >
+            {/* 右上：日志 */}
+            <div className="flex-1 min-h-0 flex flex-col border-b border-gray-200">
+              <GameLogPanel />
             </div>
-          </div>
-        </motion.div>
-      </div>
+            {/* 右下：Tab栏 + 内容 */}
+            <div className="flex-1 min-h-0 flex flex-col">
+              <TabBar tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
+              <div className="flex-1 overflow-y-auto p-3">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.25, ease: 'easeOut' }}
+                  >
+                    {renderTab()}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* === 移动端：底部导航切换 === */}
       <div className="flex md:hidden flex-1 overflow-hidden flex-col">
