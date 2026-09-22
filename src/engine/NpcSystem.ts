@@ -6,7 +6,7 @@ import type { NpcDefinition, NpcPersonalItem, Monster } from '../types';
 import { useGameStore } from '../store/useGameStore';
 import { useNpcStore } from '../store/useNpcStore';
 import { useInventoryStore } from '../store/useInventoryStore';
-import { randomGreeting, randomDialogue, NPCS } from '../data/npcs';
+import { NPCS } from '../data/npcs';
 import { executeBattle, type HeroStats } from './Combat';
 
 // ═══════════ NPC 生态动作（M2-M7：攻击 / 结交 / 求婚 / 结婚 / 揭发 / 挑拨） ═══════════
@@ -240,7 +240,7 @@ export function greetNpc(npc: NpcDefinition): ActionResult {
   if (!inst?.greeted) {
     store.markGreeted(npc.id);
     store.recordInteraction(npc.id);
-    const line = moralLine ?? randomGreeting(npc);
+    const line = moralLine ?? talk(npc, 'greet').text;
     return { type: 'log', message: `【${npc.title}】${npc.name}：「${line}」` };
   }
 
@@ -270,7 +270,7 @@ export function greetNpc(npc: NpcDefinition): ActionResult {
   const guanyinResult = tryTriggerGuanyin(npc.location, npc.id);
   if (guanyinResult) return guanyinResult;
 
-  const line = moralLine ?? randomDialogue(npc);
+  const line = moralLine ?? talk(npc, 'chat').text;
   return { type: 'log', message: `【${npc.title}】${npc.name}：「${line}」` };
 }
 
@@ -353,7 +353,7 @@ export function chatNpc(npc: NpcDefinition): ActionResult {
 
   // 善恶对话优先
   const moralLine = _getMoralDialogue(npc);
-  const line = moralLine ?? randomDialogue(npc);
+  const line = moralLine ?? talk(npc, 'chat').text;
   return { type: 'log', message: `【${npc.title}】${npc.name}：「${line}」` };
 }
 

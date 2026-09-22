@@ -5,7 +5,7 @@
 import { create } from 'zustand';
 import type { NpcBond, NpcEcoState, NpcMood, WorldEvent } from '../types';
 import { NPCS } from '../data/npcs';
-import { getRelationDef, NPC_ECO } from '../data/npcEcology';
+import { buildEco, GENERIC_RULES, getRelationDef, NPC_ECO } from '../data/npcEcology';
 
 export interface NpcEcoSave {
   states: Record<string, NpcEcoState>;
@@ -105,7 +105,30 @@ export const useNpcEcoStore = create<EcoStore>((set, get) => ({
   resetEco: () => set({ states: {}, events: [], relationOverride: {} }),
 }));
 
-/** 取 NPC 的静态生态设定（没有则返回空对象） */
+const ECO_CACHE = new Map<string, ReturnType<typeof buildEco>>();
+
+/**
+ * 取 NPC 的静态生态设定：
+ * 手写覆盖（NPC_ECO）→ 自动生成（buildEco：语气/财富/日程/道具/通用规则矩阵）→ 缓存
+ */
 export function ecoDef(npcId: string) {
-  return NPC_ECO[npcId] ?? NPCS.find((n) => n.id === npcId)?.eco ?? {};
+  const cached = ECO_CACHE.get(npcId);
+  if (cached) return cached;
+  const npc = NPCS.find((n) => n.id === npcId);
+  const manual = NPC_ECO[npcId];
+  const auto = npc ? buildEco(npc) : { dialogueRules: [] as typeof GENERIC_RULES };
+  const merged = manual
+    ? {
+        ...auto,
+        ...manual,
+        voice: manual.voice ?? auto.voice,
+        wallet: manual.wallet ?? auto.wallet,
+        agenda: manual.agenda ?? auto.agenda,
+        inventory: manual.inventory ?? auto.inventory,
+        traits: manual.traits ?? auto.traits,
+        dialogueRules: [...(manual.dialogueRules ?? []), ...GENERIC_RULES],
+      }
+    : auto;
+  ECO_CACHE.set(npcId, merged);
+  return merged;
 }

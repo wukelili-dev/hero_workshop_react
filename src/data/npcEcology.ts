@@ -1,5 +1,5 @@
 // ═══════════ NPC 生态静态数据（关系网 / 语气 / 台词片段 / 自主行为） ═══════════
-import type { NpcChannel, NpcEcoDef, NpcRelation, NpcRelationType } from '../types';
+import type { NpcChannel, NpcDefinition, NpcDialogueRule, NpcEcoDef, NpcRelation, NpcRelationType, NpcVoice } from '../types';
 
 /** 关系定义索引：单向声明，读取时两个方向都成立 */
 const REL_OWNER: Record<string, NpcRelation[]> = {
@@ -173,3 +173,83 @@ export const NPC_ECO: Record<string, NpcEcoDef> = {
     ],
   },
 };
+
+// ═══════════ 「渠道 × 状态」通用矩阵：全部 NPC 共用，靠 ${self}/${call} 适配每人语气 ═══════════
+
+/** 语气档：自称与对玩家的称呼（陌生 / 相识 / 亲近 / 夫妻） */
+const TONE_VOICE: Record<string, { selfCall: string; call: [string, string, string, string] }> = {
+  市井: { selfCall: '我', call: ['这位客官', '小友', '你', '当家的'] },
+  文士: { selfCall: '在下', call: ['足下', '阁下', '兄台', '贤内助'] },
+  江湖: { selfCall: '在下', call: ['这位', '兄弟', '兄弟', '当家的'] },
+  仙家: { selfCall: '贫道', call: ['施主', '善信', '小友', '爱侣'] },
+  番邦: { selfCall: '本商', call: ['贵人', '朋友', '朋友', '家人'] },
+};
+
+/** 通用规则：覆盖 婚后/恋人/挚友/警惕/厌恶/仇敌/被偷/被袭击/被揭发/穷/富 + 各渠道回应 */
+export const GENERIC_RULES: NpcDialogueRule[] = [
+  { id: 'g_spouse_1', channel: 'spouse', when: { bond: ['夫妻'] }, weight: 4, lines: ['${self}把灯挑亮了些，顺手给你添了碗热汤。', '「回来了？」${self}头也不抬，手里的活计却停了。'] },
+  { id: 'g_spouse_greet', channel: 'greet', when: { bond: ['夫妻'] }, weight: 5, lines: ['${self}看了你一眼：「${call}，先坐下。」', '${self}把门帘掀开半边：「外头风大。」'] },
+  { id: 'g_spouse_chat', channel: 'chat', when: { bond: ['夫妻'] }, weight: 3, lines: ['「家里的账我记着，你别操心。」${self}说，「外头的事，说给我听。」'] },
+  { id: 'g_lover_1', channel: 'chat', when: { bond: ['恋人'] }, weight: 4, lines: ['${self}避开你的目光：「……别总盯着我。」', '${self}顿了顿：「这事，你容我再想想。」'] },
+  { id: 'g_propose_1', channel: 'propose', when: { affinity: { min: 80 } }, weight: 5, lines: ['${self}沉默了很久：「你……想清楚了？」'] },
+  { id: 'g_warm_1', channel: 'greet', when: { affinity: { min: 60 } }, weight: 3, lines: ['看见是你，${self}的神色松了下来：「${call}。」'] },
+  { id: 'g_enemy_1', channel: 'greet', when: { bond: ['仇敌'] }, weight: 9, lines: ['${self}手按在腰间，没说话。', '「你还有脸来。」${self}冷冷道。'] },
+  { id: 'g_wary_1', channel: 'greet', when: { mood: ['警惕', '厌恶'] }, weight: 5, lines: ['${self}把东西往身后挪了挪：「有事？」'] },
+  { id: 'g_stolen_1', channel: 'greet', when: { flags: { 被偷: { min: 1 } } }, weight: 7, cooldownDays: 2, lines: ['${self}数了数钱袋，又看了你一眼。'] },
+  { id: 'g_attacked_1', channel: 'greet', when: { flags: { 被袭击: { min: 1 } } }, weight: 8, lines: ['${self}脸上还带着伤：「……你还敢来。」'] },
+  { id: 'g_exposed_1', channel: 'greet', when: { flags: { 被揭发: { min: 1 } } }, weight: 8, lines: ['「你揭的那事，我记着。」${self}说得很轻。'] },
+  { id: 'g_cold_1', channel: 'greet', when: { affinity: { max: -20 } }, weight: 6, lines: ['${self}别过脸去，只当没看见你。'] },
+  { id: 'g_poor_1', channel: 'trade', when: { wealth: 'poor' }, weight: 4, lines: ['「……先欠着吧。」${self}说得有点艰难。'] },
+  { id: 'g_rich_1', channel: 'trade', when: { wealth: 'rich' }, weight: 3, lines: ['「最近的行情涨了。」${self}报的价很硬。'] },
+  { id: 'g_gift_1', channel: 'gift', weight: 2, lines: ['${self}接过去看了看：「……有心了。」'] },
+  { id: 'g_challenge_1', channel: 'challenge', weight: 2, lines: ['「点到为止。」${self}挽起袖子。'] },
+  { id: 'g_steal_1', channel: 'steal', weight: 2, lines: ['${self}忽然回头，你把手缩了回去。'] },
+  { id: 'g_attack_1', channel: 'attack', weight: 2, lines: ['${self}愣住了：「你来真的？」'] },
+  { id: 'g_befriend_1', channel: 'befriend', weight: 2, lines: ['${self}点了点头：「往后算你一个。」'] },
+  { id: 'g_rumor_1', channel: 'rumor', weight: 2, lines: ['「听说了吗？」${self}压低声音，「街头巷尾都在传。」', '${self}左右看了看：「这事我只跟你说。」'] },
+  { id: 'g_chat_1', channel: 'chat', weight: 1, lines: ['${self}想了想：「这条街上，人多，话也多。」'] },
+];
+
+/** 从 NPC 的称号/描述推断语气 */
+const TONE_BY_PATTERN: [RegExp, string][] = [
+  [/道|仙|菩萨|金星|天|佛|僧|法师|真人|观音|玄奘|哪吒|三太子/, '仙家'],
+  [/波斯|胡|西域|高昌|番|龟兹/, '番邦'],
+  [/镖|刀|剑|侠|将|兵|妖|魔|鬼|鹰|掌柜|老板娘/, '江湖'],
+  [/书|史|丞相|学士|先生|儒|卜|公主|天子|太宗/, '文士'],
+];
+
+export function inferTone(npc: NpcDefinition): string {
+  const hay = `${npc.name}${npc.title}${npc.description ?? ''}`;
+  for (const [re, tone] of TONE_BY_PATTERN) if (re.test(hay)) return tone;
+  return npc.type === 'merchant' ? '市井' : npc.type === 'challenger' ? '江湖' : '文士';
+}
+
+/** 由现有 NPC 数据自动生成生态设定：42 个 NPC 一次性获得完整「渠道 × 状态」覆盖 */
+export function buildEco(npc: NpcDefinition): NpcEcoDef {
+  const tone = inferTone(npc);
+  const v = TONE_VOICE[tone] ?? TONE_VOICE['市井'];
+  const isMerchant = npc.type === 'merchant';
+  const isChallenger = npc.type === 'challenger';
+  const inventory = [
+    ...(npc.personalItem
+      ? [{ itemId: npc.personalItem.name, count: 1, price: npc.personalItem.sellPrice ?? 0, tag: 'keepsake' as const, description: npc.personalItem.description }]
+      : []),
+    ...(npc.tradeItems ?? [])
+      .filter((t) => Boolean(t.name))
+      .slice(0, 3)
+      .map((t) => ({ itemId: t.name as string, count: 1, price: t.price, tag: 'gift' as const })),
+  ];
+  return {
+    traits: isMerchant ? ['重利', '爱打听'] : isChallenger ? ['好胜', '重义'] : ['健谈', '和气'],
+    voice: {
+      tone: tone as NpcVoice['tone'],
+      selfCall: v.selfCall,
+      callPlayer: { stranger: v.call[0], acquaintance: v.call[1], close: v.call[2], spouse: v.call[3] },
+      catchphrase: npc.greetings?.[0]?.slice(0, 14),
+    },
+    wallet: { base: npc.initialGold ?? (isMerchant ? 400 : isChallenger ? 500 : 250), dailyIncome: isMerchant ? 20 : 8 },
+    agenda: isMerchant ? ['trade', 'gossip'] : isChallenger ? ['patrol', 'cultivate', 'drink'] : ['gossip', 'rest', 'visit'],
+    inventory,
+    dialogueRules: GENERIC_RULES,
+  };
+}
