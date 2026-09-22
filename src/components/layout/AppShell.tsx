@@ -27,6 +27,8 @@ import { ForgeTab } from '../forge/ForgeTab';
 import { BestiaryTab } from '../bestiary/BestiaryTab';
 import { InkMapPanel } from '../world/InkMapPanel';
 import { NpcEcology } from '../npc/NpcEcology';
+import { OfflineModal } from '../shared/OfflineModal';
+import { claimOffline, computeOffline, markSeen, type OfflineReport } from '../../engine/OfflineReport';
 import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils';
 import { startWorldClock, useWorldStore } from '../../store/useWorldStore';
 import {
@@ -86,13 +88,25 @@ export const AppShell: React.FC = () => {
   const [homeTab, setHomeTab] = useState<TabId>('farm');
   const [shop, setShop] = useState<ShopId>('none');
   const [cityView, setCityView] = useState<'eco' | 'team'>('eco');
+  const [offline, setOffline] = useState<OfflineReport | null>(null);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [saveMeta, setSaveMeta] = useState<ReturnType<typeof getSaveMeta>>(null);
 
   useEffect(() => {
-    // 世界时钟（挂机时间流逝）+ 把当前格子的妖怪同步给战斗系统
+    // 有存档就自动接着玩（放置游戏不该让人每次手动读档）
+    if (hasSave()) loadGame();
     startWorldClock();
     useWorldStore.getState().syncEncounter();
+    // 离线结算：先告诉玩家"你不在的时候发生了什么"
+    setOffline(computeOffline());
+    markSeen();
+    const onHide = () => markSeen();
+    window.addEventListener('beforeunload', onHide);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.removeEventListener('beforeunload', onHide);
+      document.removeEventListener('visibilitychange', onHide);
+    };
   }, []);
 
   const handleSave = () => {
@@ -205,6 +219,13 @@ export const AppShell: React.FC = () => {
     <div className="flex h-screen flex-col overflow-hidden bg-[#f3efe4] text-[#3f3527]">
       <Toaster />
       <TopBar />
+      {offline && (
+        <OfflineModal
+          report={offline}
+          onClaim={() => { claimOffline(offline); markSeen(); setOffline(null); }}
+          onSkip={() => setOffline(null)}
+        />
+      )}
 
       {/* === 桌面端：左去处 / 中主视图 / 右日志 === */}
       <div className="hidden min-h-0 flex-1 overflow-hidden md:flex">

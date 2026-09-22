@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { useGameStore } from '../../store/useGameStore';
 import { formatDayLabel, useWorldStore } from '../../store/useWorldStore';
 import { TERRAIN_CONFIG, findRoute, getCellById } from '../../data/cellMap';
-import { getCellEncounter } from '../../data/cellEncounters';
+import { CELL_ENCOUNTERS, getCellEncounter } from '../../data/cellEncounters';
 import { MAPS } from '../../data/maps';
 import { RARITY_COLOR, RARITY_NAME } from '../../types';
 import type { Monster } from '../../types';
@@ -106,6 +106,30 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
   const locked = boundMap ? !unlockedMaps.includes(boundMap.id) : false;
   const levelReady = boundMap ? hero.level >= boundMap.minLevel : true;
 
+  /** 目标阶梯：按怪物最低等级给出「推荐等级 + 相对难度」 */
+  const recommendOf = (enc: { monsters: Monster[]; boss?: Monster } | null) => {
+    if (!enc) return null;
+    const levels = enc.monsters.map((m) => m.level ?? 1);
+    if (enc.boss?.level) levels.push(enc.boss.level);
+    if (levels.length === 0) return null;
+    const lv = Math.min(...levels);
+    const diff = lv - hero.level;
+    const label = diff <= -3 ? '可轻松应对' : diff <= 2 ? '势均力敌' : diff <= 6 ? '有些吃力' : '危险';
+    return { lv, label, dangerous: diff > 2 };
+  };
+  const currentRec = recommendOf(currentEncounter);
+
+  /** 下一目标：还没解锁的据点里门槛最低的那个 */
+  const nextGoal = useMemo(() => {
+    const lockedMaps = MAPS.filter((m) => !unlockedMaps.includes(m.id) && !m.isCity && m.minLevel > 0);
+    if (lockedMaps.length === 0) return null;
+    return [...lockedMaps].sort((a, b) => a.minLevel - b.minLevel)[0];
+  }, [unlockedMaps]);
+  const goalCell = nextGoal
+    ? Object.entries(CELL_ENCOUNTERS).find(([, e]) => e.mapId === nextGoal.id)?.[0]
+    : undefined;
+  const goalLabel = goalCell ? (getCellById(goalCell)?.features[0]?.label ?? goalCell) : null;
+
   const handleMapClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       const target = e.target as Element;
@@ -160,6 +184,7 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
 
   const targetCell = selectedCellId ? getCellById(selectedCellId) : null;
   const targetEncounter = selectedCellId ? getCellEncounter(selectedCellId) : null;
+  const targetRec = recommendOf(targetEncounter);
   const currentTerrain = currentCell ? TERRAIN_CONFIG[currentCell.terrain] : undefined;
   const isSect = currentCell?.features[0]?.type === 'sect';
   const monsters = [...(currentEncounter?.monsters ?? [])].sort((a, b) => (a.level ?? 0) - (b.level ?? 0));
@@ -208,6 +233,12 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
             <div className="mt-1 text-[11px] text-gray-500">
               {currentTerrain?.name} · 海拔 {currentCell?.elevation ?? 0} · 坐标 ({currentCell?.x ?? 0}, {currentCell?.y ?? 0})
             </div>
+            {currentRec && (
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
+                <span className="ink-tag">推荐 Lv.{currentRec.lv}</span>
+                <span className={currentRec.dangerous ? 'text-[#8f2b23]' : ''}>{currentRec.label}</span>
+              </div>
+            )}
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-gray-500">
               <span>生命 <b className="text-gray-700">{hero.hp}</b>/{hero.maxHp}</span>
               <span>金币 <b className="text-amber-600">{hero.gold.toLocaleString()}</b></span>
@@ -275,6 +306,16 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
             )}
           </div>
 
+          {nextGoal && (
+            <div className="rounded-2xl border border-amber-900/10 bg-white p-3 shadow-sm">
+              <div className="text-sm font-bold text-gray-900">下一目标 · {nextGoal.name}</div>
+              <div className="mt-1 text-[11px] text-gray-500">
+                需要 Lv.{nextGoal.minLevel}，或花 {nextGoal.unlockCost} 金解锁
+                {goalLabel ? `；在地图上找「${goalLabel}」` : ''}
+              </div>
+            </div>
+          )}
+
           {/* 前往目标 */}
           {targetCell && selectedCellId && (
             <div className="rounded-2xl border border-amber-900/10 bg-white p-3 shadow-sm">
@@ -284,6 +325,12 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
               <div className="mt-1 text-[11px] text-gray-500">
                 {TERRAIN_CONFIG[targetCell.terrain].name} · 途经 {Math.max((route?.path.length ?? 1) - 1, 0)} 格
               </div>
+              {targetRec && (
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
+                  <span className="ink-tag">推荐 Lv.{targetRec.lv}</span>
+                  <span className={targetRec.dangerous ? 'text-[#8f2b23]' : ''}>{targetRec.label}</span>
+                </div>
+              )}
               {targetEncounter && (
                 <div className="mt-1 text-[11px] text-gray-500">
                   {targetEncounter.monsters.length > 0
