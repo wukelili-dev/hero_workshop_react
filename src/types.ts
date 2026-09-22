@@ -332,6 +332,12 @@ export interface NpcTradeItem {
   label: string;                // 显示名
   type: 'equipment' | 'potion' | 'material' | 'novelty';
   price: number;
+  /** 杂货类商品的实际物品名（背包/图鉴显示用）；缺省时回退到 label */
+  name?: string;
+  /** 杂货类商品的图标 */
+  icon?: string;
+  /** 杂货类商品的描述 */
+  description?: string;
   /** 如果是材料，对应资源 key */
   resourceKey?: string;
   /** 如果是药水，购买时触发的数量 */

@@ -1,4 +1,4 @@
-import { WorldNode, WorldEdge, TERRAIN_NAMES } from '../data/worldMap';
+import { TERRAIN_NAMES, type WorldNode } from '../data/worldMap';
 
 // ============ 旅行状态 ============
 export type TravelStatus = 'idle' | 'traveling' | 'arrived';

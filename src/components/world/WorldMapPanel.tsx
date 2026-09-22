@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CENTRAL_PLAIN_NODES, getNodeById, getNeighbors, findPath, calcPathDays, TERRAIN_COLORS } from '../../data/worldMap';
+import { CENTRAL_PLAIN_NODES, CENTRAL_PLAIN_EDGES, getNodeById, getNeighbors, findPath, calcPathDays } from '../../data/worldMap';
 import type { WorldNode, NodeType, TerrainType } from '../../data/worldMap';
 
 // ============ 类型定义 ============
@@ -217,7 +217,6 @@ export const WorldMapPanel: React.FC<WorldMapPanelProps> = (props) => {
 
   // 获取连接信息
   function getEdge(from: string, to: string) {
-    const { CENTRAL_PLAIN_EDGES } = require('../../data/worldMap');
     return CENTRAL_PLAIN_EDGES.find((e: any) =>
       (e.from === from && e.to === to) ||
       (e.isBidirectional && e.from === to && e.to === from)

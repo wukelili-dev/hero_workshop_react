@@ -247,8 +247,6 @@ export function buyNpcTradeItem(npc: NpcDefinition, itemIdx: number): ActionResu
 
   if (item.type === 'potion') {
     const count = item.potionCount ?? 1;
-    // 提取物品名称（去掉[xxx]后缀）用于背包显示
-    const name = item.label.replace(/\s*\[.*?\]/, '').trim();
     const inv = useInventoryStore.getState();
     inv.addNovelty(item.label, count); // 背包：使用完整label作为key以区分不同药水
     state.setHero({ potions: (state.hero.potions ?? 0) + count }); // 快捷栏同步
@@ -540,7 +538,14 @@ export function stealNpc(
       // 随机拿走一件 NPC 物品（personalItem 或 tradeItems 中的杂货/经验丹中随机选一个）
       let itemStolen: NpcPersonalItem | undefined;
       const lootPool: { name: string; icon: string; description: string; sellPrice: number }[] = [];
-      if (npc.personalItem) lootPool.push(npc.personalItem);
+      if (npc.personalItem) {
+        lootPool.push({
+          name: npc.personalItem.name,
+          icon: npc.personalItem.icon,
+          description: npc.personalItem.description,
+          sellPrice: npc.personalItem.sellPrice ?? 0,
+        });
+      }
       for (const ti of (npc.tradeItems ?? [])) {
         // 只偷杂货类物品（有 name/icon/description 的）
         if (ti.type === 'novelty' && ti.name && ti.icon && ti.description) {

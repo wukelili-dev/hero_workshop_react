@@ -335,7 +335,7 @@ export const NPCS: NpcDefinition[] = [
     challengeStats: { hp: 9999, atk: 300, def: 120 },
     challengeReward: { exp: 80, gold: 100, message: '神秘老者收起布幡，淡淡一笑："年轻人，火气不小。老夫该走了，这残卷送你——算你赢了。"' },
     tradeItems: [
-      { name: '天机残卷', price: 888, icon: '📜', description: '似乎记载着不该被凡人看到的秘密……售价888两，买了你就知道了' },
+      { label: '天机残卷 [杂货]', name: '天机残卷', type: 'novelty', price: 888, icon: '📜', description: '似乎记载着不该被凡人看到的秘密……售价888两，买了你就知道了' },
     ],
     personalItem: { name: '天机残卷', icon: '📜', description: '一张泛黄的残卷，上面密密麻麻写满了凡人看不懂的文字', sellPrice: 0 },
   },

@@ -2,7 +2,7 @@
 // 白格子 = 已探索 | 灰格子 = 迷雾 | 黑色粗边框
 // hover 格子 → 左侧实时显示地块信息，不需要弹窗
 
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   CENTRAL_PLAIN_CELLS,
   TERRAIN_CONFIG,
@@ -19,6 +19,7 @@ interface GridMapProps {
   onMoveToCell: (cellId: string) => void;
   onCellFeatureClick: (feature: CellFeature, cell: MapCell) => void;
   onClose?: () => void; // 返回按钮回调
+  expanded?: boolean; // 全屏模式
 }
 
 const CELL_SIZE = 56;
@@ -28,9 +29,9 @@ const GRID_ROWS = 7;
 
 export const IsometricMapPanel: React.FC<GridMapProps> = ({
   currentCellId,
+  expanded = false,
   revealedCells,
   onMoveToCell,
-  onCellFeatureClick,
   onClose,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -263,28 +264,38 @@ export const IsometricMapPanel: React.FC<GridMapProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f5f5f5', position: 'relative' }}>
-      {/* 顶部 Tab 栏（仅全屏模式显示） */}
-      {onClose && (
-        <div style={{
-          flex: '0 0 36px',
-          background: '#fff',
-          borderBottom: '1px solid #000',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 12px',
-          fontSize: 12, fontFamily: 'monospace',
-        }}>
-          <span style={{ fontWeight: 700 }}>世界地图</span>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '4px 12px',
-              background: '#000', border: 'none', borderRadius: 4,
-              color: '#fff', cursor: 'pointer', fontSize: 11,
-            }}
-          >返回</button>
-        </div>
-      )}
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: expanded ? '100vh' : '100%',
+      width: expanded ? '100vw' : '100%',
+      background: '#f5f5f5',
+      position: expanded ? 'fixed' : 'relative',
+      top: expanded ? 0 : undefined,
+      left: expanded ? 0 : undefined,
+      zIndex: expanded ? 9999 : undefined,
+    }}>
+      {/* 顶部返回栏 */}
+      <div style={{
+        flex: '0 0 40px',
+        background: '#ff4444',
+        borderBottom: '2px solid #000',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 16px',
+        fontSize: 14, fontFamily: 'monospace',
+        color: '#fff',
+        zIndex: 9999,
+      }}>
+        <span style={{ fontWeight: 700, color: '#fff' }}>世界地图</span>
+        <button
+          onClick={() => onClose?.()}
+          style={{
+            padding: '6px 16px',
+            background: '#fff', border: '2px solid #000', borderRadius: 4,
+            color: '#000', cursor: 'pointer', fontSize: 12, fontWeight: 'bold',
+          }}
+        >返回</button>
+      </div>
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
       {/* 左侧：地块信息 */}
       <div style={{ flex: '0 0 38%', maxWidth: 200, minWidth: 120, overflow: 'hidden' }}>

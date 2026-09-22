@@ -4,7 +4,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '../../store/useGameStore';
-import { formatNumber } from '../../data/constants';
+import { formatNumber, expRequired } from '../../data/constants';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 import { FaHeart, FaBolt, FaShield, FaStar } from 'react-icons/fa6';
 
@@ -12,8 +12,8 @@ export const HeroInfoPanel: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
   const moralValue = useGameStore((s) => s.moralValue);
 
-  const expPercent = hero.maxExp > 0 ? (hero.exp / hero.maxExp) * 100 : 0;
-  const hpPercent = hero.maxHp > 0 ? (hero.hp / hero.maxHp) * 100 : 0;
+  const maxExp = expRequired(hero.level);
+  const expPercent = maxExp > 0 ? (hero.exp / maxExp) * 100 : 0;
 
   const getMoralLabel = (val: number) => {
     if (val >= 50) return { text: '侠义', color: 'text-blue-600' };
@@ -38,7 +38,7 @@ export const HeroInfoPanel: React.FC = () => {
       <div className="mb-2">
         <div className="flex items-center justify-between text-[10px] text-gray-500 mb-0.5">
           <span className="flex items-center gap-1"><FaStar className="text-amber-400" /> EXP</span>
-          <span><AnimatedNumber value={hero.exp} /> / <AnimatedNumber value={hero.maxExp} /></span>
+          <span><AnimatedNumber value={hero.exp} /> / <AnimatedNumber value={maxExp} /></span>
         </div>
         <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
           <motion.div

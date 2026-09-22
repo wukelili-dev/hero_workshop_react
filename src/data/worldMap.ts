@@ -1,5 +1,3 @@
-import type { Monster } from '../types';
-
 // ============ 地形类型 ============
 export type TerrainType = 'plain' | 'hill' | 'mountain' | 'water' | 'forest' | 'underworld' | 'plateau';
 
