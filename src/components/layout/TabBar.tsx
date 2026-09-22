@@ -20,18 +20,17 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTab, onTabChange }) 
   return (
     <Tooltip.Provider delayDuration={200}>
       <Tabs.Root value={activeTab} onValueChange={(v) => onTabChange(v as TabId)}>
-        <Tabs.List className="flex border-b border-gray-200 bg-gray-50 overflow-x-auto">
+        <Tabs.List className="flex overflow-x-auto border-b border-[#8a7a63]/45 bg-[#faf6ea]/70">
           {tabs.map((tab) => (
             <Tooltip.Root key={tab.id}>
               <Tooltip.Trigger asChild>
                 <Tabs.Trigger
                   value={tab.id}
                   className="
-                    flex items-center gap-1.5 px-4 py-2.5 text-sm whitespace-nowrap
-                    border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/60
-                    transition-colors data-[state=active]:border-amber-500 data-[state=active]:text-amber-700
-                    data-[state=active]:bg-white data-[state=active]:font-bold
-                    cursor-pointer outline-none
+                    flex cursor-pointer items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent
+                    px-3 py-2 text-sm text-[#6b6252] outline-none transition-colors hover:bg-[#e9e2d2]/60
+                    data-[state=active]:border-[#b5382f] data-[state=active]:bg-[#f3efe4] data-[state=active]:font-bold
+                    data-[state=active]:text-[#3f3527]
                   "
                 >
                   <span>{tab.icon}</span>
@@ -41,11 +40,11 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTab, onTabChange }) 
               <Tooltip.Portal>
                 <Tooltip.Content
                   side="bottom"
-                  className="px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg z-50"
+                  className="z-50 border border-[#8a7a63] bg-[#faf6ea] px-2 py-1 text-xs text-[#3f3527]"
                   sideOffset={4}
                 >
                   {tab.description || tab.label}
-                  <Tooltip.Arrow className="fill-gray-900" />
+                  <Tooltip.Arrow className="fill-[#8a7a63]" />
                 </Tooltip.Content>
               </Tooltip.Portal>
             </Tooltip.Root>

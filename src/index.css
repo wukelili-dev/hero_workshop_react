@@ -111,4 +111,11 @@
     border: 0;
     border-top: 1px dashed rgba(138, 122, 99, 0.5);
   }
+  /* 水墨地图：撑满容器，由 viewBox + preserveAspectRatio 自动适配 */
+  .inkmap-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+  }
 }

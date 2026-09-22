@@ -16,6 +16,8 @@ import { FaMapLocationDot, FaSkullCrossbones, FaXmark, FaLock, FaShoePrints } fr
 
 interface InkMapPanelProps {
   onClose?: () => void;
+  /** 嵌入页面内使用（而不是全屏覆盖层） */
+  embedded?: boolean;
 }
 
 interface FightResult {
@@ -36,7 +38,7 @@ const MonsterCard: React.FC<{ monster: Monster; disabled: boolean; onFight: (m: 
 }) => {
   const color = rarityColor(monster.rarity);
   return (
-    <div className={`rounded-xl border p-2.5 ${monster.isBoss ? 'border-amber-300 bg-amber-50/70' : 'border-gray-200/80 bg-white'}`}>
+    <div className={`border p-2.5 ${monster.isBoss ? 'border-[#b08a2e] bg-[#f6edd6]' : 'border-[#8a7a63]/45 bg-[#fdfbf4]'}`}>
       <div className="flex items-center gap-2">
         <span className="text-base">{monster.isBoss ? '👑' : '👹'}</span>
         <span className="text-sm font-semibold text-gray-800">{monster.name}</span>
@@ -57,10 +59,8 @@ const MonsterCard: React.FC<{ monster: Monster; disabled: boolean; onFight: (m: 
         type="button"
         onClick={() => onFight(monster)}
         disabled={disabled}
-        className={`mt-2 w-full rounded-lg py-1 text-xs font-bold transition-colors ${
-          disabled
-            ? 'bg-gray-200 text-gray-400'
-            : 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700'
+        className={`mt-2 w-full py-1 text-xs font-bold transition-colors ${
+          disabled ? 'bg-[#e9e2d2] text-[#9c917b]' : 'bg-[#b5382f] text-[#fdf6e8] hover:bg-[#a2332b]'
         }`}
       >
         <FaSkullCrossbones className="mr-1 inline" />
@@ -70,7 +70,7 @@ const MonsterCard: React.FC<{ monster: Monster; disabled: boolean; onFight: (m: 
   );
 };
 
-export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose }) => {
+export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = false }) => {
   const day = useWorldStore((s) => s.day);
   const currentCellId = useWorldStore((s) => s.currentCellId);
   const revealedCells = useWorldStore((s) => s.revealedCells);
@@ -165,7 +165,7 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose }) => {
   const monsters = [...(currentEncounter?.monsters ?? [])].sort((a, b) => (a.level ?? 0) - (b.level ?? 0));
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#f3efe4]">
+    <div className={embedded ? 'flex h-full min-h-0 flex-col bg-[#f3efe4]' : 'fixed inset-0 z-50 flex flex-col bg-[#f3efe4]'}>
       {/* 顶栏 */}
       <div className="flex flex-wrap items-center gap-2 border-b border-amber-900/10 bg-white/85 px-3 py-2 backdrop-blur">
         <FaMapLocationDot className="text-amber-700" />
@@ -176,23 +176,21 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose }) => {
         <span className="hidden text-xs text-gray-500 sm:inline">
           所在：{currentEncounter?.label ?? currentTerrain?.name ?? '未知'}
         </span>
-        <button
-          type="button"
-          onClick={onClose}
-          className="ml-auto flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50"
-        >
-          <FaXmark /> 返回主城
-        </button>
+        {!embedded && (
+          <button type="button" onClick={onClose} className="ink-btn ml-auto text-xs">
+            <FaXmark /> 返回主城
+          </button>
+        )}
       </div>
 
       {/* 主体 */}
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* 地图 */}
         <div
-          className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-[#f3efe4] p-2"
+          className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-[#f3efe4] p-2"
           onClick={handleMapClick}
         >
-          <div className="w-full max-w-[980px]" dangerouslySetInnerHTML={{ __html: svg }} />
+          <div className="h-full w-full" dangerouslySetInnerHTML={{ __html: svg }} />
         </div>
 
         {/* 右侧情报 */}
