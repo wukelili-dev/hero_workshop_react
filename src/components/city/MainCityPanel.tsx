@@ -10,6 +10,7 @@ import { useGameStore } from '../../store/useGameStore';
 import { BUILDING_CONFIGS, WONDERS, getAllBuildingNames, getWonderNames } from '../../data/buildings';
 
 import { FaTree, FaMagnet, FaPaw, FaMountain, FaBoxOpen, FaBuilding, FaStar, FaCoins } from 'react-icons/fa6';
+import { FaMap } from 'react-icons/fa';
 
 // 造价显示：图标+简短数字（如 💰10K 🪵5K）
 const COST_ICON_MAP: Record<string, React.ReactNode> = {
@@ -56,7 +57,11 @@ const resourceVariants: Variants = {
   }),
 };
 
-export const MainCityPanel: React.FC = () => {
+interface MainCityPanelProps {
+  onOpenWorldMap?: () => void;
+}
+
+export const MainCityPanel: React.FC<MainCityPanelProps> = ({ onOpenWorldMap }) => {
   const hero = useGameStore((s) => s.hero);
   const resources = useGameStore((s) => s.resources);
   const addGold = useGameStore((s) => s.addGold);
@@ -293,6 +298,20 @@ export const MainCityPanel: React.FC = () => {
           })}
         </div>
       </div>
+
+      {/* 世界地图入口按钮 */}
+      {onOpenWorldMap && (
+        <div className="mt-4">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={onOpenWorldMap}
+            className="w-full py-2.5 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-xl text-sm font-bold shadow-md flex items-center justify-center gap-2 transition-colors"
+          >
+            <FaMap className="text-base" />
+            世界地图
+          </motion.button>
+        </div>
+      )}
     </div>
   );
 };
