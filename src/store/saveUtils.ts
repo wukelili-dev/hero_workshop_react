@@ -69,6 +69,9 @@ export function saveGame(): boolean {
         revealedCells: worldState.revealedCells,
         visitedCells: worldState.visitedCells,
         lastTickAt: worldState.lastTickAt,
+        gathered: worldState.gathered,
+        bountyClaimed: worldState.bountyClaimed,
+        dailyEvent: worldState.dailyEvent,
       },
       ranch: { slots: ranchState.slots },
       factory: {

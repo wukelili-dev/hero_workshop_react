@@ -376,7 +376,10 @@ export function buyNpcTradeItem(npc: NpcDefinition, itemIdx: number): ActionResu
   const npcStore = useNpcStore.getState();
 
   // 亲密度折扣
-  const discount = npcStore.getAffinityDiscount(npc.id);
+  const bond = useNpcEcoStore.getState().getEco(npc.id).bond;
+  if (bond === '仇敌') return { type: 'log', message: `${npc.name}把货收了回去：「不做你的生意。」` };
+  const bondBonus = bond === '夫妻' ? 0.15 : bond === '恋人' ? 0.1 : bond === '挚友' ? 0.06 : bond === '好友' ? 0.03 : 0;
+  const discount = Math.max(0.6, npcStore.getAffinityDiscount(npc.id) - bondBonus);
   const actualPrice = Math.ceil(item.price * discount);
 
   if (state.hero.gold < actualPrice) {

@@ -3,7 +3,7 @@
  * 左：世界地图 / 据点 / 角色 / 家业；中：该去处的主视图；右：卷轴日志
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Toaster, toast } from 'sonner';
@@ -29,6 +29,8 @@ import { InkMapPanel } from '../world/InkMapPanel';
 import { NpcEcology } from '../npc/NpcEcology';
 import { OfflineModal } from '../shared/OfflineModal';
 import { claimOffline, computeOffline, markSeen, type OfflineReport } from '../../engine/OfflineReport';
+import { bountiesFor, claimBounty } from '../../engine/Bounty';
+import { useGameStore } from '../../store/useGameStore';
 import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils';
 import { startWorldClock, useWorldStore } from '../../store/useWorldStore';
 import {
@@ -89,6 +91,10 @@ export const AppShell: React.FC = () => {
   const [shop, setShop] = useState<ShopId>('none');
   const [cityView, setCityView] = useState<'eco' | 'team'>('eco');
   const [offline, setOffline] = useState<OfflineReport | null>(null);
+  const day = Math.floor(useWorldStore((s) => s.day));
+  const bountyClaimed = useWorldStore((s) => s.bountyClaimed);
+  const killCounts = useGameStore((s) => s.killCounts);
+  const bounties = useMemo(() => bountiesFor(day), [day]);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [saveMeta, setSaveMeta] = useState<ReturnType<typeof getSaveMeta>>(null);
 
@@ -181,6 +187,26 @@ export const AppShell: React.FC = () => {
               {s.icon} {s.label}
             </button>
           ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-t border-[#8a7a63]/30 px-3 py-2">
+          <span className="ink-tag">今日悬赏</span>
+          {bounties.map((b) => {
+            const got = killCounts?.[b.monsterId] ?? 0;
+            const ready = got >= b.need;
+            const claimed = bountyClaimed.includes(b.id);
+            return (
+              <button
+                key={b.id}
+                type="button"
+                disabled={!ready || claimed}
+                onClick={() => toast(claimBounty(b), { icon: '📜' })}
+                className={ready && !claimed ? 'ink-btn-seal text-[11px]' : 'ink-btn text-[11px] opacity-60'}
+              >
+                讨伐{b.monsterId} ×{b.need}（{Math.min(got, b.need)}/{b.need}）
+                {claimed ? ' · 已领' : ` → ${b.gold} 金`}
+              </button>
+            );
+          })}
         </div>
         {shop !== 'none' && <div className="border-t border-[#8a7a63]/40 p-3">{renderShop()}</div>}
       </div>

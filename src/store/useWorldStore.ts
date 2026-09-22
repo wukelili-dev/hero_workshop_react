@@ -17,6 +17,12 @@ export interface WorldSave {
   revealedCells: string[];
   visitedCells: string[];
   lastTickAt: number;
+  /** 采集点冷却：cellId → 上次采集的游戏日 */
+  gathered: Record<string, number>;
+  /** 已领奖的悬赏 id */
+  bountyClaimed: string[];
+  /** 今日世界事件（丰饶/妖气/集市…） */
+  dailyEvent: { day: number; kind: 'battle' | 'industry' | 'calm'; text: string } | null;
 }
 
 type WorldState = WorldSave;
@@ -28,6 +34,17 @@ interface WorldActions {
   syncEncounter: () => void;
   loadWorld: (data: Partial<WorldSave>) => void;
   resetWorld: () => void;
+  markGathered: (cellId: string) => void;
+  claimBounty: (id: string) => void;
+  setDailyEvent: (e: WorldSave['dailyEvent']) => void;
+}
+
+/** 每日世界事件：挂在日推进上，给世界一点周期感 */
+export function rollDailyEvent(day: number): WorldSave['dailyEvent'] {
+  if (day % 7 === 0) return { day, kind: 'industry', text: '今日集市大旺：产业产出翻倍（今日）' };
+  if (day % 5 === 0) return { day, kind: 'calm', text: '今日风调雨顺：NPC 心情转好' };
+  if (day % 3 === 0) return { day, kind: 'battle', text: '今日妖气大盛：战斗收益 +50%' };
+  return null;
 }
 
 const DEFAULT_WORLD: WorldState = {
@@ -36,6 +53,9 @@ const DEFAULT_WORLD: WorldState = {
   revealedCells: [],
   visitedCells: [START_CELL_ID],
   lastTickAt: Date.now(),
+  gathered: {},
+  bountyClaimed: [],
+  dailyEvent: null,
 };
 
 export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
@@ -52,7 +72,11 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
     }
     const next = day + delta / DAY_MS;
     // 跨过整数天：推进 NPC 自主行为（每天一次，只演算活跃 NPC）
-    if (Math.floor(next) > Math.floor(day)) advanceNpcDay(Math.floor(next));
+    if (Math.floor(next) > Math.floor(day)) {
+      const d = Math.floor(next);
+      advanceNpcDay(d);
+      set({ dailyEvent: rollDailyEvent(d) });
+    }
     set({ day: next, lastTickAt: t });
   },
 
@@ -109,10 +133,17 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
       revealedCells: data.revealedCells ?? [],
       visitedCells: data.visitedCells ?? [START_CELL_ID],
       lastTickAt: data.lastTickAt ?? Date.now(),
+      gathered: data.gathered ?? {},
+      bountyClaimed: data.bountyClaimed ?? [],
+      dailyEvent: data.dailyEvent ?? null,
     });
   },
 
   resetWorld: () => set({ ...DEFAULT_WORLD, lastTickAt: Date.now() }),
+
+  markGathered: (cellId) => set((s) => ({ gathered: { ...s.gathered, [cellId]: Math.floor(s.day) } })),
+  claimBounty: (id) => set((s) => ({ bountyClaimed: [...s.bountyClaimed, id] })),
+  setDailyEvent: (e) => set({ dailyEvent: e }),
 }));
 
 /** 第几天（1 起） */

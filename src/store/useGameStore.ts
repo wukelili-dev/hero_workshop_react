@@ -82,6 +82,8 @@ interface GameState {
   autoBattle: boolean;
   buildings: Record<string, number>;   // { "伐木场: 2, "铁矿": 1 }
   mapBattles: Record<string, number>; // 各地图累计战斗次数
+  /** 每只怪的累计击杀数（悬赏用） */
+  killCounts: Record<string, number>;
 }
 
 interface GameActions {
@@ -249,6 +251,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   autoBattle: false,
   buildings: {},   // 建筑数量统计，key=建筑名，value=数量
   mapBattles: {},
+  killCounts: {},
   moralValue: 0,
   factions: { human: 50, demon: 50, divine: 50 },
 
@@ -326,6 +329,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     autoBattle: false,
     buildings: {},
     mapBattles: {},
+    killCounts: {},
     moralValue: 0,
     factions: { human: 50, demon: 50, divine: 50 },
   }),
@@ -386,6 +390,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       
       // 记录地图战斗次数
       get().incrementMapBattles(get().currentMapId);
+      set((s) => ({ killCounts: { ...(s.killCounts ?? {}), [monster.id]: ((s.killCounts ?? {})[monster.id] ?? 0) + 1 } }));
 
       // 自动药水（战胜后血量低于阈值时自动买药+喝药）
       _autoPotionIfNeeded();

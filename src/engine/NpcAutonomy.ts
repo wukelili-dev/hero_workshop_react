@@ -31,6 +31,16 @@ export function advanceNpcDay(day: number): void {
     .slice(0, 12);
 
   let made = 0;
+  // 夫妻每日家用：结婚不只是台词，有实际好处
+  for (const spouse of NPCS) {
+    const sEco = store.getEco(spouse.id);
+    if (sEco.bond !== '夫妻') continue;
+    const gift = 20 + Math.floor(npcStore.getNpcAffinity(spouse.id) / 5);
+    npcStore.modifyNpcGold(spouse.id, -Math.floor(gift / 4));
+    npcStore.modifyNpcAffinity(spouse.id, 1);
+    useGameStore.getState().addGold(gift);
+    addEvent({ day, kind: 'gift', actors: [spouse.id], text: `${spouse.name}给你送来 ${gift} 金的家用。`, aboutPlayer: true });
+  }
   for (const npc of active) {
     if (made >= 3) break;
     if (Math.random() > 0.35) continue;

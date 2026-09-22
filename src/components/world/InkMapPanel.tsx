@@ -8,6 +8,7 @@ import { useGameStore } from '../../store/useGameStore';
 import { formatDayLabel, useWorldStore } from '../../store/useWorldStore';
 import { TERRAIN_CONFIG, findRoute, getCellById } from '../../data/cellMap';
 import { CELL_ENCOUNTERS, getCellEncounter } from '../../data/cellEncounters';
+import { gatherAtCell } from '../../engine/NpcBenefits';
 import { MAPS } from '../../data/maps';
 import { RARITY_COLOR, RARITY_NAME } from '../../types';
 import type { Monster } from '../../types';
@@ -238,6 +239,15 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
                 <span className="ink-tag">推荐 Lv.{currentRec.lv}</span>
                 <span className={currentRec.dangerous ? 'text-[#8f2b23]' : ''}>{currentRec.label}</span>
               </div>
+            )}
+            {currentCell?.features.some((f) => f.type === 'resource') && (
+              <button
+                type="button"
+                className="ink-btn mt-2 w-full text-xs"
+                onClick={() => toast(gatherAtCell(currentCellId), { icon: '🌿' })}
+              >
+                采集此地资源（耗 1 天）
+              </button>
             )}
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-gray-500">
               <span>生命 <b className="text-gray-700">{hero.hp}</b>/{hero.maxHp}</span>
