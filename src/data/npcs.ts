@@ -396,7 +396,7 @@ export const NPCS: NpcDefinition[] = [
     name: '刘伯钦',
     title: '镇山太保',
     type: 'challenger',
-    location: 'dong',
+    location: 'datangdong',
     avatarEmoji: '\uD83C\uDFF9',
     description: '一个膀大腰圆的猎户，腰悬弓箭，\n背上扛着一头刚猎到的野猪。',
     greetings: [
@@ -418,7 +418,7 @@ export const NPCS: NpcDefinition[] = [
     name: '老行商',
     title: '丝路归来的商人',
     type: 'merchant',
-    location: 'dong',
+    location: 'datangdong',
     avatarEmoji: '\uD83D\uDCBC',
     description: '一个满脸风霜的老商人坐在茶棚下，\n身旁的骆驼上驮着沉甸甸的货物。',
     greetings: [
@@ -445,7 +445,7 @@ export const NPCS: NpcDefinition[] = [
     name: '张老汉',
     title: '长安老木匠',
     type: 'flavor',
-    location: 'nan',
+    location: 'datangnan',
     avatarEmoji: '\uD83E\uDEA8',
     description: '一个头发花白的老木匠坐在路旁，\n手边摆着几件雕工精细的木器。',
     greetings: [
@@ -538,7 +538,7 @@ export const NPCS: NpcDefinition[] = [
     name: '通背猿猴',
     title: '花果山四健将之一',
     type: 'flavor',
-    location: 'huaguo',
+    location: 'huaguoshan',
     avatarEmoji: '\uD83D\uDC35',
     description: '一只白毛老猿蹲在巨石上，\n双目炯炯有神，看上去已活了不知多少年。',
     greetings: [
@@ -671,7 +671,7 @@ export const NPCS: NpcDefinition[] = [
     name: '清风',
     title: '万寿山五庄观道童',
     type: 'flavor',
-    location: 'wanshou',
+    location: 'wanshoushan',
     avatarEmoji: '\uD83C\uDF3F',
     description: '一个眉清目秀的小道童站在观门前，\n手里拿着一把蒲扇，神态倨傲。',
     greetings: [
@@ -822,7 +822,7 @@ export const NPCS: NpcDefinition[] = [
     name: '青鳞蛇姬',
     title: '蛇族美女',
     type: 'challenger',
-    location: 'huaguo',
+    location: 'huaguoshan',
     avatarEmoji: '🐍',
     description: `一名绿衣女子立在溪边，
 裙下隐约可见一条青色的蛇尾在轻轻摆动。`,
@@ -870,7 +870,7 @@ export const NPCS: NpcDefinition[] = [
     name: '墨烟女妖',
     title: '黑山女妖',
     type: 'challenger',
-    location: 'wanshou',
+    location: 'wanshoushan',
     avatarEmoji: '👩',
     description: `一个周身缠绕着黑烟的女子，
 面容绝美却透着诡异，
@@ -895,7 +895,7 @@ export const NPCS: NpcDefinition[] = [
     name: '老松精',
     title: '千年树妖',
     type: 'flavor',
-    location: 'huaguo',
+    location: 'huaguoshan',
     avatarEmoji: '🌲',
     description: `一棵千年古松化为人形，
 躯干虬结如龙，须发皆为松针，
@@ -921,7 +921,7 @@ export const NPCS: NpcDefinition[] = [
     name: '獐子小妖',
     title: '山间小妖',
     type: 'challenger',
-    location: 'dong',
+    location: 'datangdong',
     avatarEmoji: '🦌',
     description: `一个矮小的獐子精，拿着根削尖的木棍，
 蹲在草丛里鬼鬼祟祟地张望。`,
@@ -1000,7 +1000,7 @@ export const NPCS: NpcDefinition[] = [
     name: '牛魔王',
     title: '平天大圣',
     type: 'challenger',
-    location: 'huaguo',
+    location: 'huaguoshan',
     avatarEmoji: '🐂',
     description: `一个身高三丈的牛头巨人，
 身着铠甲，手持混铁棍，
@@ -1198,7 +1198,7 @@ export const NPCS: NpcDefinition[] = [
     name: '二郎显圣真君',
     title: '灌江口守护神',
     type: 'challenger',
-    location: 'huaguo',
+    location: 'huaguoshan',
     avatarEmoji: '🐕',
     description: `一位英武的青年神将，
 三只眼，牵着一只啸天犬，
@@ -1228,7 +1228,7 @@ export const NPCS: NpcDefinition[] = [
     name: '盘古',
     title: '开天辟地之神',
     type: 'flavor',
-    location: 'huaguo',
+    location: 'huaguoshan',
     avatarEmoji: '🪓',
     description: `一位身披兽皮的巨人，
 手持巨斧，周身环绕混沌之气，

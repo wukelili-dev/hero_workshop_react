@@ -49,9 +49,6 @@ interface SubTab {
 /** 角色：我的东西 */
 const HERO_TABS: SubTab[] = [
   { id: 'status', label: '状态', icon: <FaUser />, description: '勇者属性与装备' },
-  { id: 'weapon', label: '兵器', icon: <FaBomb />, description: '购买和装备武器' },
-  { id: 'armor', label: '护甲', icon: <FaShieldHalved />, description: '购买和装备护甲' },
-  { id: 'novelty', label: '杂货', icon: <FaGift />, description: '购买各类杂货道具' },
   { id: 'inventory', label: '行囊', icon: <FaBagShopping />, description: '查看和管理背包物品' },
   { id: 'materials', label: '材料', icon: <FaCube />, description: '查看材料库存' },
   { id: 'bestiary', label: '图鉴', icon: <FaBookOpen />, description: '查看已击败的怪物' },
@@ -74,10 +71,19 @@ const MOBILE_NAV: { id: PageId; label: string; icon: React.ReactNode }[] = [
   { id: 'home', label: '家业', icon: <FaWheatAwn /> },
 ];
 
+type ShopId = 'none' | 'weapon' | 'armor' | 'novelty';
+
+const SHOPS: { id: ShopId; label: string; icon: React.ReactNode }[] = [
+  { id: 'weapon', label: '兵器铺', icon: <FaBomb /> },
+  { id: 'armor', label: '甲胄铺', icon: <FaShieldHalved /> },
+  { id: 'novelty', label: '杂货铺', icon: <FaGift /> },
+];
+
 export const AppShell: React.FC = () => {
   const [page, setPage] = useState<PageId>('map');
   const [heroTab, setHeroTab] = useState<TabId>('status');
   const [homeTab, setHomeTab] = useState<TabId>('farm');
+  const [shop, setShop] = useState<ShopId>('none');
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [saveMeta, setSaveMeta] = useState<ReturnType<typeof getSaveMeta>>(null);
 
@@ -133,11 +139,48 @@ export const AppShell: React.FC = () => {
     </div>
   );
 
-  const renderPageBody = () => {
+  const renderShop = () => {
+    if (shop === 'weapon') return <WeaponTab />;
+    if (shop === 'armor') return <ArmorTab />;
+    if (shop === 'novelty') return <NoveltyTab />;
+    return null;
+  };
+
+  /** 据点：城中铺子（兵器/甲胄/杂货）+ 队伍与遭遇 */
+  const renderCity = () => (
+    <div className="flex h-full min-h-0 flex-col gap-2 p-3">
+      <div className="ink-panel ink-frame flex-shrink-0">
+        <div className="ink-head">
+          <h3 className="ink-title text-[15px]">城中铺子</h3>
+          <span className="ink-tag ml-auto">买卖也可直接找城中商人</span>
+        </div>
+        <div className="flex flex-wrap gap-2 p-3">
+          {SHOPS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setShop(shop === s.id ? 'none' : s.id)}
+              className={shop === s.id ? 'ink-btn-seal text-sm' : 'ink-btn text-sm'}
+            >
+              {s.icon} {s.label}
+            </button>
+          ))}
+        </div>
+        {shop !== 'none' && <div className="border-t border-[#8a7a63]/40 p-3">{renderShop()}</div>}
+      </div>
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <CenterPanel />
+      </div>
+    </div>
+  );
+
+  const renderMain = () => {
     if (page === 'map') return <InkMapPanel embedded />;
-    if (page === 'hero') return renderGroup(HERO_TABS, heroTab, setHeroTab);
-    if (page === 'home') return renderGroup(HOME_TABS, homeTab, setHomeTab);
-    return <CenterPanel />;
+    if (page === 'city') return renderCity();
+    if (page === 'hero') {
+      return <div className="h-full overflow-y-auto p-3">{renderGroup(HERO_TABS, heroTab, setHeroTab)}</div>;
+    }
+    return <div className="h-full overflow-y-auto p-3">{renderGroup(HOME_TABS, homeTab, setHomeTab)}</div>;
   };
 
   return (
@@ -155,11 +198,7 @@ export const AppShell: React.FC = () => {
           transition={{ duration: 0.25, ease: 'easeOut' }}
           className="min-w-0 flex-1 overflow-hidden"
         >
-          {page === 'map' ? (
-            <InkMapPanel embedded />
-          ) : (
-            <div className="h-full overflow-y-auto p-3">{renderPageBody()}</div>
-          )}
+          {renderMain()}
         </motion.main>
         {page !== 'map' && (
           <aside className="hidden w-[320px] flex-shrink-0 flex-col overflow-hidden border-l border-[#8a7a63]/45 bg-[#faf6ea]/60 xl:flex">
@@ -171,11 +210,7 @@ export const AppShell: React.FC = () => {
       {/* === 移动端 === */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:hidden">
         <div className="min-h-0 flex-1 overflow-hidden">
-          {page === 'map' ? (
-            <InkMapPanel embedded />
-          ) : (
-            <div className="h-full overflow-y-auto p-2">{renderPageBody()}</div>
-          )}
+          {renderMain()}
         </div>
         <div className="flex flex-shrink-0 items-center justify-around border-t border-[#8a7a63] bg-[#faf6ea] px-1 py-1.5">
           {MOBILE_NAV.map((nav) => (

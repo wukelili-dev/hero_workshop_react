@@ -260,6 +260,33 @@ export function buyNpcTradeItem(npc: NpcDefinition, itemIdx: number): ActionResu
     return { type: 'log', message: `【${npc.title}】${npc.name}：「${dialogue}」` };
   }
 
+  // 装备类：按 label 里的 [攻+12] / [防+8] 造一件真实装备放进背包
+  // （此前这里落到兜底分支，只扣钱、不发装备）
+  if (item.type === 'equipment') {
+    const atkM = item.label.match(/攻\+(\d+)/);
+    const defM = item.label.match(/防\+(\d+)/);
+    const hpM = item.label.match(/(?:HP|血)\+(\d+)/);
+    const isArmor = /防\+/.test(item.label) || /[铠甲衣]/.test(item.label);
+    const name = item.label.replace(/\s*\[.*?\]/, '').trim();
+    const rarity: 0 | 1 | 2 = item.price >= 300 ? 2 : item.price >= 150 ? 1 : 0;
+    const gear = {
+      id: `npc_${npc.id}_${name}`,
+      type: isArmor ? ('armor' as const) : ('weapon' as const),
+      name,
+      tier: rarity + 1,
+      rarity,
+      levelReq: 0,
+      stats: isArmor
+        ? { def: defM ? Number(defM[1]) : 0, hp: hpM ? Number(hpM[1]) : 0 }
+        : { atk: atkM ? Number(atkM[1]) : 0 },
+      cost: { 金币: item.price },
+      sellPrice: Math.floor(item.price * 0.5),
+    };
+    useInventoryStore.getState().addEquipment(gear);
+    state.addGameLog(`从${npc.name}处购得 ${name}，已放入背包。${costMsg}`);
+    return { type: 'log', message: `【${npc.title}】${npc.name}：「${dialogue}」` };
+  }
+
   // 经验丹处理（立即使用，不进背包）
   if (item.type === 'novelty' && item.label.includes('经验丹')) {
     let expGain = 0;

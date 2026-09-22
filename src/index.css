@@ -119,3 +119,50 @@
     max-height: 100%;
   }
 }
+
+/* ═══════════ 旧界面水墨化桥接层 ═══════════
+   逐步重写各组件之前，先统一压制旧配色（非 layer，优先级高于 Tailwind utilities） */
+.bg-white { background-color: var(--paper-2); }
+.bg-white\/90, .bg-white\/80, .bg-white\/70, .bg-white\/60 { background-color: rgba(250, 246, 234, 0.9); }
+.bg-gray-50, .bg-gray-100, .bg-slate-50, .bg-amber-50, .bg-blue-50, .bg-green-50, .bg-red-50 {
+  background-color: rgba(233, 226, 210, 0.6);
+}
+.bg-gray-200 { background-color: #ded6c6; }
+.bg-gray-300 { background-color: #d5cbb8; }
+.bg-gray-400 { background-color: var(--line); }
+.bg-gray-500, .bg-gray-600, .bg-gray-700, .bg-slate-800, .bg-slate-900 { background-color: var(--ink-2); }
+.bg-blue-500, .bg-blue-600, .bg-red-500, .bg-red-600 { background-color: var(--cinnabar); }
+.bg-green-500, .bg-green-600, .bg-green-700 { background-color: var(--ink-2); }
+.bg-yellow-400 { background-color: #f6edd6; color: #8a6b2a; }
+.bg-yellow-500, .bg-yellow-600, .bg-amber-400, .bg-amber-500, .bg-amber-600 { background-color: var(--gold-dark); }
+.bg-indigo-500, .bg-indigo-600, .bg-purple-500, .bg-purple-600, .bg-pink-500 { background-color: var(--violet); }
+.hover\:bg-blue-600:hover, .hover\:bg-blue-700:hover, .hover\:bg-red-600:hover, .hover\:bg-red-700:hover,
+.hover\:bg-amber-600:hover, .hover\:bg-amber-700:hover { background-color: #a2332b; }
+.hover\:bg-green-600:hover, .hover\:bg-green-700:hover, .hover\:bg-gray-400:hover,
+.hover\:bg-gray-500:hover, .hover\:bg-gray-600:hover { background-color: #57503f; }
+.hover\:bg-yellow-600:hover, .hover\:bg-amber-500:hover { background-color: #7a5f25; }
+.hover\:bg-gray-100:hover, .hover\:bg-blue-100:hover, .hover\:bg-amber-100:hover,
+.hover\:bg-green-100:hover, .hover\:bg-red-100:hover, .hover\:bg-white:hover { background-color: var(--paper-3); }
+.text-gray-900, .text-gray-800, .text-gray-700 { color: var(--ink); }
+.text-gray-600, .text-gray-500 { color: var(--ink-2); }
+.text-gray-400, .text-gray-300 { color: var(--ink-3); }
+.text-blue-500, .text-blue-600, .text-blue-700, .text-blue-200 { color: var(--azure); }
+.text-green-500, .text-green-600, .text-green-700 { color: #5d7a4a; }
+.text-amber-100, .text-amber-200\/80, .text-amber-300, .text-amber-600, .text-amber-700,
+.text-amber-800, .text-yellow-600, .text-yellow-700 { color: var(--gold-dark); }
+.text-red-500, .text-red-600, .text-red-700 { color: var(--cinnabar-dark); }
+.text-purple-600, .text-purple-700 { color: var(--violet); }
+.border-gray-100, .border-gray-200, .border-gray-200\/70, .border-gray-300, .border-gray-200\/80 {
+  border-color: rgba(138, 122, 99, 0.45);
+}
+.border-amber-200, .border-amber-300, .border-amber-700\/40, .border-amber-900\/30,
+.border-yellow-200 { border-color: rgba(176, 138, 46, 0.5); }
+.border-blue-100, .border-blue-200 { border-color: rgba(79, 122, 140, 0.45); }
+.border-green-200 { border-color: rgba(93, 122, 74, 0.45); }
+.border-red-200 { border-color: rgba(181, 56, 47, 0.45); }
+.rounded, .rounded-md { border-radius: 3px; }
+.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl { border-radius: 3px; }
+.shadow-sm, .shadow, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl {
+  box-shadow: 0 1px 2px -1px rgba(63, 53, 39, 0.2);
+}
+[class*="bg-gradient-to-"] { background-image: none; }
