@@ -12,8 +12,9 @@ import { useNpcStore } from '../../store/useNpcStore';
 import { useWorldStore } from '../../store/useWorldStore';
 import { wealthOf } from '../../engine/NpcDialogue';
 import {
-  attackNpc, befriendNpc, challengeNpc, exposeSecretNpc, proposeNpc, sowDiscordNpc, stealNpc, talkNpc, wedNpc,
+  attackNpc, befriendNpc, challengeNpc, exposeSecretNpc, giftNpc, inspectNpc, proposeNpc, sowDiscordNpc, stealNpc, talkNpc, wedNpc,
 } from '../../engine/NpcSystem';
+import { GiftModal } from './GiftModal';
 
 const REL_COLOR: Record<string, { c: string; dash?: string; label: string }> = {
   lover: { c: '#c1932f', label: '恋侣' },
@@ -45,6 +46,7 @@ export const NpcEcology: React.FC = () => {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [line, setLine] = useState<string | null>(null);
+  const [giftFor, setGiftFor] = useState<string | null>(null);
 
   const locals = useMemo(() => getNpcsByMap(mapId), [mapId]);
   const nodes = useMemo(() => {
@@ -174,6 +176,8 @@ export const NpcEcology: React.FC = () => {
               <button className="ink-btn text-xs" onClick={() => run(() => talkNpc(sel, 'greet'))}>问候</button>
               <button className="ink-btn text-xs" onClick={() => run(() => talkNpc(sel, 'chat'))}>闲聊</button>
               <button className="ink-btn text-xs" onClick={() => run(() => talkNpc(sel, 'rumor'))}>打听</button>
+              <button className="ink-btn text-xs" onClick={() => run(() => inspectNpc(sel))}>查看</button>
+              <button className="ink-btn text-xs" onClick={() => setGiftFor(sel.id)}>送礼</button>
               <button className="ink-btn text-xs" onClick={() => run(() => challengeNpc(sel))}>切磋</button>
               <button className="ink-btn text-xs" onClick={() => run(() => stealNpc(sel))}>偷窃</button>
               <button className="ink-btn text-xs" onClick={() => run(() => befriendNpc(sel))}>结交</button>
@@ -181,6 +185,7 @@ export const NpcEcology: React.FC = () => {
               <button className="ink-btn text-xs" onClick={() => run(() => wedNpc(sel))}>成婚</button>
               <button className="ink-btn text-xs" onClick={() => run(() => exposeSecretNpc(sel))}>揭发</button>
               <button className="ink-btn text-xs" onClick={() => run(() => attackNpc(sel))}>攻击</button>
+              <button className="ink-btn text-xs" onClick={() => run(() => giftNpc(sel, 20))}>赠金 20</button>
               {relationsOf(sel.id)[0] && (
                 <button
                   className="ink-btn text-xs"
@@ -208,6 +213,10 @@ export const NpcEcology: React.FC = () => {
         )}
 
         {/* 城中见闻 */}
+        {giftFor && (() => {
+          const target = NPCS.find((n) => n.id === giftFor);
+          return target ? <GiftModal npc={target} onClose={() => setGiftFor(null)} /> : null;
+        })()}
         <div className="mt-auto border-t border-[#8a7a63]/40 p-3">
           <div className="ink-title mb-1 text-[13px]">城中见闻</div>
           <div className="space-y-1 text-[11px] leading-relaxed text-[#6b6252]">

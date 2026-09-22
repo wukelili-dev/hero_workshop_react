@@ -6,14 +6,11 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import { useGameStore } from '../../store/useGameStore';
 import { MAPS } from '../../data/maps';
-import { hasNpcs } from '../../data/npcs';
-import { formatNumber } from '../../data/constants';
 import { RARITY_NAME, RARITY_COLOR } from '../../types';
 import type { Monster } from '../../types';
 import type { BattleLog, Rewards } from '../../engine/Combat';
 import { FaSkullCrossbones, FaBomb, FaShield, FaUsers } from 'react-icons/fa6';
 import { AnimatedNumber } from '../../hooks/useCountUp';
-import { NpcPanel } from '../npc/NpcPanel';
 
 type TeamTab = 'hero' | 'teammate' | 'all';
 type BattlePhase = 'idle' | 'fighting' | 'result';
@@ -35,8 +32,6 @@ const cardVariants: Variants = {
 export const CenterPanel: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
   const currentMapId = useGameStore((s) => s.currentMapId);
-  const setCurrentMapId = useGameStore((s) => s.setCurrentMap);
-  const unlockedMaps = useGameStore((s) => s.unlockedMaps);
   const currentEnemies = useGameStore((s) => s.currentEnemies);
   const refreshEnemies = useGameStore((s) => s.refreshEnemies);
   const fightMonster = useGameStore((s) => s.fightMonster);
@@ -76,23 +71,6 @@ export const CenterPanel: React.FC = () => {
     setBattleResult(null);
     setFightingMonster(null);
   }, [clearAnimTimer]);
-
-  const handleSelectMap = (mapId: string) => {
-    if (unlockedMaps.includes(mapId)) {
-      setCurrentMapId(mapId);
-      resetBattleState();
-    }
-  };
-
-  const handleUnlockMap = (map: typeof MAPS[number]) => {
-    if (unlockedMaps.includes(map.id)) return;
-    if (hero.gold < map.unlockCost) {
-      useGameStore.getState().addGameLog(`金币不足! 解锁${map.name}需要 ${map.unlockCost}G`);
-      return;
-    }
-    useGameStore.getState().addGold(-map.unlockCost);
-    useGameStore.getState().unlockMap(map.id);
-  };
 
   const handleRefreshEnemies = () => {
     refreshEnemies();
@@ -414,40 +392,10 @@ export const CenterPanel: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* 地图区域 */}
-      <div>
-        <div className="flex items-center gap-1 mb-2">
-          <span className="text-sm">🗺️</span>
-          <span className="text-sm font-bold text-gray-700">地图</span>
-        </div>
-        <div className="text-xs text-blue-600 mb-2">{currentMap?.name ?? '傲来国'}</div>
-        <div className="flex flex-wrap gap-1.5">
-          {MAPS.map((map) => {
-            const isUnlocked = unlockedMaps.includes(map.id);
-            const isActive = currentMapId === map.id;
-            return (
-              <motion.button
-                key={map.id}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => isUnlocked ? handleSelectMap(map.id) : handleUnlockMap(map)}
-                className={`relative px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                  isActive && isUnlocked
-                    ? 'bg-green-600 text-white shadow'
-                    : isUnlocked
-                    ? 'bg-gray-500 text-white hover:bg-gray-600'
-                    : 'bg-gray-400 text-white/80 hover:bg-gray-500'
-                }`}
-                disabled={!isUnlocked && hero.gold < map.unlockCost}
-              >
-                {map.name}{!isUnlocked ? ` (${formatNumber(map.unlockCost)}G)` : ''}
-              </motion.button>
-            );
-          })}
-        </div>
+      {/* 地图切换与人物的各种互动都已移出本页 */}
+      <div className="ink-panel p-2 text-xs leading-relaxed text-[#6b6252]">
+        换地图请到「世界地图」点格子前往；此处的人物、关系与全部互动（交谈 / 赠礼 / 偷窃 / 结交 / 求婚…）都在「人物志 · 关系网」。
       </div>
-
-      {/* NPC 面板（所有有NPC的地图都显示） */}
-      {hasNpcs(currentMapId) && <NpcPanel mapId={currentMapId} />}
       {/* 战斗区域（仅非城市地图） */}
       {!currentMap?.isCity && battleSection}
     </div>
