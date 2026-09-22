@@ -13,9 +13,9 @@ interface ProgressBarProps {
 export const ProgressBar: React.FC<ProgressBarProps> = ({
   current,
   max,
-  color = 'bg-green-500',
-  bgColor = 'bg-gray-700',
-  height = 'h-3',
+  color = 'bg-[#3f3527]',
+  bgColor = 'bg-[#e9e2d2]',
+  height = 'h-2',
   showText = true,
   label,
 }) => {
@@ -24,7 +24,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   return (
     <div className="w-full">
       {(showText || label) && (
-        <div className="flex justify-between text-xs text-amber-200/80 mb-0.5">
+        <div className="mb-0.5 flex justify-between text-xs text-[#9c917b]">
           {label && <span>{label}</span>}
           {showText && (
             <span>
@@ -33,11 +33,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
           )}
         </div>
       )}
-      <div className={`w-full ${height} ${bgColor} rounded overflow-hidden border border-amber-900/30`}>
-        <div
-          className={`${color} ${height} rounded transition-all duration-300`}
-          style={{ width: `${pct}%` }}
-        />
+      <div className={`w-full ${height} ${bgColor} overflow-hidden border border-[#8a7a63]/55`}>
+        <div className={`${color} ${height} transition-all duration-300`} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

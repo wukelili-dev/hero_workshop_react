@@ -119,7 +119,7 @@ export const AppShell: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 text-gray-800 overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#f3efe4] text-[#3f3527]">
       <Toaster />
       {/* Top bar */}
       <TopBar />
@@ -214,10 +214,10 @@ export const AppShell: React.FC = () => {
       </div>
 
       {/* Bottom action bar */}
-      <div className="flex items-center justify-center gap-2 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 bg-white border-t border-gray-200 flex-shrink-0">
+      <div className="flex flex-shrink-0 items-center justify-center gap-2 border-t border-[#8a7a63] bg-[#faf6ea]/95 px-2 py-1.5 md:gap-3 md:px-4 md:py-2">
         <button
           onClick={handleSave}
-          className="px-3 md:px-4 py-1 md:py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm flex items-center gap-1"
+          className="ink-btn-seal px-3 py-1 text-xs md:px-4 md:py-1.5 md:text-sm"
         >
           <FaFloppyDisk /> 存档
         </button>
@@ -225,31 +225,31 @@ export const AppShell: React.FC = () => {
           <Dialog.Trigger asChild>
             <button
               onClick={handleLoadClick}
-              className="px-3 md:px-4 py-1 md:py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm flex items-center gap-1"
+              className="ink-btn px-3 py-1 text-xs md:px-4 md:py-1.5 md:text-sm"
             >
               <FaFolderOpen /> 读档
             </button>
           </Dialog.Trigger>
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-            <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl p-6 w-80 z-50 border border-gray-100 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
-              <Dialog.Title className="text-lg font-bold text-gray-900 mb-2">确认读档？</Dialog.Title>
+            <Dialog.Overlay className="fixed inset-0 z-40 bg-[#3f3527]/45 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+            <Dialog.Content className="ink-panel ink-frame fixed left-1/2 top-1/2 z-50 w-80 -translate-x-1/2 -translate-y-1/2 p-5 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+              <Dialog.Title className="ink-title mb-2 text-lg">确认读档？</Dialog.Title>
               {saveMeta && (
-                <div className="text-sm text-gray-600 mb-4 space-y-1">
+                <div className="mb-4 space-y-1 text-sm text-[#6b6252]">
                   <p><span className="font-medium">{saveMeta.heroName}</span> Lv.{saveMeta.heroLevel}</p>
                   <p>金币: {saveMeta.gold.toLocaleString()}</p>
-                  <p className="text-xs text-gray-400">{new Date(saveMeta.timestamp).toLocaleString()}</p>
+                  <p className="text-xs text-[#9c917b]">{new Date(saveMeta.timestamp).toLocaleString()}</p>
                 </div>
               )}
               <div className="flex gap-3 justify-end">
                 <Dialog.Close asChild>
-                  <button className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors">
+                  <button className="ink-btn text-sm">
                     取消
                   </button>
                 </Dialog.Close>
                 <button
                   onClick={handleLoadConfirm}
-                  className="px-4 py-2 text-sm bg-yellow-500 hover:bg-yellow-600 text-white rounded transition-colors"
+                  className="ink-btn-seal text-sm"
                 >
                   确认读档
                 </button>
@@ -259,11 +259,11 @@ export const AppShell: React.FC = () => {
         </Dialog.Root>
         <button
           onClick={() => setActiveTab('bestiary')}
-          className="px-3 md:px-4 py-1 md:py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm hidden md:block flex items-center gap-1"
+          className="ink-btn hidden px-3 py-1 text-xs md:inline-flex md:px-4 md:py-1.5 md:text-sm"
         >
           <FaBookOpen /> 图鉴
         </button>
-        <button className="px-3 md:px-4 py-1 md:py-1.5 bg-red-500 text-white rounded-full text-xs md:text-sm font-medium shadow-sm cursor-not-allowed opacity-60 hidden md:block flex items-center gap-1">
+        <button className="ink-btn hidden cursor-not-allowed px-3 py-1 text-xs opacity-60 md:inline-flex md:px-4 md:py-1.5 md:text-sm" disabled>
           <FaCircleQuestion /> 帮助
         </button>
       </div>

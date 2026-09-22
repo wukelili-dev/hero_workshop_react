@@ -1,10 +1,114 @@
 @import "tailwindcss";
 
+/* ═══════════ 勇者工坊 · 水墨设计令牌 ═══════════ */
+:root {
+  --paper: #f3efe4;
+  --paper-2: #faf6ea;
+  --paper-3: #e9e2d2;
+  --ink: #3f3527;
+  --ink-2: #6b6252;
+  --ink-3: #9c917b;
+  --line: #8a7a63;
+  --cinnabar: #b5382f;
+  --cinnabar-dark: #8f2b23;
+  --gold: #c1932f;
+  --gold-dark: #8a6b2a;
+  --azure: #4f7a8c;
+  --violet: #6b4a7a;
+  --font-kai: KaiTi, STKaiti, "Kaiti SC", "Songti SC", SimSun, serif;
+  --font-song: "Songti SC", SimSun, "Noto Serif CJK SC", Georgia, serif;
+}
+
 @layer base {
+  body {
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-song);
+  }
   button {
     transition: transform 0.1s ease;
   }
   button:active:not(:disabled) {
-    transform: scale(0.95);
+    transform: scale(0.97);
+  }
+}
+
+@layer components {
+  /* 纸面板：1px 笔线 + 内层亮光，重要处叠 .ink-frame 做「裱边」 */
+  .ink-panel {
+    border: 1px solid var(--line);
+    background-color: var(--paper-2);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  }
+  .ink-frame {
+    position: relative;
+  }
+  .ink-frame::after {
+    position: absolute;
+    inset: 3px;
+    border: 1px solid rgba(138, 122, 99, 0.35);
+    content: "";
+    pointer-events: none;
+  }
+  .ink-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid rgba(138, 122, 99, 0.45);
+  }
+  .ink-title {
+    font-family: var(--font-kai);
+    letter-spacing: 0.06em;
+    color: var(--ink);
+  }
+  .ink-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background-color: rgba(250, 246, 234, 0.9);
+    color: var(--ink);
+    font: inherit;
+  }
+  .ink-btn:hover:not(:disabled) {
+    background-color: var(--paper-3);
+  }
+  .ink-btn-seal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.9rem;
+    border: 1px solid var(--cinnabar-dark);
+    border-radius: 3px;
+    background-color: var(--cinnabar);
+    color: #fdf6e8;
+    font: inherit;
+  }
+  .ink-btn-seal:hover:not(:disabled) {
+    background-color: #a2332b;
+  }
+  .ink-btn:disabled,
+  .ink-btn-seal:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .ink-tag {
+    display: inline-block;
+    padding: 0 0.4rem;
+    border: 1px solid rgba(138, 122, 99, 0.5);
+    border-radius: 2px;
+    background-color: rgba(233, 226, 210, 0.7);
+    color: var(--ink-2);
+    font-size: 0.72rem;
+    line-height: 1.5;
+  }
+  .ink-rule {
+    border: 0;
+    border-top: 1px dashed rgba(138, 122, 99, 0.5);
   }
 }
