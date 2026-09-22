@@ -9,8 +9,21 @@ import { NOVELTY_ITEMS, NOVELTY_RARITY_COLORS, NOVELTY_RARITY_NAMES } from '../.
 import { PLANTS_CATALOG, PLANT_RARITY_COLORS, PLANT_RARITY_NAMES } from '../../data/plants';
 import { RANCH_CATALOG } from '../../data/ranch';
 import { NPCS } from '../../data/npcs';
+import { getAllEncounterMonsters } from '../../data/cellEncounters';
 
-const ALL_MONSTERS: Monster[] = MAPS.flatMap((m) => [...(m.monsters ?? []), ...(m.boss ? [m.boss] : [])]);
+const MAP_MONSTERS: Monster[] = MAPS.flatMap((m) => [...(m.monsters ?? []), ...(m.boss ? [m.boss] : [])]);
+
+// 主地图池 + 世界地图野外妖怪，按 id 去重
+const ALL_MONSTERS: Monster[] = (() => {
+  const seen = new Set<string>();
+  const out: Monster[] = [];
+  for (const m of [...MAP_MONSTERS, ...getAllEncounterMonsters()]) {
+    if (seen.has(m.id)) continue;
+    seen.add(m.id);
+    out.push(m);
+  }
+  return out;
+})();
 
 const RARITY_COLOR: Record<number, string> = {
   0: '#C0C0C0', 1: '#4CAF50', 2: '#2196F3', 3: '#9370DB', 4: '#FF9800',
@@ -42,6 +55,14 @@ const MONSTER_ICON_MAP: Record<string, React.ReactNode> = {
   '山神': <span>👻</span>, '黄风大圣': <span>👑</span>,
   '人参娃娃': <span>👶</span>, '五庄道童': <span>👦</span>,
   '骷髅怪': <span>💀</span>, '镇元大仙': <span>👑</span>,
+  // 世界地图野外妖怪
+  '灰狼': <span>🐺</span>, '狼王': <span>🐺</span>,
+  '山贼': <span>🗡️</span>, '山贼头目': <span>🗡️</span>,
+  '毒蛇': <span>🐍</span>, '河妖': <span>🌊</span>,
+  '野猴': <span>🐒</span>, '沼泽巨蜥': <span>🦎</span>,
+  '山君': <span>🐯</span>, '沙虫': <span>🐛</span>,
+  '海蛇': <span>🐍</span>, '黑熊精': <span>🐻</span>,
+  '蛟': <span>🐉</span>,
 };
 const DEFAULT_MONSTER_ICON: React.ReactNode = <span>👹</span>;
 

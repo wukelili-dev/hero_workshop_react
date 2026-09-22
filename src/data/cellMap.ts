@@ -59,7 +59,7 @@ export interface MapCell {
   // 视觉
   elevation?: number;      // 海拔（0-3，影响渲染层级）
   isRevealed: boolean;     // 是否已探索
-  isVisited: boolean;      // 是否已访问
+  isVisited?: boolean;     // 是否已访问
   
   // 连接（用于路径计算）
   connections?: string[];  // 相邻格子 ID
@@ -236,7 +236,7 @@ export const CENTRAL_PLAIN_CELLS: MapCell[] = [
     { type: 'event', id: 'immortal_encounter', eventId: 'meet_immortal', icon: '☁️', label: '仙人指路', description: '有缘者方能得见' }
   ], isRevealed: false, elevation: 1 },
   { id: 'cp_4_3', x: 4, y: 3, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
-  { id: 'cp_5_3', x: 5, y: 3, terrain: 'city', features: [
+  { id: 'cp_5_3', x: 5, y: 3, terrain: 'plains', features: [
     { type: 'city', id: 'datang_south', cityId: 'datang_south', icon: '🏘️', label: '大唐南', description: '南方商埠' }
   ], isRevealed: true, elevation: 0 },
   { id: 'cp_6_3', x: 6, y: 3, terrain: 'forest', features: [
@@ -349,4 +349,77 @@ export function calcMoveCost(fromId: string, toId: string): number {
   
   const t = TERRAIN_CONFIG[to.terrain];
   return t ? t.moveCost : 1;
+}
+
+// ============ 驿道（世界地图上绘制用） ============
+export const CELL_ROADS: [string, string][] = [
+  ['cp_3_0', 'cp_5_1'],
+  ['cp_3_0', 'cp_1_3'],
+  ['cp_1_3', 'cp_5_3'],
+  ['cp_5_3', 'cp_3_6'],
+  ['cp_2_5', 'cp_3_5'],
+  ['cp_5_1', 'cp_6_2'],
+  ['cp_5_3', 'cp_6_4'],
+  ['cp_3_0', 'cp_3_5'],
+  ['cp_0_5', 'cp_0_6'],
+];
+
+// ============ 行军路线（任意格子之间移动，按地形累计天数） ============
+export interface CellRoute {
+  /** 含起点与终点 */
+  path: string[];
+  /** 所需天数 = 进入每一格的地形消耗之和 */
+  days: number;
+}
+
+export function findRoute(fromId: string, toId: string): CellRoute | null {
+  const from = getCellById(fromId);
+  const to = getCellById(toId);
+  if (!from || !to) return null;
+  if (fromId === toId) return { path: [fromId], days: 0 };
+
+  const dist = new Map<string, number>([[fromId, 0]]);
+  const prev = new Map<string, string>();
+  const done = new Set<string>();
+  const open = new Set<string>([fromId]);
+
+  while (open.size > 0) {
+    let currentId: string | undefined;
+    let best = Infinity;
+    for (const id of open) {
+      const d = dist.get(id) ?? Infinity;
+      if (d < best) {
+        best = d;
+        currentId = id;
+      }
+    }
+    if (currentId === undefined) break;
+    open.delete(currentId);
+    if (currentId === toId) break;
+    done.add(currentId);
+    for (const neighborId of getNeighbors(currentId)) {
+      if (done.has(neighborId)) continue;
+      const cell = getCellById(neighborId);
+      if (!cell) continue;
+      const cost = TERRAIN_CONFIG[cell.terrain]?.moveCost ?? 1;
+      const next = best + cost;
+      if (next < (dist.get(neighborId) ?? Infinity)) {
+        dist.set(neighborId, next);
+        prev.set(neighborId, currentId);
+        open.add(neighborId);
+      }
+    }
+  }
+
+  const total = dist.get(toId);
+  if (total === undefined) return null;
+  const path: string[] = [toId];
+  let cursor = toId;
+  while (cursor !== fromId) {
+    const p = prev.get(cursor);
+    if (!p) return null;
+    path.unshift(p);
+    cursor = p;
+  }
+  return { path, days: Math.round(total * 10) / 10 };
 }

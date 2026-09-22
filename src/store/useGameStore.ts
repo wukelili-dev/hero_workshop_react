@@ -9,6 +9,7 @@ import { RANCH_CATALOG } from '../data/ranch';
 import { NPCS } from '../data/npcs';
 import { generateTavernRoster, type TavernRecruit } from '../data/tavern';
 import { BUILDING_CONFIGS, BUILDING_OUTPUTS } from '../data/buildings';
+import { getCellEncounter } from '../data/cellEncounters';
 
 // 掉落物品 itemId → 资源 key 映射（怪物掉落用中文，资源状态用英文）
 const DROP_TO_RESOURCE: Record<string, string> = {
@@ -31,6 +32,19 @@ function _autoPotionIfNeeded() {
   }
 }
 
+/** 从妖怪表里抽 2~3 只作为当前敌人 */
+function drawEnemies(roster: Monster[]): Monster[] {
+  if (roster.length === 0) return [];
+  const pool = [...roster];
+  const n = Math.min(2 + Math.floor(Math.random() * 2), pool.length);
+  const out: Monster[] = [];
+  for (let i = 0; i < n && pool.length > 0; i++) {
+    const idx = Math.floor(Math.random() * pool.length);
+    out.push(pool.splice(idx, 1)[0]);
+  }
+  return out;
+}
+
 // 判断英雄是否能打过怪物
 function canDefeat(hero: any, monster: any): boolean {
   const result = executeBattle(
@@ -47,6 +61,10 @@ interface GameState {
   currentMapId: string;
   unlockedMaps: string[];
   currentEnemies: Monster[];
+  /** 当前所在地的妖怪表（null = 未绑定格子，沿用地图池） */
+  currentRoster: Monster[] | null;
+  /** 当前所在地的 Boss */
+  currentBoss: Monster | null;
   moralValue: number;
   factions: Factions;
   isRunning: boolean;
@@ -70,6 +88,8 @@ interface GameActions {
   setHero: (hero: Partial<HeroState>) => void;
   setResources: (resources: Partial<Resources>) => void;
   setCurrentMap: (mapId: string) => void;
+  /** 进入世界地图上的某格：把该格的妖怪同步为当前敌人 */
+  enterCell: (cellId: string) => void;
   unlockMap: (mapId: string) => void;
   addGold: (amount: number) => void;
   addResource: (key: string, amount: number) => void;
@@ -212,6 +232,8 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   currentMapId: 'aolai',
   unlockedMaps: ['aolai'],
   currentEnemies: getEnemies('aolai'),
+  currentRoster: null,
+  currentBoss: null,
   isRunning: false,
   farmPlots: Array.from({ length: 6 }, () => ({ plantId: null, plantedAt: null, lastHarvest: null, accumulatedGold: 0 })),
   tavernRoster: [],
@@ -233,7 +255,27 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
   setHero: (p) => set((s) => ({ hero: { ...s.hero, ...p } })),
   setResources: (p) => set((s) => ({ resources: { ...s.resources, ...p } })),
-  setCurrentMap: (id) => set({ currentMapId: id, currentEnemies: getEnemies(id) }),
+  setCurrentMap: (id) => set(() => {
+    const map = MAPS.find((m) => m.id === id);
+    return {
+      currentMapId: id,
+      currentRoster: map?.monsters ?? null,
+      currentBoss: map?.boss ?? null,
+      currentEnemies: getEnemies(id),
+    };
+  }),
+  enterCell: (cellId) => set((s) => {
+    const enc = getCellEncounter(cellId);
+    if (!enc) {
+      return { currentRoster: [], currentBoss: null, currentEnemies: [] };
+    }
+    return {
+      currentMapId: enc.mapId ?? s.currentMapId,
+      currentRoster: enc.monsters,
+      currentBoss: enc.boss ?? null,
+      currentEnemies: drawEnemies(enc.monsters),
+    };
+  }),
   unlockMap: (id) => set((s) => {
     if (s.unlockedMaps.includes(id)) return {};
     const map = MAPS.find(m => m.id === id);
@@ -244,14 +286,19 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   addResource: (key, amt) => set((s) => ({ resources: { ...s.resources, [key]: Math.max(0, (s.resources[key] ?? 0) + amt) } })),
   setRunning: (r) => set({ isRunning: r }),
   refreshEnemies: () => set((s) => {
-    const m = MAPS.find(x => x.id === s.currentMapId);
-    let enemies = getEnemies(s.currentMapId);
-    // Boss 概率刷新：当前地图所有普通怪图鉴点亮后，10% 概率出现 Boss
-    if (m?.boss && m.monsters.every(mon => s.discoveredMonsters.includes(mon.id))) {
-      if (Math.random() < 0.1 && enemies.length > 0) {
-        const idx = Math.floor(Math.random() * enemies.length);
-        enemies = [...enemies.slice(0, idx), m.boss, ...enemies.slice(idx + 1)];
-      }
+    const roster = s.currentRoster;
+    // 站在没有妖怪的格子上：不刷新敌人
+    if (roster && roster.length === 0) return { currentEnemies: [] };
+
+    const boundMap = MAPS.find((x) => x.id === s.currentMapId);
+    const pool = roster && roster.length > 0 ? roster : (boundMap?.monsters ?? []);
+    const boss = s.currentBoss ?? boundMap?.boss ?? null;
+    let enemies = roster && roster.length > 0 ? drawEnemies(roster) : getEnemies(s.currentMapId);
+
+    // Boss 概率刷新：此地普通怪图鉴全部点亮后，10% 概率出现 Boss
+    if (boss && pool.length > 0 && pool.every((mon) => s.discoveredMonsters.includes(mon.id)) && Math.random() < 0.1 && enemies.length > 0) {
+      const idx = Math.floor(Math.random() * enemies.length);
+      enemies = [...enemies.slice(0, idx), boss, ...enemies.slice(idx + 1)];
     }
     return { currentEnemies: enemies };
   }),
@@ -262,6 +309,8 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     currentMapId: 'aolai',
     unlockedMaps: ['aolai'],
     currentEnemies: getEnemies('aolai'),
+    currentRoster: null,
+    currentBoss: null,
     isRunning: false,
     farmPlots: Array.from({ length: 6 }, () => ({ plantId: null, plantedAt: null, lastHarvest: null, accumulatedGold: 0 })),
     tavernRoster: [],

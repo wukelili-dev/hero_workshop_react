@@ -19,18 +19,19 @@ import { FactoryTab } from '../factory/FactoryTab';
 import { RanchTab } from '../ranch/RanchTab';
 import { ForgeTab } from '../forge/ForgeTab';
 import { BestiaryTab } from '../bestiary/BestiaryTab';
-import { IsometricMapPanel } from '../world/IsometricMapPanel';
+import { InkMapPanel } from '../world/InkMapPanel';
 import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils';
+import { startWorldClock, useWorldStore } from '../../store/useWorldStore';
 
 // Icon imports
 import {
-  FaBomb, FaShieldHalved, FaBagShopping, FaFlask,
+  FaBomb, FaShieldHalved, FaBagShopping,
   FaBeerMugEmpty, FaWheatAwn, FaIndustry, FaPaw,
   FaBookOpen, FaCity, FaFloppyDisk, FaFolderOpen, FaCircleQuestion,
 } from 'react-icons/fa6';
-import { FaGift, FaCube, FaHammer, FaSkullCrossbones, FaMap } from 'react-icons/fa';
+import { FaGift, FaCube, FaHammer, FaSkullCrossbones } from 'react-icons/fa';
 
-export type TabId = 'weapon' | 'armor' | 'novelty' | 'inventory' | 'materials' | 'tavern' | 'farm' | 'factory' | 'ranch' | 'forge' | 'bestiary' | 'world';
+export type TabId = 'weapon' | 'armor' | 'novelty' | 'inventory' | 'materials' | 'tavern' | 'farm' | 'factory' | 'ranch' | 'forge' | 'bestiary';
 type MobileView = 'city' | 'combat' | TabId;
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode; description: string }[] = [
@@ -45,13 +46,11 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode; description: stri
   { id: 'ranch', label: '牧场', icon: <FaPaw />, description: '养殖生物获取资源' },
   { id: 'forge', label: '锻造', icon: <FaHammer />, description: '合成高级装备' },
   { id: 'bestiary', label: '图鉴', icon: <FaBookOpen />, description: '查看已击败的怪物' },
-  { id: 'world', label: '世界', icon: <FaMap />, description: '查看世界地图和移动' },
 ];
 
 const MOBILE_NAV: { id: MobileView; label: string; icon: React.ReactNode }[] = [
   { id: 'city', label: '主城', icon: <FaCity /> },
   { id: 'combat', label: '战斗', icon: <FaSkullCrossbones /> },
-  { id: 'world', label: '世界', icon: <FaMap /> },
   { id: 'inventory', label: '背包', icon: <FaBagShopping /> },
   { id: 'forge', label: '锻造', icon: <FaHammer /> },
   { id: 'ranch', label: '牧场', icon: <FaPaw /> },
@@ -63,12 +62,12 @@ export const AppShell: React.FC = () => {
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [saveMeta, setSaveMeta] = useState<ReturnType<typeof getSaveMeta>>(null);
   const [showApp, setShowApp] = useState(false);
-  // 地图状态
-  const [currentCellId, setCurrentCellId] = useState<string>('cp_3_0'); // 起始位置：长安城
-  const [revealedCells, setRevealedCells] = useState<string[]>(['cp_3_0']); // 已探索的格子
-
+  const [showWorldMap, setShowWorldMap] = useState(false);
 
   useEffect(() => {
+    // 世界时钟（挂机时间流逝）+ 把当前格子的妖怪同步给战斗系统
+    startWorldClock();
+    useWorldStore.getState().syncEncounter();
     const t = setTimeout(() => setShowApp(true), 30);
     return () => clearTimeout(t);
   }, []);
@@ -108,20 +107,6 @@ export const AppShell: React.FC = () => {
       case 'ranch': return <RanchTab />;
       case 'forge': return <ForgeTab />;
       case 'bestiary': return <BestiaryTab />;
-      case 'world': return (
-    <IsometricMapPanel
-      currentCellId={currentCellId}
-      revealedCells={revealedCells}
-      onMoveToCell={(cellId) => {
-        setCurrentCellId(cellId);
-        setRevealedCells(prev => [...prev, cellId]);
-      }}
-      onCellFeatureClick={(feature, cell) => {
-        console.log('Feature click:', feature, cell);
-      }}
-      onClose={() => setActiveTab('weapon')}
-    />
-  );
     }
   };
 
@@ -140,76 +125,69 @@ export const AppShell: React.FC = () => {
       <TopBar />
 
       {/* === 桌面端布局 === */}
-      {activeTab === 'world' ? (
-        /* 地图模式：左栏主城 + 大地图占满剩余空间 */
-        <div className="hidden md:flex flex-1 overflow-hidden">
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={showApp ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="flex-[2_0_0] min-w-0 overflow-y-auto border-r border-gray-200/70 bg-gradient-to-b from-gray-50/80 to-gray-100/40"
-          >
-            <MainCityPanel />
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={showApp ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="flex-[5_0_0] min-w-0 overflow-hidden"
-          >
-            {renderTab()}
-          </motion.div>
-        </div>
-      ) : (
-        /* 默认三栏布局 */
-        <div className="hidden md:flex flex-1 overflow-hidden">
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={showApp ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="flex-[2_0_0] min-w-0 overflow-y-auto border-r border-gray-200/70 bg-gradient-to-b from-gray-50/80 to-gray-100/40"
-          >
-            <MainCityPanel />
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={showApp ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.4, delay: 0.25 }}
-            className="flex-[3_0_0] min-w-0 overflow-y-auto border-r border-gray-200/70 bg-white/90 flex flex-col"
-          >
-            <CenterPanel />
-          </motion.div>
-          {/* 右侧：人物/日志(上) + Tab内容(下) */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={showApp ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.4, delay: 0.4 }}
-            className="flex-[2_0_0] min-w-0 flex flex-col overflow-hidden"
-          >
-            {/* 右上：日志 */}
-            <div className="flex-1 min-h-0 flex flex-col border-b border-gray-200">
-              <GameLogPanel />
+      <div className="hidden md:flex flex-1 overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={showApp ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="flex-[2_0_0] min-w-0 overflow-y-auto border-r border-gray-200/70 bg-gradient-to-b from-gray-50/80 to-gray-100/40"
+        >
+          <MainCityPanel onOpenWorldMap={() => setShowWorldMap(true)} />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={showApp ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.4, delay: 0.25 }}
+          className="flex-[3_0_0] min-w-0 overflow-y-auto border-r border-gray-200/70 bg-white/90 flex flex-col"
+        >
+          <CenterPanel />
+        </motion.div>
+        {/* 右侧：人物/日志(上) + Tab内容(下) */}
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          animate={showApp ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.4, delay: 0.4 }}
+          className="flex-[2_0_0] min-w-0 flex flex-col overflow-hidden"
+        >
+          {/* 右上：日志 */}
+          <div className="flex-1 min-h-0 flex flex-col border-b border-gray-200">
+            <GameLogPanel />
+          </div>
+          {/* 右下：Tab栏 + 内容 */}
+          <div className="flex-1 min-h-0 flex flex-col">
+            <TabBar tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
+            <div className="flex-1 overflow-y-auto p-3">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.25, ease: 'easeOut' }}
+                >
+                  {renderTab()}
+                </motion.div>
+              </AnimatePresence>
             </div>
-            {/* 右下：Tab栏 + 内容 */}
-            <div className="flex-1 min-h-0 flex flex-col">
-              <TabBar tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
-              <div className="flex-1 overflow-y-auto p-3">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={activeTab}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -12 }}
-                    transition={{ duration: 0.25, ease: 'easeOut' }}
-                  >
-                    {renderTab()}
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* === 世界地图全屏覆盖层 === */}
+      <AnimatePresence>
+        {showWorldMap && (
+          <motion.div
+            key="world-map"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50"
+          >
+            <InkMapPanel onClose={() => setShowWorldMap(false)} />
           </motion.div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* === 移动端：底部导航切换 === */}
       <div className="flex md:hidden flex-1 overflow-hidden flex-col">

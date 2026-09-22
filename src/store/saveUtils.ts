@@ -7,6 +7,9 @@ import { useInventoryStore } from '../store/useInventoryStore';
 import { useRanchStore } from '../store/useRanchStore';
 import { useFactoryStore } from '../store/useFactoryStore';
 import { useNpcStore } from '../store/useNpcStore';
+import { useWorldStore } from './useWorldStore';
+import { MAPS } from '../data/maps';
+import { getCellEncounter } from '../data/cellEncounters';
 
 const SAVE_KEY = 'hero_workshop_save_v1';
 
@@ -27,6 +30,7 @@ export function saveGame(): boolean {
     const factoryState = useFactoryStore.getState();
 
     const npcState = useNpcStore.getState();
+    const worldState = useWorldStore.getState();
 
     const saveData = {
       version: 'v2',
@@ -51,6 +55,14 @@ export function saveGame(): boolean {
         armors: invState.armors,
         materials: invState.materials,
         novelties: invState.novelties,
+      },
+      // 世界时间 / 所在格子 / 迷雾
+      world: {
+        day: worldState.day,
+        currentCellId: worldState.currentCellId,
+        revealedCells: worldState.revealedCells,
+        visitedCells: worldState.visitedCells,
+        lastTickAt: worldState.lastTickAt,
       },
       ranch: { slots: ranchState.slots },
       factory: {
@@ -94,6 +106,12 @@ export function loadGame(): boolean {
 
     // v2 新增字段
     if (data.farmPlots) gameStore.setFarmPlots(data.farmPlots);
+
+    // 世界时间 / 位置 / 迷雾，并把当前格子的妖怪同步给战斗系统
+    if (data.world) {
+      useWorldStore.getState().loadWorld(data.world);
+    }
+    useWorldStore.getState().syncEncounter();
 
     // NPC 状态
     if (data.npcInstances) {
@@ -178,7 +196,10 @@ export function getSaveMeta(): SaveMeta | null {
       heroLevel: data.hero?.level || 1,
       heroName: data.hero?.name || '未知',
       gold: data.hero?.gold || 0,
-      mapName: data.currentMapId || '傲来国',
+      mapName:
+        (data.world?.currentCellId && getCellEncounter(data.world.currentCellId)?.label) ||
+        MAPS.find((m) => m.id === data.currentMapId)?.name ||
+        '傲来国',
     };
   } catch {
     return null;

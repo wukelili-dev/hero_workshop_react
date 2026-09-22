@@ -2,9 +2,12 @@ import React from 'react';
 import { FaBomb, FaCoins } from 'react-icons/fa6';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 import { useGameStore } from '../../store/useGameStore';
+import { dayNumber, shichenOf, useWorldStore } from '../../store/useWorldStore';
 
 export const TopBar: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
+  const dayNo = useWorldStore((s) => dayNumber(s.day));
+  const shichen = useWorldStore((s) => shichenOf(s.day));
   return (
     <div className="flex items-center justify-between px-4 py-2 bg-blue-600 text-white">
       {/* Left: Title */}
@@ -15,6 +18,7 @@ export const TopBar: React.FC = () => {
 
       {/* Right: Kill count + Gold */}
       <div className="flex items-center gap-4">
+        <span className="text-sm font-medium text-blue-100">第 {dayNo} 天 · {shichen}</span>
         <span className="text-sm text-blue-200">击杀: {hero.kills ?? 0}</span>
         <div className="px-3 py-0.5 bg-yellow-400 text-gray-900 rounded-full font-bold text-sm">
           <FaCoins /><AnimatedNumber value={hero.gold} />

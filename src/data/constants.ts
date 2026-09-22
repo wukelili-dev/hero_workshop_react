@@ -118,6 +118,21 @@ export type CodexCategory = typeof CODEX_CATEGORIES[number];
 // 游戏tick间隔（秒）
 export const TICK_S = 1;
 
+// 升到下一级所需经验（与 useGameStore.addExp 的 lv*100 曲线保持一致）
+export function expRequired(level: number): number {
+  return level * 100;
+}
+
+// ═══════════════ 世界时间常量 ═══════════════
+// 1 个游戏日 = 多少毫秒真实时间（挂机时时间照样流逝）
+export const DAY_MS = 2 * 60 * 1000;
+
+// 十二时辰
+export const SHICHEN = [
+  '子时', '丑时', '寅时', '卯时', '辰时', '巳时',
+  '午时', '未时', '申时', '酉时', '戌时', '亥时',
+] as const;
+
 // 自动保存间隔（秒）
 export const SAVE_INTERVAL_S = 30;
 

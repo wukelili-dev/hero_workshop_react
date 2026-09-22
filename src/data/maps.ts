@@ -57,6 +57,20 @@ export const MONSTERS: Record<string, Monster> = {
   '五庄道童': { id: '五庄道童', name: '五庄道童', level: 57, hp: 2200, atk: 210, def: 82, rarity: 4, expReward: 520, goldReward: 440, drops: [{ itemId: '铁矿', chance: 1, quantity: [9, 9] }, { itemId: '木材', chance: 0.5, quantity: [7, 7] }] },
   '骷髅怪': { id: '骷髅怪', name: '骷髅怪', level: 59, hp: 1900, atk: 230, def: 68, rarity: 4, expReward: 500, goldReward: 420, drops: [{ itemId: '皮革', chance: 1, quantity: [9, 9] }, { itemId: '铁矿', chance: 0.5, quantity: [7, 7] }] },
   '镇元大仙': { id: '镇元大仙', name: '镇元大仙', level: 60, hp: 5500, atk: 270, def: 110, rarity: 4, expReward: 2200, goldReward: 1700, drops: [{ itemId: '铁矿', chance: 1, quantity: [25, 25] }, { itemId: '木材', chance: 1, quantity: [22, 22] }, { itemId: '皮革', chance: 1, quantity: [25, 25] }], isBoss: true },
+  // ── 中原野外妖怪（供世界地图格子遭遇表使用） ──
+  '灰狼': { id: '灰狼', name: '灰狼', level: 4, hp: 65, atk: 14, def: 4, rarity: 0, expReward: 17, goldReward: 12, drops: [{ itemId: '皮革', chance: 1, quantity: [1, 2] }] },
+  '山贼': { id: '山贼', name: '山贼', level: 5, hp: 88, atk: 17, def: 5, rarity: 0, expReward: 21, goldReward: 16, drops: [{ itemId: '木材', chance: 1, quantity: [1, 1] }, { itemId: '铁矿', chance: 0.5, quantity: [1, 1] }] },
+  '毒蛇': { id: '毒蛇', name: '毒蛇', level: 6, hp: 100, atk: 19, def: 6, rarity: 0, expReward: 25, goldReward: 18, drops: [{ itemId: '皮革', chance: 1, quantity: [2, 2] }, { itemId: '药草', chance: 0.5, quantity: [1, 1] }] },
+  '河妖': { id: '河妖', name: '河妖', level: 7, hp: 115, atk: 21, def: 6, rarity: 1, expReward: 30, goldReward: 21, drops: [{ itemId: '皮革', chance: 1, quantity: [2, 2] }, { itemId: '木材', chance: 0.5, quantity: [1, 1] }] },
+  '野猴': { id: '野猴', name: '野猴', level: 7, hp: 120, atk: 22, def: 6, rarity: 1, expReward: 32, goldReward: 22, drops: [{ itemId: '皮革', chance: 1, quantity: [2, 2] }] },
+  '沼泽巨蜥': { id: '沼泽巨蜥', name: '沼泽巨蜥', level: 9, hp: 145, atk: 27, def: 9, rarity: 1, expReward: 40, goldReward: 28, drops: [{ itemId: '皮革', chance: 1, quantity: [3, 3] }, { itemId: '铁矿', chance: 0.5, quantity: [1, 1] }] },
+  '山君': { id: '山君', name: '山君', level: 9, hp: 165, atk: 30, def: 10, rarity: 1, expReward: 48, goldReward: 34, drops: [{ itemId: '皮革', chance: 1, quantity: [3, 3] }, { itemId: '铁矿', chance: 0.5, quantity: [1, 1] }] },
+  '沙虫': { id: '沙虫', name: '沙虫', level: 12, hp: 200, atk: 37, def: 13, rarity: 1, expReward: 55, goldReward: 40, drops: [{ itemId: '铁矿', chance: 1, quantity: [3, 3] }, { itemId: '石头', chance: 0.5, quantity: [2, 2] }] },
+  '海蛇': { id: '海蛇', name: '海蛇', level: 16, hp: 420, atk: 62, def: 24, rarity: 2, expReward: 125, goldReward: 100, drops: [{ itemId: '皮革', chance: 1, quantity: [6, 6] }, { itemId: '铁矿', chance: 1, quantity: [3, 3] }] },
+  '狼王': { id: '狼王', name: '狼王', level: 7, hp: 300, atk: 24, def: 8, rarity: 1, expReward: 65, goldReward: 50, drops: [{ itemId: '皮革', chance: 1, quantity: [4, 4] }, { itemId: '木材', chance: 1, quantity: [2, 2] }], isBoss: true },
+  '山贼头目': { id: '山贼头目', name: '山贼头目', level: 9, hp: 380, atk: 30, def: 11, rarity: 1, expReward: 90, goldReward: 70, drops: [{ itemId: '铁矿', chance: 1, quantity: [3, 3] }, { itemId: '皮革', chance: 1, quantity: [2, 2] }], isBoss: true },
+  '黑熊精': { id: '黑熊精', name: '黑熊精', level: 13, hp: 480, atk: 50, def: 20, rarity: 2, expReward: 120, goldReward: 95, drops: [{ itemId: '皮革', chance: 1, quantity: [5, 5] }, { itemId: '铁矿', chance: 1, quantity: [2, 2] }], isBoss: true },
+  '蛟': { id: '蛟', name: '蛟', level: 14, hp: 560, atk: 58, def: 22, rarity: 2, expReward: 150, goldReward: 120, drops: [{ itemId: '皮革', chance: 1, quantity: [6, 6] }, { itemId: '木材', chance: 1, quantity: [4, 4] }], isBoss: true },
 };
 
 // 地图数据
