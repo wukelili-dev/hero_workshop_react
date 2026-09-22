@@ -10,6 +10,7 @@ import { useNpcStore } from '../store/useNpcStore';
 import { useWorldStore } from './useWorldStore';
 import { MAPS } from '../data/maps';
 import { getCellEncounter } from '../data/cellEncounters';
+import { useNpcEcoStore } from './useNpcEcoStore';
 
 const SAVE_KEY = 'hero_workshop_save_v1';
 
@@ -33,7 +34,7 @@ export function saveGame(): boolean {
     const worldState = useWorldStore.getState();
 
     const saveData = {
-      version: 'v2',
+      version: 'v3',
       timestamp: Date.now(),
       hero: gameState.hero,
       resources: gameState.resources,
@@ -50,6 +51,11 @@ export function saveGame(): boolean {
       buildings: gameState.buildings,
       // NPC 状态
       npcInstances: npcState.instances,
+      npcEco: {
+        states: useNpcEcoStore.getState().states,
+        events: useNpcEcoStore.getState().events,
+        relationOverride: useNpcEcoStore.getState().relationOverride,
+      },
       inventory: {
         weapons: invState.weapons,
         armors: invState.armors,
@@ -116,6 +122,9 @@ export function loadGame(): boolean {
     // NPC 状态
     if (data.npcInstances) {
       useNpcStore.setState({ instances: data.npcInstances });
+    }
+    if (data.npcEco) {
+      useNpcEcoStore.getState().loadEco(data.npcEco);
     }
 
     // 图鉴数据

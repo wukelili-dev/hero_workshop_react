@@ -9,6 +9,154 @@ import { useInventoryStore } from '../store/useInventoryStore';
 import { randomGreeting, randomDialogue, NPCS } from '../data/npcs';
 import { executeBattle, type HeroStats } from './Combat';
 
+// ═══════════ NPC 生态动作（M2-M7：攻击 / 结交 / 求婚 / 结婚 / 揭发 / 挑拨） ═══════════
+import { PROPAGATION, relationsOf } from '../data/npcEcology';
+import { useNpcEcoStore } from '../store/useNpcEcoStore';
+import { useWorldStore } from '../store/useWorldStore';
+import { talk } from './NpcDialogue';
+import { addEvent, nameOf } from './NpcAutonomy';
+import type { NpcChannel } from '../types';
+
+const dayNow = () => Math.floor(useWorldStore.getState().day);
+
+/** 关系网传导：玩家对 actor 的动作，影响与其有关系的 NPC */
+function propagate(actorId: string, action: string): void {
+  const rules = PROPAGATION[action];
+  if (!rules) return;
+  const npcStore = useNpcStore.getState();
+  const eco = useNpcEcoStore.getState();
+  const day = dayNow();
+  for (const rel of relationsOf(actorId)) {
+    for (const rule of rules) {
+      if (!rule.types.includes(rel.type)) continue;
+      if (rule.affinity) npcStore.modifyNpcAffinity(rel.target, rule.affinity);
+      if (rule.mood) eco.setMood(rel.target, rule.mood);
+      eco.addMemory(rel.target, `${action}_propagation`, day, actorId);
+      addEvent({
+        day, kind: 'rumor', actors: [actorId, rel.target],
+        text: `${nameOf(rel.target)}听说了你对${nameOf(actorId)}做的事。`,
+        aboutPlayer: rule.affinity < 0,
+      });
+    }
+  }
+}
+
+/** 交谈：走对话引擎（作者规则 → 模板组合 → 兜底），并结算效果 */
+export function talkNpc(npc: NpcDefinition, channel: NpcChannel = 'chat'): ActionResult {
+  const res = talk(npc, channel);
+  useNpcStore.getState().recordInteraction(npc.id);
+  return { type: 'log', message: `【${npc.title}】${npc.name}：${res.text}` };
+}
+
+/** 攻击 NPC：走战斗，结仇并沿关系网传导 */
+export function attackNpc(npc: NpcDefinition): ActionResult {
+  const game = useGameStore.getState();
+  const npcStore = useNpcStore.getState();
+  const eco = useNpcEcoStore.getState();
+  const day = dayNow();
+  const cs = npc.challengeStats ?? {
+    hp: 300 + game.hero.level * 60,
+    atk: 25 + game.hero.level * 4,
+    def: 12 + game.hero.level * 2,
+  };
+  const monster: Monster = {
+    id: `npc_attack_${npc.id}`, name: npc.name, hp: cs.hp, atk: cs.atk, def: cs.def,
+    expReward: Math.round(cs.hp / 4), goldReward: Math.round(cs.hp / 8), drops: [],
+  };
+  const result = executeBattle(
+    { hp: game.hero.hp, atk: game.hero.atk, def: game.hero.def, crit: game.hero.critRate },
+    [],
+    monster
+  );
+  eco.setBond(npc.id, '仇敌', day);
+  eco.setMood(npc.id, '厌恶');
+  eco.addFlag(npc.id, '被袭击');
+  propagate(npc.id, 'attack');
+  if (!result.victory) {
+    game.setHp(result.heroFinalHp ?? 1);
+    game.changeMoral(-4);
+    return { type: 'log', message: `${npc.name}把你打退了。仇怨已经结下。` };
+  }
+  game.addExp(result.rewards?.exp ?? 0);
+  game.addGold(result.rewards?.gold ?? 0);
+  npcStore.setDefeated(npc.id);
+  const inst = eco.getEco(npc.id);
+  eco.patch(npc.id, { health: Math.max(0, inst.health - 40), enemies: [...inst.enemies, 'player'] });
+  game.changeMoral(-10);
+  addEvent({ day, kind: 'fight', actors: [npc.id], text: `${npc.name}在街头被人打伤，据说是位外乡人。`, aboutPlayer: true });
+  return { type: 'log', message: `你击败了${npc.name}。善恶值下降，其亲友已记恨于你。` };
+}
+
+/** 结交：好感 ≥60 可结为好友 / ≥85 挚友 */
+export function befriendNpc(npc: NpcDefinition): ActionResult {
+  const npcStore = useNpcStore.getState();
+  const eco = useNpcEcoStore.getState();
+  const aff = npcStore.getNpcAffinity(npc.id);
+  if (aff < 60) return { type: 'log', message: `${npc.name}还没把你当朋友（好感 ${Math.round(aff)}/60）。` };
+  const bond = aff >= 85 ? '挚友' : '好友';
+  eco.setBond(npc.id, bond, dayNow());
+  eco.addFlag(npc.id, '结交');
+  eco.setMood(npc.id, '喜悦');
+  npcStore.modifyNpcAffinity(npc.id, 5);
+  propagate(npc.id, 'befriend');
+  return { type: 'log', message: `你与${npc.name}结为${bond}。` };
+}
+
+/** 求婚：好感 ≥80，先成恋人 */
+export function proposeNpc(npc: NpcDefinition): ActionResult {
+  const npcStore = useNpcStore.getState();
+  const eco = useNpcEcoStore.getState();
+  const inst = eco.getEco(npc.id);
+  const aff = npcStore.getNpcAffinity(npc.id);
+  if (inst.bond === '夫妻') return { type: 'log', message: `你与${npc.name}已是夫妻。` };
+  if (inst.bond === '仇敌') return { type: 'log', message: `${npc.name}冷冷看了你一眼，转身走了。` };
+  if (aff < 80) return { type: 'log', message: `${npc.name}怔了一下，把话头岔开了。（好感 ${Math.round(aff)}/80）` };
+  eco.setBond(npc.id, '恋人', dayNow());
+  eco.addFlag(npc.id, '提亲');
+  eco.setMood(npc.id, '喜悦');
+  return { type: 'log', message: `${npc.name}沉默半晌：「……你容我想想。」（关系：恋人）` };
+}
+
+/** 成婚：需要先到恋人 */
+export function wedNpc(npc: NpcDefinition): ActionResult {
+  const eco = useNpcEcoStore.getState();
+  const day = dayNow();
+  if (eco.getEco(npc.id).bond !== '恋人') return { type: 'log', message: '还不是时候。' };
+  eco.setBond(npc.id, '夫妻', day);
+  eco.setMood(npc.id, '喜悦');
+  eco.addFlag(npc.id, '成婚');
+  useGameStore.getState().addGameLog(`你与${npc.name}成婚。`);
+  propagate(npc.id, 'wed');
+  addEvent({ day, kind: 'bond', actors: [npc.id], text: `城中传闻：${npc.name}成亲了，喜宴摆了三条街。`, aboutPlayer: true });
+  return { type: 'log', message: `礼成。你与${npc.name}结为夫妻。` };
+}
+
+/** 揭发秘密：得赏金与善名，但被记恨 */
+export function exposeSecretNpc(npc: NpcDefinition): ActionResult {
+  const eco = useNpcEcoStore.getState();
+  const game = useGameStore.getState();
+  const day = dayNow();
+  eco.addFlag(npc.id, '被揭发');
+  eco.setMood(npc.id, '厌恶');
+  eco.setBond(npc.id, '仇敌', day);
+  useNpcStore.getState().modifyNpcAffinity(npc.id, -30);
+  game.addGold(120);
+  game.changeMoral(6);
+  addEvent({ day, kind: 'rumor', actors: [npc.id], text: `${npc.name}的旧事被人捅了出去，一时满城风雨。`, aboutPlayer: true });
+  return { type: 'log', message: `你揭发了${npc.name}的秘密，得赏金 120；他记恨上了你。` };
+}
+
+/** 挑拨：破坏两名 NPC 之间的关系（关系网会被改写） */
+export function sowDiscordNpc(a: NpcDefinition, b: NpcDefinition): ActionResult {
+  const eco = useNpcEcoStore.getState();
+  const day = dayNow();
+  eco.addRelation(a.id, b.id, -35);
+  eco.addMemory(a.id, '挑拨', day, b.id);
+  eco.addMemory(b.id, '挑拨', day, a.id);
+  addEvent({ day, kind: 'quarrel', actors: [a.id, b.id], text: `${a.name}与${b.name}起了嫌隙，据说有人在中间递了话。`, aboutPlayer: true });
+  return { type: 'log', message: `你在${a.name}与${b.name}之间递了话，两人的交情明显冷了。` };
+}
+
 // ── 偷窃结果类型 ──
 export interface StealResult {
   success: boolean;

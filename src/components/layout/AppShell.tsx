@@ -26,6 +26,7 @@ import { RanchTab } from '../ranch/RanchTab';
 import { ForgeTab } from '../forge/ForgeTab';
 import { BestiaryTab } from '../bestiary/BestiaryTab';
 import { InkMapPanel } from '../world/InkMapPanel';
+import { NpcEcology } from '../npc/NpcEcology';
 import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils';
 import { startWorldClock, useWorldStore } from '../../store/useWorldStore';
 import {
@@ -84,6 +85,7 @@ export const AppShell: React.FC = () => {
   const [heroTab, setHeroTab] = useState<TabId>('status');
   const [homeTab, setHomeTab] = useState<TabId>('farm');
   const [shop, setShop] = useState<ShopId>('none');
+  const [cityView, setCityView] = useState<'eco' | 'team'>('eco');
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [saveMeta, setSaveMeta] = useState<ReturnType<typeof getSaveMeta>>(null);
 
@@ -168,8 +170,24 @@ export const AppShell: React.FC = () => {
         </div>
         {shop !== 'none' && <div className="border-t border-[#8a7a63]/40 p-3">{renderShop()}</div>}
       </div>
+      <div className="flex flex-shrink-0 gap-2">
+        <button
+          type="button"
+          onClick={() => setCityView('eco')}
+          className={cityView === 'eco' ? 'ink-btn-seal text-sm' : 'ink-btn text-sm'}
+        >
+          人物志 · 关系网
+        </button>
+        <button
+          type="button"
+          onClick={() => setCityView('team')}
+          className={cityView === 'team' ? 'ink-btn-seal text-sm' : 'ink-btn text-sm'}
+        >
+          队伍与遭遇
+        </button>
+      </div>
       <div className="min-h-0 flex-1 overflow-hidden">
-        <CenterPanel />
+        {cityView === 'eco' ? <NpcEcology /> : <CenterPanel />}
       </div>
     </div>
   );

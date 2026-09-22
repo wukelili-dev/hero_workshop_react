@@ -6,6 +6,7 @@ import { DAY_MS, SHICHEN } from '../data/constants';
 import { TERRAIN_CONFIG, findRoute, getCellById, type CellRoute } from '../data/cellMap';
 import { getCellEncounter } from '../data/cellEncounters';
 import { useGameStore } from './useGameStore';
+import { advanceNpcDay } from '../engine/NpcAutonomy';
 
 /** 出生点：傲来国（新手区，与 useGameStore 默认 currentMapId='aolai' 对齐） */
 export const START_CELL_ID = 'cp_2_5';
@@ -49,7 +50,10 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
       set({ lastTickAt: t });
       return;
     }
-    set({ day: day + delta / DAY_MS, lastTickAt: t });
+    const next = day + delta / DAY_MS;
+    // 跨过整数天：推进 NPC 自主行为（每天一次，只演算活跃 NPC）
+    if (Math.floor(next) > Math.floor(day)) advanceNpcDay(Math.floor(next));
+    set({ day: next, lastTickAt: t });
   },
 
   advanceDays: (days) => {

@@ -415,3 +415,121 @@ export interface GameSave {
   currentMapId: string;
   log: string[];
 }
+
+// ═══════════ NPC 生态（记忆/关系/财产/状态机） ═══════════
+
+export type NpcMood = '平静' | '喜悦' | '感激' | '警惕' | '厌恶' | '悲伤' | '狂热';
+export type NpcBond = '陌生' | '相识' | '熟客' | '好友' | '挚友' | '恋人' | '夫妻' | '仇敌';
+export type NpcChannel =
+  | 'greet' | 'chat' | 'rumor' | 'trade' | 'gift' | 'challenge'
+  | 'steal' | 'attack' | 'befriend' | 'propose' | 'wed' | 'spouse' | 'idle';
+export type NpcRelationType =
+  | 'lover' | 'spouse' | 'parent' | 'child' | 'sibling'
+  | 'master' | 'disciple' | 'friend' | 'rival' | 'enemy' | 'colleague';
+
+export interface NpcRelation {
+  target: string;
+  type: NpcRelationType;
+  strength: number;      // -100 ~ 100
+  secret?: boolean;      // 暗恋/隐情
+  jealous?: boolean;     // 是否吃醋
+}
+
+export interface NpcItem {
+  itemId: string;
+  count: number;
+  price?: number;
+  tag?: 'treasure' | 'tool' | 'gift' | 'loot' | 'keepsake';
+  description?: string;
+}
+
+export interface NpcVoice {
+  tone: '市井' | '文士' | '江湖' | '仙家' | '番邦';
+  selfCall: string;
+  callPlayer: { stranger: string; acquaintance: string; close: string; spouse: string };
+  catchphrase?: string;
+}
+
+/** 纯数据条件（对话与自主行为都用它判断） */
+export interface NpcCondition {
+  affinity?: { min?: number; max?: number };
+  bond?: NpcBond[];
+  mood?: NpcMood[];
+  flags?: Record<string, { min?: number; max?: number }>;
+  wealth?: 'poor' | 'normal' | 'rich';
+  hasItem?: string;
+  missingItem?: string;
+  moral?: { min?: number; max?: number };
+  faction?: Record<string, { min?: number; max?: number }>;
+  day?: { min?: number };
+  playerLevel?: { min?: number };
+  /** 对方与玩家的关系（第三方吃醋判断） */
+  relationAffinity?: { target: string; min?: number; max?: number };
+  playerBondWith?: { target: string; bond: NpcBond[] };
+  chance?: number;
+  all?: NpcCondition[];
+  any?: NpcCondition[];
+  not?: NpcCondition;
+}
+
+export interface NpcEffect {
+  mood?: NpcMood;
+  affinity?: number;
+  goldPlayer?: number;
+  giveItem?: string;
+  takeItem?: string;
+  setFlag?: string;
+  bond?: NpcBond;
+  moral?: number;
+}
+
+export interface NpcDialogueRule {
+  id: string;
+  channel: NpcChannel;
+  when?: NpcCondition;
+  weight?: number;
+  once?: boolean;
+  cooldownDays?: number;
+  lines: string[];       // 支持 ${self} ${call} ${name} ${title} ${catch} ${day}
+  effects?: NpcEffect[];
+}
+
+/** 运行时生态状态（进存档） */
+export interface NpcEcoState {
+  mood: NpcMood;
+  bond: NpcBond;
+  bondedDay?: number;
+  memory: { key: string; day: number; detail?: string }[];
+  flags: Record<string, number>;
+  cooldowns: Record<string, number>;
+  saidOnce: string[];
+  health: number;
+  enemies: string[];
+  benefactors: string[];
+  lastActiveDay: number;
+}
+
+export interface WorldEvent {
+  id: string;
+  day: number;
+  kind: 'gather' | 'quarrel' | 'gift' | 'trade' | 'fight' | 'illness' | 'rumor' | 'visit' | 'bond';
+  actors: string[];
+  place?: string;
+  text: string;
+  aboutPlayer?: boolean;
+}
+
+/** 静态生态设定：挂在 NpcDefinition.eco 上，避免改动原接口 */
+export interface NpcEcoDef {
+  relations?: NpcRelation[];
+  traits?: string[];
+  voice?: NpcVoice;
+  inventory?: NpcItem[];
+  wallet?: { base: number; dailyIncome?: number; dailyExpense?: number };
+  agenda?: ('cultivate' | 'trade' | 'drink' | 'patrol' | 'rest' | 'visit' | 'gossip')[];
+  dialogueRules?: NpcDialogueRule[];
+}
+
+export interface NpcDefinition {
+  eco?: NpcEcoDef;
+}
