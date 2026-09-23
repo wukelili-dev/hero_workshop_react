@@ -17,6 +17,7 @@ import { talk } from './NpcDialogue';
 import { addEvent, nameOf } from './NpcAutonomy';
 import { enqueueRevenge } from './VisitSystem';
 import { isBanned, priceMultiplier } from './FactionSystem';
+import { sum as sumEffect } from './ItemEffects';
 import type { NpcChannel } from '../types';
 
 const dayNow = () => Math.floor(useWorldStore.getState().day);
@@ -400,7 +401,9 @@ export function buyNpcTradeItem(npc: NpcDefinition, itemIdx: number): ActionResu
   const factionMult = priceMultiplier(factionId) * (priceConsequence ? priceConsequence.value : 1);
   const bondBonus = bond === '夫妻' ? 0.15 : bond === '恋人' ? 0.1 : bond === '挚友' ? 0.06 : bond === '好友' ? 0.03 : 0;
   const discount = Math.max(0.6, npcStore.getAffinityDiscount(npc.id) - bondBonus);
-  const actualPrice = Math.ceil(item.price * discount * factionMult);
+  // 通商词条：购买价再降（与亲密度/势力折扣叠乘）
+  const shopCut = sumEffect('shopPrice');
+  const actualPrice = Math.max(1, Math.ceil(item.price * discount * factionMult * (1 - shopCut)));
 
   if (state.hero.gold < actualPrice) {
     return { type: 'log', message: '你囊中羞涩，只好作罢。' };

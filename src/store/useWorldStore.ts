@@ -3,11 +3,12 @@
 
 import { create } from 'zustand';
 import { DAY_MS, SHICHEN } from '../data/constants';
-import { TERRAIN_CONFIG, findRoute, getCellById, type CellRoute } from '../data/cellMap';
+import { TERRAIN_CONFIG, findRoute, getCellById, getNeighbors, type CellRoute } from '../data/cellMap';
 import { getCellEncounter } from '../data/cellEncounters';
 import { useGameStore } from './useGameStore';
 import { advanceNpcDay } from '../engine/NpcAutonomy';
 import { tickVisits } from '../engine/VisitSystem';
+import { sum as sumEffect } from '../engine/ItemEffects';
 import type { Consequence, PendingVisit } from '../types';
 
 /** 出生点：傲来国（新手区，与 useGameStore 默认 currentMapId='aolai' 对齐） */
@@ -129,8 +130,16 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
     const route = findRoute(state.currentCellId, cellId);
     if (!route) return null;
 
+    // 行脚词条：行军天数减少（最低 1 天）
+    const travelCut = sumEffect('travelDays');
+    const days = Math.max(route.days > 0 ? 1 : 0, route.days - travelCut);
+
     const revealed = new Set(state.revealedCells);
     route.path.forEach((id) => revealed.add(id));
+    // 识途词条：沿途多揭 1 格（终点的邻格）
+    if (sumEffect('revealExtra') > 0) {
+      for (const nb of getNeighbors(cellId)) revealed.add(nb);
+    }
     const visited = new Set(state.visitedCells);
     visited.add(cellId);
 
@@ -138,7 +147,7 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
       currentCellId: cellId,
       revealedCells: Array.from(revealed),
       visitedCells: Array.from(visited),
-      day: state.day + route.days,
+      day: state.day + days,
     });
 
     // 同步战斗系统：此地有哪些妖怪
@@ -150,8 +159,8 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
     const terrain = cell ? TERRAIN_CONFIG[cell.terrain] : undefined;
     const where = enc?.label ?? terrain?.name ?? cellId;
     game.addGameLog(
-      route.days > 0
-        ? `行军 ${route.days} 天，抵达${where}（第 ${Math.floor(get().day)} 天）`
+      days > 0
+        ? `行军 ${days} 天，抵达${where}（第 ${Math.floor(get().day)} 天）`
         : `抵达${where}`
     );
     return route;

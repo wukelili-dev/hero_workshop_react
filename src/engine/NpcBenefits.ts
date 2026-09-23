@@ -2,6 +2,7 @@
 import { getCellById } from '../data/cellMap';
 import { useGameStore } from '../store/useGameStore';
 import { useWorldStore } from '../store/useWorldStore';
+import { sum as sumEffect } from './ItemEffects';
 
 /** 资源点产出表（key 为 cellMap 里的 resourceType） */
 const RESOURCE_YIELD: Record<string, { key: string; name: string; min: number; max: number }> = {
@@ -22,7 +23,10 @@ export function gatherAtCell(cellId: string): string {
   if ((world.gathered[cellId] ?? -1) >= day) return `${feature.label}今天已经采过了，明日再来。`;
 
   const y = RESOURCE_YIELD[feature.resourceType ?? ''] ?? { key: 'wood', name: '木材', min: 2, max: 5 };
-  const amount = y.min + Math.floor(Math.random() * (y.max - y.min + 1));
+  let amount = y.min + Math.floor(Math.random() * (y.max - y.min + 1));
+  // 寻宝词条：采集产量提升
+  const bonus = sumEffect('gatherBonus');
+  if (bonus > 0) amount = Math.floor(amount * (1 + bonus));
   useGameStore.getState().addResource(y.key, amount);
   useWorldStore.getState().markGathered(cellId);
   useWorldStore.getState().advanceDays(1);

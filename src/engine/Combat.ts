@@ -3,6 +3,7 @@
 import type { Monster, Equipment } from '../types';
 import { generateDrop } from './equipmentDrops';
 import { useGameStore } from '../store/useGameStore';
+import { sum as sumEffect } from './ItemEffects';
 
 export interface HeroStats {
   hp: number;
@@ -100,7 +101,12 @@ export function executeBattle(
     const baseHeroDmg = calculateDamage(heroStats.atk, monster.def, heroCrit);
     const heroDmg = Math.floor(baseHeroDmg * _factionMultiplier(monster));
     monsterCurrentHP = Math.max(0, monsterCurrentHP - heroDmg);
-    
+    // 吸血词条：按造成伤害比例回血（不超过上限）
+    const lifesteal = sumEffect('lifesteal');
+    if (lifesteal > 0 && heroDmg > 0) {
+      heroCurrentHP = Math.min(heroStats.hp, heroCurrentHP + heroDmg * lifesteal);
+    }
+
     logs.push({
       round,
       attacker: '勇者',
@@ -109,12 +115,15 @@ export function executeBattle(
       isCrit: heroCrit,
       description: `勇者攻击 ${monster.name}，造成 ${heroDmg} 点伤害${heroCrit ? '（暴击！）' : ''}。${monster.name} 剩余 HP: ${monsterCurrentHP}`,
     });
-    
+
     if (monsterCurrentHP <= 0) break;
-    
+
     // 怪物攻击
     const monsterCrit = false; // 怪物暂不支持暴击
-    const monsterDmg = calculateDamage(monster.atk, heroStats.def, monsterCrit);
+    const rawMonsterDmg = calculateDamage(monster.atk, heroStats.def, monsterCrit);
+    // 护主词条：受伤减免
+    const damageCut = sumEffect('damageCut');
+    const monsterDmg = Math.max(1, Math.floor(rawMonsterDmg * (1 - damageCut)));
     heroCurrentHP = Math.max(0, heroCurrentHP - monsterDmg);
     
     logs.push({

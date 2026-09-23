@@ -10,6 +10,7 @@ import { NPCS } from '../data/npcs';
 import { generateTavernRoster, type TavernRecruit } from '../data/tavern';
 import { BUILDING_CONFIGS, BUILDING_OUTPUTS } from '../data/buildings';
 import { getCellEncounter } from '../data/cellEncounters';
+import { sum as sumEffect } from '../engine/ItemEffects';
 
 // 掉落物品 itemId → 资源 key 映射（怪物掉落用中文，资源状态用英文）
 const DROP_TO_RESOURCE: Record<string, string> = {
@@ -616,8 +617,9 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     // 从背包移除（可叠加）
     const removed = useInventoryStore.getState().removeNovelty(itemName, 1);
     if (!removed) return false;
-    // 返还80%金币
-    const refund = Math.floor(sellPrice * 0.8);
+    // 囤积词条：出售价提高，再返还 80% 基础价
+    const sellBoost = sumEffect('sellPrice');
+    const refund = Math.floor(sellPrice * 0.8 * (1 + sellBoost));
     set((s) => ({
       hero: {
         ...s.hero,

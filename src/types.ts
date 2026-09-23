@@ -54,6 +54,8 @@ export interface Equipment {
   critDmg?: number;
   hpBonus?: number;
   special?: string | { name: string; value: number };
+  /** 词条（M1 起装备可携带效果，equip 触发时由 Combat 传入） */
+  effects?: ItemEffect[];
   forge_level?: number;
   is_perfect?: boolean;
   crit_rate?: number;
@@ -667,4 +669,56 @@ export interface NpcEcoDef {
 
 export interface NpcDefinition {
   eco?: NpcEcoDef;
+}
+
+// ============================================================
+// 物品与词条系统（M1/M2）
+// ============================================================
+
+/** 品阶：中文名物等级，替代"稀有度"在 UI 中的呈现 */
+export type ItemGrade = 0 | 1 | 2 | 3 | 4; // 凡品/良品/珍品/秘宝/神物
+
+export const ITEM_GRADE_NAME: Record<ItemGrade, string> = {
+  0: '凡品', 1: '良品', 2: '珍品', 3: '秘宝', 4: '神物',
+};
+
+export type ItemCategory = 'material' | 'consumable' | 'treasure' | 'equipment' | 'keepsake';
+
+/** 词条触发时机 */
+export type EffectTrigger = 'equip' | 'use' | 'hold';
+
+/** 单条效果：kind 决定数值往哪儿落，value 是数值 */
+export interface ItemEffect {
+  kind:
+    | 'atk' | 'def' | 'crit' | 'critDmg' | 'hpMax'
+    | 'armorPen' | 'lifesteal' | 'combo' | 'reflect' | 'damageCut'
+    | 'travelDays' | 'revealExtra' | 'gatherBonus'
+    | 'shopPrice' | 'sellPrice'
+    | 'affinityGain' | 'proposeBonus' | 'reputation'
+    | 'moralPerDay' | 'moralPerKill'
+    | 'heal' | 'exp';
+  trigger: EffectTrigger;
+  value: number;
+}
+
+export interface ItemDef {
+  id: string;
+  name: string;
+  grade: ItemGrade;
+  category: ItemCategory;
+  /** 一句话来历，支持插值 */
+  lore: string;
+  price: number;
+  effects?: ItemEffect[];
+  source?: 'drop' | 'shop' | 'npc' | 'gather' | 'bounty' | 'steal' | 'craft';
+  /** 旧的杂物兼容字段（种子等） */
+  kind?: string;
+  plantId?: string;
+}
+
+/** 命名词表结构 */
+export interface NameParts {
+  material: string[];
+  form: string[];
+  omen: string[];
 }
