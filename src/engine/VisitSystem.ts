@@ -117,9 +117,14 @@ export function resolveVisit(visit: PendingVisit, choice: VisitChoice): VisitRes
         const injuries = Math.min(100, self.injuries + 30);
         eco.patch(npc.id, { self: { ...self, injuries } });
         const faction = self.factionId ?? FACTION_BY_NPC[npc.id];
-        if (faction) world.addFactionRep(faction, -10);
-        game.addGameLog(`⚔️ 你打退了上门寻仇的${npc.name}。其所在势力对你观感大降。`);
-        return { ok: true, victory: true, message: `你击败了${npc.name}。对方负伤而归，其背后势力对你记恨在心（声望 -10）。` };
+        if (faction) {
+          world.addFactionRep(faction, -10);
+          const bounty = Math.max(100, 200 + self.power);
+          const until = dayNow() + 10;
+          world.addConsequence({ id: `bounty_${faction}_${until}`, kind: 'quest', scope: { factionId: faction }, value: bounty, untilDay: until, reason: `${npc.name}背后的势力悬赏通缉你，悬红 ${bounty} 金` });
+        }
+        game.addGameLog(`⚔️ 你打退了上门寻仇的${npc.name}。其所在势力对你观感大降，并发布了对你的悬赏。`);
+        return { ok: true, victory: true, message: `你击败了${npc.name}。对方负伤而归，其背后势力对你记恨在心（声望 -10），并悬赏通缉你。` };
       }
       const goldLost = Math.floor(hero.gold * 0.3);
       game.addGold(-goldLost);
