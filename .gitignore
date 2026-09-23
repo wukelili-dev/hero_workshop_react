@@ -28,9 +28,8 @@ install_reb.cmd
 install_three.cmd
 npm_install_log.txt
 
-# 设计文档（本地参考稿，不入库）
-docs/设计文档.md
-docs/*设计*.md
+# 文档一律本地参考稿，不入库（含设计稿、实现文档、交接文档）
+docs/
 
 # Editor directories and files
 .vscode/*
