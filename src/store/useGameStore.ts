@@ -10,7 +10,7 @@ import { NPCS } from '../data/npcs';
 import { generateTavernRoster, type TavernRecruit } from '../data/tavern';
 import { BUILDING_CONFIGS, BUILDING_OUTPUTS } from '../data/buildings';
 import { getCellEncounter } from '../data/cellEncounters';
-import { sum as sumEffect } from '../engine/ItemEffects';
+import { sum as sumEffect, sumList } from '../engine/ItemEffects';
 
 // 掉落物品 itemId → 资源 key 映射（怪物掉落用中文，资源状态用英文）
 const DROP_TO_RESOURCE: Record<string, string> = {
@@ -542,13 +542,16 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const newAtk = w.stats?.atk ?? 0;
     const oldCrit = hero.weapon?.stats?.crit ?? 0;
     const newCrit = w.stats?.crit ?? 0;
+    // equip 词条基础数值加成（M3：atk/crit 等，与 stats 叠加）
+    const atkBonus = sumList(w.effects ?? [], 'atk');
+    const critBonus = sumList(w.effects ?? [], 'crit');
     set((s) => ({
       hero: {
         ...s.hero,
         gold: s.hero.gold - goldCost,
         weapon: w,
-        atk: BASE_ATK(s.hero.level) + newAtk,
-        critRate: Math.max(0, Math.min(1, s.hero.critRate - oldCrit + newCrit)),
+        atk: BASE_ATK(s.hero.level) + newAtk + atkBonus,
+        critRate: Math.max(0, Math.min(1, s.hero.critRate - oldCrit + newCrit + critBonus)),
       },
       resources: newRes,
     }));
@@ -579,13 +582,16 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       newRes[rKey] = Math.max(0, (newRes as any)[rKey] - Number(amt));
     }
     const newHp = (a.stats?.hp ?? 0);
-    const mhp = BASE_HP(hero.level) + newHp;
+    // equip 词条基础数值加成（M3：def/hpMax 等，与 stats 叠加）
+    const defBonus = sumList(a.effects ?? [], 'def');
+    const hpBonus = sumList(a.effects ?? [], 'hpMax');
+    const mhp = BASE_HP(hero.level) + newHp + hpBonus;
     set((s) => ({
       hero: {
         ...s.hero,
         gold: s.hero.gold - goldCost,
         armor: a,
-        def: BASE_DEF(s.hero.level) + (a.stats?.def ?? 0),
+        def: BASE_DEF(s.hero.level) + (a.stats?.def ?? 0) + defBonus,
         maxHp: mhp,
         hp: Math.min(s.hero.hp, mhp),
       },

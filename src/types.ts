@@ -43,7 +43,6 @@ export interface Equipment {
   };
   enhanceLevel?: number;
   cost?: Record<string, number>;
-  passiveId?: string;
   sellPrice?: number;
   isPerfect?: boolean;
   fortifyLevel?: number;
@@ -53,7 +52,6 @@ export interface Equipment {
   critRate?: number;
   critDmg?: number;
   hpBonus?: number;
-  special?: string | { name: string; value: number };
   /** 词条（M1 起装备可携带效果，equip 触发时由 Combat 传入） */
   effects?: ItemEffect[];
   forge_level?: number;

@@ -3,8 +3,27 @@
  * 翻译自 Python 版本的 equipment_drops.py
  */
 
-import type { Equipment, Rarity } from '../types';
+import type { Equipment, Rarity, ItemEffect } from '../types';
 import { RARITY_NAME } from '../types';
+import { EFFECT_LABEL } from './ItemEffects';
+
+// ─── 特殊属性 → 词条映射（M3：special 死字段迁移到 effects 的 equip 词条） ───
+// scale：value 与词条数值的换算比例（百分比类 ×0.01，固定点数类 ×1）
+const SPECIAL_TO_EFFECT: Record<string, { kind: ItemEffect['kind']; scale: number }> = {
+  '吸血': { kind: 'lifesteal', scale: 0.01 },
+  '破甲': { kind: 'armorPen', scale: 1 },
+  '连击': { kind: 'combo', scale: 0.01 },
+  '反伤': { kind: 'reflect', scale: 1 },
+  '护盾': { kind: 'damageCut', scale: 0.01 },
+};
+
+function specialToEffect(special: { name: string; value: number }): ItemEffect {
+  const map = SPECIAL_TO_EFFECT[special.name];
+  const kind: ItemEffect['kind'] = map?.kind ?? 'atk';
+  const scale = map?.scale ?? 1;
+  const value = Math.round(special.value * scale * 100) / 100;
+  return { kind, trigger: 'equip', value };
+}
 
 // ─── 名称前缀（按地图怪物等级分层） ───
 const WEAPON_PREFIXES: [number, number, string[]][] = [
@@ -194,7 +213,6 @@ function generateWeapon(
     isPerfect,
     enhanceLevel: 0,
     fortifyLevel: 0,
-    special: undefined,
   };
 
   // 极品装备：在传说基础上×1.4，无等级限制，必带特殊属性
@@ -206,11 +224,12 @@ function generateWeapon(
     equip.levelReq = 0;
     equip.stats!.critDmg = 200;
     equip.critDmg = 200;
-    equip.special = [
+    const special = [
       { name: "吸血", value: Math.floor(Math.random() * 11) + 10 },
       { name: "破甲", value: Math.floor(Math.random() * 11) + 15 },
       { name: "连击", value: Math.floor(Math.random() * 9) + 10 },
     ][Math.floor(Math.random() * 3)];
+    equip.effects = [specialToEffect(special)];
   }
 
   // 史诗/传说的带特殊属性
@@ -220,7 +239,8 @@ function generateWeapon(
       { name: "破甲", value: Math.floor(Math.random() * 11) + 5 },
       { name: "连击", value: Math.floor(Math.random() * 6) + 5 },
     ];
-    equip.special = specialOptions[Math.floor(Math.random() * specialOptions.length)];
+    const special = specialOptions[Math.floor(Math.random() * specialOptions.length)];
+    equip.effects = [specialToEffect(special)];
   }
 
   return equip;
@@ -282,7 +302,6 @@ function generateArmor(
     isPerfect,
     enhanceLevel: 0,
     fortifyLevel: 0,
-    special: undefined,
   };
 
   // 极品装备
@@ -292,11 +311,12 @@ function generateArmor(
     equip.stats!.hp = Math.floor(equip.stats!.hp! * 1.4);
     equip.hpBonus = equip.stats!.hp;
     equip.levelReq = 0;
-    equip.special = [
+    const special = [
       { name: "吸血", value: Math.floor(Math.random() * 11) + 10 },
       { name: "反伤", value: Math.floor(Math.random() * 11) + 15 },
       { name: "护盾", value: Math.floor(Math.random() * 16) + 15 },
     ][Math.floor(Math.random() * 3)];
+    equip.effects = [specialToEffect(special)];
   }
 
   // 史诗/传说带特殊属性
@@ -306,7 +326,8 @@ function generateArmor(
       { name: "反伤", value: Math.floor(Math.random() * 6) + 5 },
       { name: "护盾", value: Math.floor(Math.random() * 11) + 10 },
     ];
-    equip.special = specialOptions[Math.floor(Math.random() * specialOptions.length)];
+    const special = specialOptions[Math.floor(Math.random() * specialOptions.length)];
+    equip.effects = [specialToEffect(special)];
   }
 
   return equip;
@@ -427,11 +448,10 @@ export function getDropSummary(equip: Equipment): string | null {
     info += ` DEF:${equip.defense || equip.stats?.def || 0} HP+:${equip.hpBonus || equip.stats?.hp || 0}`;
   }
 
-  if (equip.special) {
-    const special = typeof equip.special === 'string'
-      ? equip.special
-      : `${equip.special.name}+${equip.special.value}`;
-    info += ` [${special}]`;
+  if (equip.effects && equip.effects.length > 0) {
+    for (const e of equip.effects) {
+      info += ` [${EFFECT_LABEL[e.kind]}+${e.value}]`;
+    }
   }
 
   return info;

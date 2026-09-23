@@ -1,9 +1,9 @@
 // 战斗系统核心模块
 // 参考 Python 版 game_core.py 的伤害公式和战斗逻辑
-import type { Monster, Equipment } from '../types';
+import type { Monster, Equipment, ItemEffect } from '../types';
 import { generateDrop } from './equipmentDrops';
 import { useGameStore } from '../store/useGameStore';
-import { sum as sumEffect } from './ItemEffects';
+import { sum as sumEffect, sumList, equipEffectsOf } from './ItemEffects';
 
 export interface HeroStats {
   hp: number;
@@ -87,6 +87,24 @@ export function executeBattle(
   monster: Monster
 ): { logs: BattleLog[]; victory: boolean; rewards: Rewards; heroFinalHp: number } {
   const logs: BattleLog[] = [];
+
+  // 装备（equip）词条：从当前武器 + 护甲各取 equip 触发词条，与 hold 词条合并
+  const hero = useGameStore.getState().hero;
+  const equipEffects: ItemEffect[] = [
+    ...equipEffectsOf(hero.weapon?.effects),
+    ...equipEffectsOf(hero.armor?.effects),
+  ];
+  const equipSum = (kind: ItemEffect['kind']) => sumList(equipEffects, kind);
+  // 战斗内生效的总词条 = 装备 equip 词条 + 持有 hold 词条
+  const battleSum = (kind: ItemEffect['kind']) => equipSum(kind) + sumEffect(kind);
+
+  // 护甲穿透：降低怪物等效防御
+  const armorPen = battleSum('armorPen');
+  const monsterEffDef = Math.max(0, monster.def - armorPen);
+  // 连击：额外再打一次的概率
+  const comboChance = Math.min(0.5, battleSum('combo'));
+  // 反伤：怪物攻击时反弹固定伤害
+  const reflect = battleSum('reflect');
   
   // 复制 HP 以避免修改原对象
   let heroCurrentHP = heroStats.hp;
@@ -98,11 +116,11 @@ export function executeBattle(
     // 玩家先手
     // 玩家攻击
     const heroCrit = checkCrit(heroStats.crit);
-    const baseHeroDmg = calculateDamage(heroStats.atk, monster.def, heroCrit);
+    const baseHeroDmg = calculateDamage(heroStats.atk, monsterEffDef, heroCrit);
     const heroDmg = Math.floor(baseHeroDmg * _factionMultiplier(monster));
     monsterCurrentHP = Math.max(0, monsterCurrentHP - heroDmg);
     // 吸血词条：按造成伤害比例回血（不超过上限）
-    const lifesteal = sumEffect('lifesteal');
+    const lifesteal = battleSum('lifesteal');
     if (lifesteal > 0 && heroDmg > 0) {
       heroCurrentHP = Math.min(heroStats.hp, heroCurrentHP + heroDmg * lifesteal);
     }
@@ -118,14 +136,29 @@ export function executeBattle(
 
     if (monsterCurrentHP <= 0) break;
 
+    // 连击：额外追加一次攻击
+    if (comboChance > 0 && Math.random() < comboChance) {
+      const comboDmg = Math.max(1, Math.floor(calculateDamage(heroStats.atk, monsterEffDef, false) * _factionMultiplier(monster)));
+      monsterCurrentHP = Math.max(0, monsterCurrentHP - comboDmg);
+      logs.push({
+        round,
+        attacker: '勇者',
+        defender: monster.name,
+        damage: comboDmg,
+        isCrit: false,
+        description: `勇者连击 ${monster.name}，造成 ${comboDmg} 点伤害。${monster.name} 剩余 HP: ${monsterCurrentHP}`,
+      });
+      if (monsterCurrentHP <= 0) break;
+    }
+
     // 怪物攻击
     const monsterCrit = false; // 怪物暂不支持暴击
     const rawMonsterDmg = calculateDamage(monster.atk, heroStats.def, monsterCrit);
     // 护主词条：受伤减免
-    const damageCut = sumEffect('damageCut');
+    const damageCut = battleSum('damageCut');
     const monsterDmg = Math.max(1, Math.floor(rawMonsterDmg * (1 - damageCut)));
     heroCurrentHP = Math.max(0, heroCurrentHP - monsterDmg);
-    
+
     logs.push({
       round,
       attacker: monster.name,
@@ -134,6 +167,20 @@ export function executeBattle(
       isCrit: false,
       description: `${monster.name} 攻击勇者，造成 ${monsterDmg} 点伤害。勇者剩余 HP: ${heroCurrentHP}`,
     });
+
+    // 反伤：怪物攻击后反弹固定伤害
+    if (reflect > 0 && monsterCurrentHP > 0) {
+      const reflectDmg = Math.max(1, Math.floor(reflect));
+      monsterCurrentHP = Math.max(0, monsterCurrentHP - reflectDmg);
+      logs.push({
+        round,
+        attacker: '勇者',
+        defender: monster.name,
+        damage: reflectDmg,
+        isCrit: false,
+        description: `${monster.name} 攻击勇者，被反伤 ${reflectDmg} 点伤害。${monster.name} 剩余 HP: ${monsterCurrentHP}`,
+      });
+    }
     
     round++;
   }
