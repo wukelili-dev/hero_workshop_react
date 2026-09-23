@@ -71,6 +71,7 @@ export function saveGame(): boolean {
         lastTickAt: worldState.lastTickAt,
         gathered: worldState.gathered,
         bountyClaimed: worldState.bountyClaimed,
+        worldFlags: worldState.worldFlags,
         dailyEvent: worldState.dailyEvent,
       },
       ranch: { slots: ranchState.slots },

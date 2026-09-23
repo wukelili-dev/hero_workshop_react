@@ -21,6 +21,8 @@ export interface WorldSave {
   gathered: Record<string, number>;
   /** 已领奖的悬赏 id */
   bountyClaimed: string[];
+  /** 全局剧情旗标（对话分支/彩蛋落下的世界级旗标） */
+  worldFlags: Record<string, boolean>;
   /** 今日世界事件（丰饶/妖气/集市…） */
   dailyEvent: { day: number; kind: 'battle' | 'industry' | 'calm'; text: string } | null;
 }
@@ -36,6 +38,8 @@ interface WorldActions {
   resetWorld: () => void;
   markGathered: (cellId: string) => void;
   claimBounty: (id: string) => void;
+  setWorldFlag: (key: string) => void;
+  hasWorldFlag: (key: string) => boolean;
   setDailyEvent: (e: WorldSave['dailyEvent']) => void;
 }
 
@@ -55,6 +59,7 @@ const DEFAULT_WORLD: WorldState = {
   lastTickAt: Date.now(),
   gathered: {},
   bountyClaimed: [],
+  worldFlags: {},
   dailyEvent: null,
 };
 
@@ -135,6 +140,7 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
       lastTickAt: data.lastTickAt ?? Date.now(),
       gathered: data.gathered ?? {},
       bountyClaimed: data.bountyClaimed ?? [],
+      worldFlags: data.worldFlags ?? {},
       dailyEvent: data.dailyEvent ?? null,
     });
   },
@@ -143,6 +149,8 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
 
   markGathered: (cellId) => set((s) => ({ gathered: { ...s.gathered, [cellId]: Math.floor(s.day) } })),
   claimBounty: (id) => set((s) => ({ bountyClaimed: [...s.bountyClaimed, id] })),
+  setWorldFlag: (key) => set((s) => ({ worldFlags: { ...s.worldFlags, [key]: true } })),
+  hasWorldFlag: (key) => Boolean(get().worldFlags[key]),
   setDailyEvent: (e) => set({ dailyEvent: e }),
 }));
 

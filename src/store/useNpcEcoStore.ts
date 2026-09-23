@@ -18,6 +18,7 @@ interface EcoStore extends NpcEcoSave {
   patch: (npcId: string, p: Partial<NpcEcoState>) => void;
   addMemory: (npcId: string, key: string, day: number, detail?: string) => void;
   addFlag: (npcId: string, key: string, delta?: number) => void;
+  addRecentTopic: (npcId: string, topicId: string) => void;
   setBond: (npcId: string, bond: NpcBond, day?: number) => void;
   setMood: (npcId: string, mood: NpcMood) => void;
   addEvent: (e: WorldEvent) => void;
@@ -35,7 +36,7 @@ function defaultEco(affinity: number): NpcEcoState {
   const bond: NpcBond = affinity >= 80 ? '挚友' : affinity >= 60 ? '好友' : affinity >= 30 ? '熟客' : affinity > 0 ? '相识' : '陌生';
   const mood: NpcMood = affinity >= 70 ? '喜悦' : affinity <= -30 ? '厌恶' : '平静';
   return {
-    mood, bond, memory: [], flags: {}, cooldowns: {}, saidOnce: [],
+    mood, bond, memory: [], flags: {}, cooldowns: {}, saidOnce: [], recentTopics: [],
     health: 100, enemies: [], benefactors: [], lastActiveDay: 0,
   };
 }
@@ -70,6 +71,12 @@ export const useNpcEcoStore = create<EcoStore>((set, get) => ({
     return { states: { ...s.states, [npcId]: { ...eco, flags } } };
   }),
 
+  addRecentTopic: (npcId, topicId) => set((s) => {
+    const eco = get().getEco(npcId);
+    const recentTopics = [topicId, ...eco.recentTopics.filter((t) => t !== topicId)].slice(0, 10);
+    return { states: { ...s.states, [npcId]: { ...eco, recentTopics } } };
+  }),
+
   setBond: (npcId, bond, day) => set((s) => {
     const eco = get().getEco(npcId);
     return { states: { ...s.states, [npcId]: { ...eco, bond, bondedDay: day ?? eco.bondedDay } } };
@@ -96,11 +103,24 @@ export const useNpcEcoStore = create<EcoStore>((set, get) => ({
     return { relationOverride: { ...s.relationOverride, [key(a, b)]: next, [key(b, a)]: next } };
   }),
 
-  loadEco: (data) => set({
-    states: data.states ?? {},
-    events: data.events ?? [],
-    relationOverride: data.relationOverride ?? {},
-  }),
+  loadEco: (data) => {
+    // 归一化：旧档可能缺 recentTopics 等新增字段，逐个补默认值
+    const raw = data.states ?? {};
+    const states: Record<string, NpcEcoState> = {};
+    for (const [id, st] of Object.entries(raw)) {
+      states[id] = {
+        memory: [], flags: {}, cooldowns: {}, saidOnce: [], recentTopics: [],
+        health: 100, enemies: [], benefactors: [], lastActiveDay: 0,
+        ...st,
+        recentTopics: st.recentTopics ?? [],
+      };
+    }
+    set({
+      states,
+      events: data.events ?? [],
+      relationOverride: data.relationOverride ?? {},
+    });
+  },
 
   resetEco: () => set({ states: {}, events: [], relationOverride: {} }),
 }));

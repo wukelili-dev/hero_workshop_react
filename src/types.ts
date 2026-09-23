@@ -326,6 +326,10 @@ export interface NpcDefinition {
 
   /** 偷窃难度修正（0~1，0=普通，0.5=困难，0.8=极难） */
   stealDifficulty?: number;
+  /** 隐藏 NPC：需要该世界旗标才可见 */
+  hiddenFlag?: string;
+  /** 解锁引导文案 */
+  unlockHint?: string;
 }
 
 export interface NpcTradeItem {
@@ -470,6 +474,10 @@ export interface NpcCondition {
   all?: NpcCondition[];
   any?: NpcCondition[];
   not?: NpcCondition;
+  /** 需要已设置的世界旗标 */
+  worldFlag?: string;
+  /** 需要尚未设置的世界旗标 */
+  notWorldFlag?: string;
 }
 
 export interface NpcEffect {
@@ -481,6 +489,80 @@ export interface NpcEffect {
   setFlag?: string;
   bond?: NpcBond;
   moral?: number;
+}
+
+/** 世界级效果：比 NpcEffect 更宽，能改第三方关系 / 落全局旗标 / 传流言 */
+export interface WorldEffect {
+  affinity?: number;
+  mood?: NpcMood;
+  bond?: NpcBond;
+  setFlag?: string;
+  addFlag?: string;
+  gold?: number;
+  item?: { id: string; count: number };
+  moral?: number;
+  /** 全局剧情旗标 */
+  worldFlag?: string;
+  /** 命名世界事件（写日志） */
+  worldEvent?: string;
+  /** 改第三方关系（NPC ↔ 目标 NPC） */
+  relationShift?: { target: string; affinity: number };
+  /** 传播流言（写入生态事件） */
+  rumor?: string;
+}
+
+/** 分支对话选项 */
+export interface DialogueOption {
+  id: string;
+  text: string;
+  /** 展示提示：绿=利好，红=风险 */
+  hint?: string;
+  /** 显示条件；不满足则置灰 */
+  condition?: NpcCondition;
+  /** 未满足时置灰提示 */
+  lockedHint?: string;
+  /** 选择后结算的效果 */
+  effects?: WorldEffect[];
+  /** NPC 回应（选择后 NPC 说的话） */
+  reply?: string[];
+  /** 跳转到下一节点 */
+  next?: string;
+  end?: boolean;
+  once?: boolean;
+  isEaster?: boolean;
+  /** 运行时标记：当前不满足条件（置灰） */
+  locked?: boolean;
+}
+
+/** 分支树节点 */
+export interface DialogueNode {
+  id: string;
+  speaker: 'npc' | 'player' | 'system';
+  text: string | string[];
+  onEnter?: WorldEffect[];
+  next?: string;
+  options?: DialogueOption[];
+}
+
+export interface DialogueTree {
+  id: string;
+  npcId: string;
+  when?: NpcCondition;
+  root: string;
+  nodes: Record<string, DialogueNode>;
+}
+
+/** 闲聊话题：NPC 抛话题 → 玩家接 → NPC 回应 */
+export interface ChatTopic {
+  id: string;
+  kind?: 'generic' | 'personality' | 'state' | 'memory' | 'rumor' | 'easter';
+  when?: NpcCondition;
+  weight?: number;
+  lines: string[];
+  options?: DialogueOption[];
+  once?: boolean;
+  cooldownDays?: number;
+  isEaster?: boolean;
 }
 
 export interface NpcDialogueRule {
@@ -503,6 +585,7 @@ export interface NpcEcoState {
   flags: Record<string, number>;
   cooldowns: Record<string, number>;
   saidOnce: string[];
+  recentTopics: string[];
   health: number;
   enemies: string[];
   benefactors: string[];

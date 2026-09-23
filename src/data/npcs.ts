@@ -340,6 +340,160 @@ export const NPCS: NpcDefinition[] = [
     personalItem: { name: '天机残卷', icon: '📜', description: '一张泛黄的残卷，上面密密麻麻写满了凡人看不懂的文字', sellPrice: 0 },
   },
 
+  // ── 长安 · 裴绣娘（女） ──
+  {
+    id: 'changan_embroidery',
+    name: '裴绣娘',
+    title: '云锦绣坊老板娘',
+    type: 'merchant',
+    location: 'changan',
+    initialGold: 400,
+    stealDifficulty: 0.15,
+    avatarEmoji: '🧵',
+    description: '绣坊里挂着各色蜀锦苏绣，\n一位眉眼温柔的妇人在绣架前飞针走线。',
+    greetings: [
+      '客官可要挑件绣品？奴家这儿的云锦，宫里的贵人都夸好。',
+      '这位爷瞧着眼生，是头一回来东市吧？进来坐坐，奴家给你沏茶。',
+      '绣了半辈子花，还是头一回见客官这样……气度不凡的。',
+    ],
+    chatDialogues: [
+      '裴绣娘手上不停，柔声道：“这金线是从波斯来的，一根要抵十两银子。绣坏了，可赔不起。”',
+      '“奴家年轻时在宫里当过绣女，给杨妃绣过牡丹大袖。后来出了宫，就在这东市落了脚。”',
+      '“西市胡姬那儿的葡萄酒，配奴家的蜀锦，是长安城里顶好的礼数。”她掩口轻笑。',
+      '“听说城南新开了家绸缎庄，东家是个江南来的，货倒是好，就是嘴不饶人。”',
+      '“奴家绣的这方帕子，绣的是并蒂莲。客官若买了送人，保准对方欢喜。”',
+    ],
+    tradeItems: [
+      { label: '鸳鸯锦帕 [杂货]', type: 'novelty', price: 60, name: '鸳鸯锦帕', icon: '🧣', description: '双面绣并蒂莲，长安贵女争相收藏' },
+      { label: '云锦腰带 [杂货]', type: 'novelty', price: 120, name: '云锦腰带', icon: '🎀', description: '云锦所制，缀以金线，束之显贵' },
+      { label: '金疮药 [回血+20]', type: 'potion', price: 25, potionCount: 1, dialogue: '绣坊常备的跌打药，比药铺的还灵。' },
+      { label: '锦缎 ×10', type: 'material', price: 80, resourceKey: 'hide', dialogue: '上等蜀锦，做甲做衣都是好料。' },
+    ],
+    challengeStats: { hp: 1000, atk: 45, def: 30 },
+    challengeReward: { exp: 20, gold: 30, message: '裴绣娘掩面笑道：“好俊的功夫……这锭银子权当压惊。”' },
+    bestiary: { source: '《唐六典·少府监·织染署》', era: '唐代·贞观年间', notes: '唐代织染业发达，蜀锦苏绣名满天下。长安东市多织绣作坊，女工技艺精湛。' },
+    personalItem: { name: '金线绣牡丹', icon: '🌸', description: '裴绣娘毕生绣艺所聚，金线牡丹栩栩如生', sellPrice: 300 },
+  },
+
+  // ── 长安 · 公孙大娘（女） ──
+  {
+    id: 'changan_gongsun',
+    name: '公孙大娘',
+    title: '剑器舞宗师',
+    type: 'challenger',
+    location: 'changan',
+    initialGold: 600,
+    stealDifficulty: 0.5,
+    avatarEmoji: '💃',
+    description: '一位红衣女子仗剑而立，\n剑光凛冽，身段如虹。\n正是名动京城的剑器舞大家。',
+    greetings: [
+      '想看剑器舞？先接得住我这一剑再说！',
+      '当年我在郾城舞剑，观者如堵，山石为之动容。你可敢一试？',
+      '剑非舞，舞非剑。能懂这句话的，天下没几个。',
+    ],
+    chatDialogues: [
+      '公孙大娘挽了个剑花：“杜甫那小儿看了我的剑器舞，写诗赞我‘来如雷霆收震怒，罢如江海凝清光’。倒也不差。”',
+      '“我的剑器舞，是从剑术里悟出来的。先杀人，再起舞，最后连自己都分不清哪是剑，哪是舞。”',
+      '“你问我要不要收徒？”她上下打量你，“先过了我三招再说。”',
+      '“赵镖头那刀法，刚猛有余，灵动不足。真要打，他接不住我十剑。”',
+    ],
+    challengeStats: { hp: 2800, atk: 130, def: 60 },
+    challengeReward: { exp: 300, gold: 400, message: '公孙大娘收剑而立，眼中闪过赞赏：“好身手！我这一式‘霓裳破’，送你做个彩头。”' },
+    uniqueDrop: {
+      message: '剑光如雪，化作一柄软剑落入你手——剑名「霓裳」，随舞而鸣。',
+      equipment: {
+        id: 'gongsun_sword',
+        type: 'weapon',
+        name: '霓裳软剑',
+        tier: 8,
+        rarity: 4,
+        stats: { atk: 210, def: 20, hp: 180, crit: 30, critDmg: 70 },
+      },
+    },
+    bestiary: { source: '杜甫《观公孙大娘弟子舞剑器行》及《明皇杂录》', era: '唐代·开元年间', notes: '公孙大娘，开元时剑器舞名家。杜甫童年观其舞，后作诗追忆。张旭见其舞而草书大进。' },
+    personalItem: { name: '剑器舞谱', icon: '📜', description: '公孙大娘手书的剑器舞谱，字迹如剑走龙蛇', sellPrice: 400 },
+  },
+
+  // ── 长安 · 秦琼 ──
+  {
+    id: 'changan_qinqiong',
+    name: '秦琼',
+    title: '翼国公，左门神',
+    type: 'challenger',
+    location: 'changan',
+    initialGold: 1500,
+    stealDifficulty: 0.7,
+    avatarEmoji: '🛡️',
+    description: '一位面如淡金的将军按锏而立，\n气势沉凝，正是为唐王守门的秦叔宝。',
+    greetings: [
+      '某乃秦琼秦叔宝。想讨教几招，尽管放马过来。',
+      '太宗夜里梦魇，是某与尉迟恭把守宫门，鬼祟方才不敢近前。',
+      '你既到长安，可敢与某一战？',
+    ],
+    chatDialogues: [
+      '秦琼抚着熟铜锏：“某这双锏，随太宗南征北战，会过多少好汉。如今用来给宫门站岗，倒也不委屈。”',
+      '“当年某病重，太宗亲往探视，割下自己须发为某入药。这份恩情，某粉身难报。”',
+      '“你可知泾河龙王夜夜入宫？太宗夜不能寐，某与尉迟敬德披甲执械，把守宫门，那龙魂便不敢再扰。”',
+      '“后来太宗命画工绘某与敬德之像，悬于宫门。自此民间家家贴门神，画的便是某二人。”',
+    ],
+    challengeStats: { hp: 3500, atk: 160, def: 90 },
+    challengeReward: { exp: 600, gold: 800, message: '秦琼收锏抱拳：“痛快！这枚锏穗，是某征战所佩，赠予阁下做个念想。”' },
+    uniqueDrop: {
+      message: '双锏相击，锏身嗡鸣如雷——一柄熟铜锏脱手，正入你怀中。',
+      equipment: {
+        id: 'qinqiong_jian',
+        type: 'weapon',
+        name: '熟铜双锏',
+        tier: 10,
+        rarity: 4,
+        stats: { atk: 260, def: 60, hp: 400, crit: 20, critDmg: 50 },
+      },
+    },
+    bestiary: { source: '《旧唐书·秦琼传》', era: '唐代·贞观年间', notes: '秦琼字叔宝，凌烟阁二十四功臣之一。民间奉为门神，与尉迟恭并称。' },
+    personalItem: { name: '熟铜锏', icon: '⚔️', description: '秦琼随身的熟铜双锏之一', sellPrice: 500 },
+  },
+
+  // ── 长安 · 聂隐娘（隐藏NPC，需对话解锁） ──
+  {
+    id: 'changan_nieyinniang',
+    name: '聂隐娘',
+    title: '隐于市井的传奇女侠',
+    type: 'challenger',
+    location: 'changan',
+    hiddenFlag: 'nieyinniang_unlocked',
+    unlockHint: '长安街头流传着一则女侠的传说……',
+    initialGold: 1000,
+    stealDifficulty: 0.9,
+    avatarEmoji: '🗡️',
+    description: '一位黑衣女子悄无声息地立于檐下，\n手中一柄羊角匕首寒光内敛。\n此人正是传奇女侠聂隐娘。',
+    greetings: [
+      '你既寻得到我，便是有缘。要过招，还是听我讲讲这长安城的暗处？',
+      '我这匕首杀人于无形，寻常人近不得身。你可想试试？',
+      '隐娘行事，不问善恶，只问值不值得。',
+    ],
+    chatDialogues: [
+      '聂隐娘把玩着羊角匕首：“当年我入深山，得一老尼传授剑术，能飞剑取人首级于百里之外。”',
+      '“魏征丞相府戒备森严，我却来去自如。他梦里斩龙，我暗中护他，各司其职。”',
+      '“这长安城看似太平，暗处不知藏着多少刀光剑影。你既要闯荡，便该多留几个心眼。”',
+      '“神秘老者？那老东西知道我的底细。你既是从他那儿问来，也算有几分门路。”',
+    ],
+    challengeStats: { hp: 4000, atk: 200, def: 100 },
+    challengeReward: { exp: 900, gold: 1200, message: '聂隐娘收起匕首，微微颔首：“能逼我出第三招，你已不凡。这粒解刀毒的灵丹，赠你。”' },
+    uniqueDrop: {
+      message: '匕首寒光一闪，落入你掌——「羊角匕」可斩妖邪，锋锐无匹。',
+      equipment: {
+        id: 'nieyinniang_bi',
+        type: 'weapon',
+        name: '羊角匕首',
+        tier: 12,
+        rarity: 4,
+        stats: { atk: 320, def: 50, hp: 300, crit: 35, critDmg: 80 },
+      },
+    },
+    bestiary: { source: '裴铏《传奇·聂隐娘》', era: '唐代·元和年间', notes: '聂隐娘，唐传奇女侠。幼年被老尼拐入深山学剑，能飞剑取首。归家后嫁磨镜少年，后为陈许节度使刘昌裔效力。' },
+    personalItem: { name: '羊角匕首', icon: '🗡️', description: '聂隐娘的羊角匕首，削铁如泥', sellPrice: 600 },
+  },
+
   //
 
   // ═══════════════════════════════════════

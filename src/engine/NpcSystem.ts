@@ -276,6 +276,10 @@ export function greetNpc(npc: NpcDefinition): ActionResult {
 
 /** 根据 unlockCondition 判断 NPC 是否已解锁 */
 export function isNpcUnlocked(npc: NpcDefinition): boolean {
+  // 隐藏 NPC：需要对应世界旗标才可见
+  if (npc.hiddenFlag) {
+    if (!useWorldStore.getState().hasWorldFlag(npc.hiddenFlag)) return false;
+  }
   const cond = npc.unlockCondition;
   if (!cond) return true;
   const state = useGameStore.getState();

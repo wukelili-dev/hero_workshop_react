@@ -4,13 +4,15 @@
  */
 import React, { useState } from 'react';
 import { GiftModal } from './GiftModal';
+import { DialogueModal } from './DialogueModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../../store/useGameStore';
 import { useNpcStore } from '../../store/useNpcStore';
+import { useWorldStore } from '../../store/useWorldStore';
 import { getNpcsByMap, hasNpcs, NPCS } from '../../data/npcs';
 import type { NpcDefinition } from '../../types';
 import {
-  greetNpc, chatNpc, inspectNpc, buyNpcTradeItem,
+  greetNpc, inspectNpc, buyNpcTradeItem,
   challengeNpc, stealNpc, isNpcUnlocked,
 } from '../../engine/NpcSystem';
 import {
@@ -48,6 +50,7 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
   const inst = instances[npc.id];
   const [showBestiary, setShowBestiary] = useState(false);
   const [showGift, setShowGift] = useState(false);
+  const [showDialogue, setShowDialogue] = useState(false);
 
   const handleToggle = () => {
     if (!inst) initMapNpcs(npc.location);
@@ -65,8 +68,7 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
   };
 
   const doChat = () => {
-    const r = chatNpc(npc);
-    if (r.type === 'log') addGameLog(r.message);
+    setShowDialogue(true);
   };
 
   const doInspect = () => {
@@ -307,6 +309,10 @@ const NpcCard: React.FC<{ npc: NpcDefinition; index: number }> = ({ npc, index }
               {showGift && (
                 <GiftModal npc={npc} onClose={() => setShowGift(false)} />
               )}
+              {/* 分支对话弹窗 */}
+              {showDialogue && (
+                <DialogueModal npc={npc} onClose={() => setShowDialogue(false)} />
+              )}
             </div>
           </motion.div>
         )}
@@ -356,6 +362,7 @@ interface NpcPanelProps {
 export const NpcPanel: React.FC<NpcPanelProps> = ({ mapId }) => {
   const mapBattles = useGameStore((s) => s.mapBattles);
   const explorationFlags = useNpcStore((s) => s.explorationFlags);
+  const worldFlags = useWorldStore((s) => s.worldFlags);
   const setExplorationFlag = useNpcStore((s) => s.setExplorationFlag);
   const addGameLog = useGameStore((s) => s.addGameLog);
 
@@ -363,9 +370,12 @@ export const NpcPanel: React.FC<NpcPanelProps> = ({ mapId }) => {
   const liuerNpc = NPCS.find(n => n.id === 'huaguo_liuermihou');
   const regularNpcs = getNpcsByMap(mapId).filter(n => {
     if (n.id === 'huaguo_liuermihou') return false;
-    if (n.unlockCondition) return isNpcUnlocked(n);
+    if (n.unlockCondition || n.hiddenFlag) return isNpcUnlocked(n);
     return true;
   });
+  // 隐藏 NPC 提示（未解锁时展示）
+  const hiddenNpcs = getNpcsByMap(mapId).filter(n => n.hiddenFlag && !isNpcUnlocked(n));
+  void worldFlags;
   const isLiuerRevealed = explorationFlags['liuermi_explored'] ?? false;
 
   // 检查六耳猕猴触发条件
@@ -434,6 +444,27 @@ export const NpcPanel: React.FC<NpcPanelProps> = ({ mapId }) => {
       {/* 普通NPC列表 */}
       {regularNpcs.map((npc, i) => (
         <NpcCard key={npc.id} npc={npc} index={isLiuerRevealed ? i + 1 : i} />
+      ))}
+
+      {/* 隐藏NPC提示（未解锁时） */}
+      {hiddenNpcs.map((npc) => (
+        <motion.div
+          key={npc.id}
+          custom={998}
+          variants={cardVariants}
+          initial="hidden"
+          animate="visible"
+          className="bg-gray-50/70 rounded-xl border border-dashed border-gray-300 shadow-sm overflow-hidden"
+        >
+          <div className="p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg opacity-30">❓</span>
+              <span className="font-bold text-sm text-gray-500">？？？</span>
+              <span className="text-[10px] text-gray-400 ml-auto">尚未现身</span>
+            </div>
+            <div className="text-xs text-gray-400 italic">{npc.unlockHint ?? '此人在城中，却寻不到踪迹……'}</div>
+          </div>
+        </motion.div>
       ))}
 
       {/* 观音事件剩余提示 */}

@@ -78,6 +78,8 @@ export function matches(cond: NpcCondition | undefined, npc: NpcDefinition): boo
     const other = ecoStore.getEco(cond.playerBondWith.target);
     if (!cond.playerBondWith.bond.includes(other.bond)) return false;
   }
+  if (cond.worldFlag && !useWorldStore.getState().hasWorldFlag(cond.worldFlag)) return false;
+  if (cond.notWorldFlag && useWorldStore.getState().hasWorldFlag(cond.notWorldFlag)) return false;
   if (cond.all && !cond.all.every((c) => matches(c, npc))) return false;
   if (cond.any && !cond.any.some((c) => matches(c, npc))) return false;
   if (cond.not && matches(cond.not, npc)) return false;
@@ -89,6 +91,14 @@ function callName(voice: NpcVoice, affinity: number, bond: string): string {
   if (affinity >= 60) return voice.callPlayer.close;
   if (affinity >= 25) return voice.callPlayer.acquaintance;
   return voice.callPlayer.stranger;
+}
+
+/** 渲染一行台词：替换 ${self}/${call}/${name}/${title}/${catch}/${day} */
+export function renderLine(npc: NpcDefinition, raw: string): string {
+  const eco = useNpcEcoStore.getState().getEco(npc.id);
+  const affinity = useNpcStore.getState().getNpcAffinity(npc.id);
+  const day = Math.floor(useWorldStore.getState().day);
+  return interpolate(raw, npc, voiceOf(npc), affinity, eco.bond, day);
 }
 
 function interpolate(line: string, npc: NpcDefinition, voice: NpcVoice, affinity: number, bond: string, day: number): string {
@@ -156,7 +166,13 @@ export function talk(npc: NpcDefinition, channel: NpcChannel = 'chat'): Dialogue
       && !(r.once && eco.saidOnce.includes(r.id))
       && (r.cooldownDays === undefined || (eco.cooldowns[r.id] ?? 0) <= day)
       && matches(r.when, npc))
-    .map((r) => ({ id: r.id, lines: r.lines, weight: (r.weight ?? 2) * 3, effects: r.effects, cooldownDays: r.cooldownDays, once: r.once }));
+    .map((r) => {
+      const base = (r.weight ?? 2) * 3;
+      // 近期说过的规则降权 90%，避免复读；once/冷却已在上层过滤
+      const w = eco.recentTopics.includes(r.id) ? base * 0.1 : base;
+      return { id: r.id, lines: r.lines, weight: w, effects: r.effects, cooldownDays: r.cooldownDays, once: r.once };
+    });
+  const authoredIds = new Set(authored.map((c) => c.id));
 
   const chosen = pick([...authored, ...templateCandidates(npc, channel, affinity, eco.bond, eco.mood)])
     ?? { id: 'fallback', lines: [`${voice.selfCall}没有多说什么。`], weight: 1 };
@@ -165,6 +181,10 @@ export function talk(npc: NpcDefinition, channel: NpcChannel = 'chat'): Dialogue
   const text = interpolate(raw, npc, voice, affinity, eco.bond, day);
 
   ecoStore.addMemory(npc.id, channel, day, chosen.id);
+  // 手写规则（非模板/兜底）记入近期话题，供下次降权
+  if (authoredIds.has(chosen.id)) {
+    ecoStore.addRecentTopic(npc.id, chosen.id);
+  }
   if (chosen.cooldownDays) {
     ecoStore.patch(npc.id, { cooldowns: { ...eco.cooldowns, [chosen.id]: day + chosen.cooldownDays } });
   }
