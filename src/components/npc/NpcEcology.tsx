@@ -15,6 +15,13 @@ import {
   attackNpc, befriendNpc, challengeNpc, exposeSecretNpc, giftNpc, inspectNpc, proposeNpc, sowDiscordNpc, stealNpc, talkNpc, wedNpc,
 } from '../../engine/NpcSystem';
 import { GiftModal } from './GiftModal';
+import { factionName } from '../../data/factions';
+import { allFactionRep } from '../../engine/FactionSystem';
+
+const GOAL_ZH: Record<string, string> = {
+  wealth: '敛财', power: '精进', revenge: '寻仇', love: '求偶', fame: '扬名', wander: '云游',
+};
+const goalLabel = (g: { kind: string; target?: string }) => `${GOAL_ZH[g.kind] ?? g.kind}${g.target ? '·' + (NPCS.find((n) => n.id === g.target)?.name ?? g.target) : ''}`;
 
 const REL_COLOR: Record<string, { c: string; dash?: string; label: string }> = {
   lover: { c: '#c1932f', label: '恋侣' },
@@ -156,7 +163,17 @@ export const NpcEcology: React.FC = () => {
                 <span className="ink-tag">关系 {eco.bond}</span>
                 <span className="ink-tag">财富 {wealthOf(sel.id)}（{getNpcGold(sel.id)} 金）</span>
                 <span className="ink-tag">好感 {Math.round(getNpcAffinity(sel.id))}</span>
+                {eco.self.factionId && <span className="ink-tag">势力 {factionName(eco.self.factionId)}</span>}
               </div>
+              {eco.self && (
+                <div className="mt-2 grid grid-cols-2 gap-x-2 text-[11px] text-[#6b6252]">
+                  <span>战力 {eco.self.power}</span>
+                  <span>家资 {eco.self.assets}</span>
+                  <span>伤势 {eco.self.injuries}</span>
+                  <span>声望 {eco.self.reputation}</span>
+                  <span className="col-span-2">目标 {goalLabel(eco.self.goal)}（{eco.self.goal.progress}/100）</span>
+                </div>
+              )}
               {eco.memory.length > 0 && (
                 <div className="mt-2 border-l-2 border-[#8a7a63]/50 pl-2 leading-relaxed">
                   最近：{eco.memory.slice(0, 3).map((m) => m.key).join('、')}
@@ -218,6 +235,17 @@ export const NpcEcology: React.FC = () => {
           return target ? <GiftModal npc={target} onClose={() => setGiftFor(null)} /> : null;
         })()}
         <div className="mt-auto border-t border-[#8a7a63]/40 p-3">
+          <div className="ink-title mb-1 text-[13px]">势力声望</div>
+          <div className="space-y-1 text-[11px] leading-relaxed text-[#6b6252]">
+            {allFactionRep().map(({ def, rep }) => (
+              <div key={def.id} className="flex items-center justify-between">
+                <span>{def.name}</span>
+                <span className={rep <= -60 ? 'text-[#8f2b23]' : rep <= -30 ? 'text-[#8a6b2a]' : rep >= 40 ? 'text-[#4f7a8c]' : ''}>{rep}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="border-t border-[#8a7a63]/40 p-3">
           <div className="ink-title mb-1 text-[13px]">城中见闻</div>
           <div className="space-y-1 text-[11px] leading-relaxed text-[#6b6252]">
             {events.slice(0, 5).map((e) => (
