@@ -1,4 +1,7 @@
+import { composeName, composeLore } from './items/nameParts';
+
 export interface NoveltyItem {
+  id: string;
   name: string;
   desc: string;
   price: number;
@@ -7,38 +10,38 @@ export interface NoveltyItem {
   plantId?: string;
 }
 
-// 杂物物品列表
+// 杂物物品列表（名字用 id 哈希组合生成，稳定不重复）
 export const NOVELTY_ITEMS: NoveltyItem[] = [
   // 普通 (5-8G)
-  { name: "🍀 幸运草", desc: "据说能带来好运的四叶草", price: 5, rarityIdx: 0, kind: "plant_seed", plantId: "clover" },
-  { name: "🗺️ 破旧地图碎片", desc: "像是某个宝藏的一部分", price: 8, rarityIdx: 0 },
-  { name: "🐚 普通贝壳", desc: "大海的味道，若有若无", price: 6, rarityIdx: 0 },
-  { name: "🪶 褪色羽毛", desc: "曾经鲜艳，如今黯淡", price: 5, rarityIdx: 0 },
-  { name: "🪨 普通石头", desc: "形状还算圆润", price: 3, rarityIdx: 0 },
+  { id: 'clover', name: composeName('clover'), desc: composeLore('clover'), price: 5, rarityIdx: 0, kind: "plant_seed", plantId: "clover" },
+  { id: 'map_fragment', name: composeName('map_fragment'), desc: composeLore('map_fragment'), price: 8, rarityIdx: 0 },
+  { id: 'seashell', name: composeName('seashell'), desc: composeLore('seashell'), price: 6, rarityIdx: 0 },
+  { id: 'feather', name: composeName('feather'), desc: composeLore('feather'), price: 5, rarityIdx: 0 },
+  { id: 'stone', name: composeName('stone'), desc: composeLore('stone'), price: 3, rarityIdx: 0 },
   // 少见 (10-20G)
-  { name: "🍄 跳舞的蘑菇", desc: "随着节拍轻轻摇摆", price: 10, rarityIdx: 1, kind: "plant_seed", plantId: "mushroom" },
-  { name: "🔮 迷你水晶球", desc: "偶尔会闪烁一下", price: 20, rarityIdx: 1 },
-  { name: "🕯️ 永不熄灭的蜡烛", desc: "火焰永不熄灭", price: 18, rarityIdx: 1 },
-  { name: "✨ 发光萤石", desc: "在黑暗中散发柔光", price: 16, rarityIdx: 1 },
-  { name: "🌱 沉睡的种子", desc: "似乎永远不会发芽", price: 12, rarityIdx: 1 },
-  { name: "🎃 迷你南瓜灯", desc: "万圣节纪念品", price: 14, rarityIdx: 1 },
-  { name: "🧊 冰冻的眼泪", desc: "永远不会融化的冰晶", price: 19, rarityIdx: 1 },
+  { id: 'mushroom', name: composeName('mushroom'), desc: composeLore('mushroom'), price: 10, rarityIdx: 1, kind: "plant_seed", plantId: "mushroom" },
+  { id: 'crystal_ball', name: composeName('crystal_ball'), desc: composeLore('crystal_ball'), price: 20, rarityIdx: 1 },
+  { id: 'candle', name: composeName('candle'), desc: composeLore('candle'), price: 18, rarityIdx: 1 },
+  { id: 'fluorite', name: composeName('fluorite'), desc: composeLore('fluorite'), price: 16, rarityIdx: 1 },
+  { id: 'dormant_seed', name: composeName('dormant_seed'), desc: composeLore('dormant_seed'), price: 12, rarityIdx: 1 },
+  { id: 'pumpkin_lantern', name: composeName('pumpkin_lantern'), desc: composeLore('pumpkin_lantern'), price: 14, rarityIdx: 1 },
+  { id: 'frozen_tear', name: composeName('frozen_tear'), desc: composeLore('frozen_tear'), price: 19, rarityIdx: 1 },
   // 稀有 (22-38G)
-  { name: "🐚 会说话的贝壳", desc: "会重复最后听到的话", price: 25, rarityIdx: 2 },
-  { name: "🎈 装在瓶中的微风", desc: "打开时会有风轻轻吹过", price: 22, rarityIdx: 2 },
-  { name: "🔮 占卜水晶球", desc: "偶尔能看到模糊的影像", price: 30, rarityIdx: 2 },
-  { name: "🎵 会唱歌的水晶", desc: "轻敲会发出清脆声响", price: 28, rarityIdx: 2 },
-  { name: "🧱 谜之方块", desc: "没人知道它是怎么出现的", price: 33, rarityIdx: 2 },
-  { name: "🔭 迷你望远镜", desc: "据说能看见月亮背面", price: 35, rarityIdx: 2 },
+  { id: 'talking_shell', name: composeName('talking_shell'), desc: composeLore('talking_shell'), price: 25, rarityIdx: 2 },
+  { id: 'bottled_breeze', name: composeName('bottled_breeze'), desc: composeLore('bottled_breeze'), price: 22, rarityIdx: 2 },
+  { id: 'crystal_scry', name: composeName('crystal_scry'), desc: composeLore('crystal_scry'), price: 30, rarityIdx: 2 },
+  { id: 'singing_crystal', name: composeName('singing_crystal'), desc: composeLore('singing_crystal'), price: 28, rarityIdx: 2 },
+  { id: 'mystery_block', name: composeName('mystery_block'), desc: composeLore('mystery_block'), price: 33, rarityIdx: 2 },
+  { id: 'telescope', name: composeName('telescope'), desc: composeLore('telescope'), price: 35, rarityIdx: 2 },
   // 珍藏 (40-55G)
-  { name: "🪩 彩虹贝壳", desc: "折射出七彩光芒", price: 45, rarityIdx: 3 },
-  { name: "❄️ 跳舞的雪花", desc: "在温暖的地方也能存在", price: 48, rarityIdx: 3 },
-  { name: "💎 月亮碎片", desc: "散发着淡淡的银光", price: 52, rarityIdx: 3 },
-  { name: "🌈 凝固的彩虹", desc: "触碰它就会消失", price: 55, rarityIdx: 3 },
+  { id: 'rainbow_shell', name: composeName('rainbow_shell'), desc: composeLore('rainbow_shell'), price: 45, rarityIdx: 3 },
+  { id: 'dancing_snow', name: composeName('dancing_snow'), desc: composeLore('dancing_snow'), price: 48, rarityIdx: 3 },
+  { id: 'moon_shard', name: composeName('moon_shard'), desc: composeLore('moon_shard'), price: 52, rarityIdx: 3 },
+  { id: 'frozen_rainbow', name: composeName('frozen_rainbow'), desc: composeLore('frozen_rainbow'), price: 55, rarityIdx: 3 },
   // 传说 (60G+)
-  { name: "⏳ 时间的沙漏", desc: "沙子流向不明", price: 65, rarityIdx: 4 },
-  { name: "🌙 梦境碎片", desc: "收藏着一个完整的梦", price: 70, rarityIdx: 4 },
-  { name: "☄️ 坠落的流星", desc: "许愿成功率提升100%", price: 80, rarityIdx: 4 },
+  { id: 'time_hourglass', name: composeName('time_hourglass'), desc: composeLore('time_hourglass'), price: 65, rarityIdx: 4 },
+  { id: 'dream_shard', name: composeName('dream_shard'), desc: composeLore('dream_shard'), price: 70, rarityIdx: 4 },
+  { id: 'falling_meteor', name: composeName('falling_meteor'), desc: composeLore('falling_meteor'), price: 80, rarityIdx: 4 },
 ];
 
 // 杂物稀有度颜色
