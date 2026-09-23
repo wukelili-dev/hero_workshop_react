@@ -16,6 +16,7 @@ import { useWorldStore } from '../store/useWorldStore';
 import { talk } from './NpcDialogue';
 import { addEvent, nameOf } from './NpcAutonomy';
 import { enqueueRevenge } from './VisitSystem';
+import { isBanned, priceMultiplier } from './FactionSystem';
 import type { NpcChannel } from '../types';
 
 const dayNow = () => Math.floor(useWorldStore.getState().day);
@@ -384,9 +385,15 @@ export function buyNpcTradeItem(npc: NpcDefinition, itemIdx: number): ActionResu
   // 亲密度折扣
   const bond = useNpcEcoStore.getState().getEco(npc.id).bond;
   if (bond === '仇敌') return { type: 'log', message: `${npc.name}把货收了回去：「不做你的生意。」` };
+  // 势力仇恨：直接拒卖
+  const factionId = useNpcEcoStore.getState().getEco(npc.id).self.factionId;
+  if (isBanned(factionId)) {
+    return { type: 'log', message: `${npc.name}冷冷道：「你在这条街上已经没生意可做了。」` };
+  }
+  const factionMult = priceMultiplier(factionId);
   const bondBonus = bond === '夫妻' ? 0.15 : bond === '恋人' ? 0.1 : bond === '挚友' ? 0.06 : bond === '好友' ? 0.03 : 0;
   const discount = Math.max(0.6, npcStore.getAffinityDiscount(npc.id) - bondBonus);
-  const actualPrice = Math.ceil(item.price * discount);
+  const actualPrice = Math.ceil(item.price * discount * factionMult);
 
   if (state.hero.gold < actualPrice) {
     return { type: 'log', message: '你囊中羞涩，只好作罢。' };
