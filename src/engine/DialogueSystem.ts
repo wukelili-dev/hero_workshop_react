@@ -12,6 +12,8 @@ import { useNpcStore } from '../store/useNpcStore';
 import { useNpcEcoStore } from '../store/useNpcEcoStore';
 import { useWorldStore } from '../store/useWorldStore';
 import { useInventoryStore } from '../store/useInventoryStore';
+import { nameOf } from './NpcAutonomy';
+import { factionName } from '../data/factions';
 import type {
   ChatTopic, DialogueNode, DialogueOption, DialogueTree, NpcDefinition, WorldEffect,
 } from '../types';
@@ -39,6 +41,9 @@ export function applyWorldEffect(npcId: string, e: WorldEffect): void {
       id: `rumor_${npcId}_${day}_${Date.now()}`,
       day, kind: 'rumor', actors: [npcId], text: e.rumor, aboutPlayer: true,
     });
+  }
+  if (e.factionRep) {
+    world.addFactionRep(e.factionRep.factionId, e.factionRep.delta);
   }
   if (e.worldEvent) {
     game.addGameLog(`🌍 ${e.worldEvent}`);
@@ -125,6 +130,23 @@ export interface TreeSession {
   node: DialogueNode;
   /** 已选项 id（用于 once 隐藏） */
   chosenOnce: string[];
+}
+
+/** 情报节点：把 ${intel} 替换为真实 store 查询结果 */
+export function resolveIntel(npc: NpcDefinition, node: DialogueNode, raw: string): string {
+  if (!node.intel || !raw.includes('${intel}')) return raw;
+  const ecoStore = useNpcEcoStore.getState();
+  let result = '';
+  if (node.intel.kind === 'relation') {
+    const t = node.intel.target;
+    const strength = ecoStore.relationStrength(npc.id, t);
+    const targetName = nameOf(t);
+    result = `${targetName}（关系强度 ${strength}）`;
+  } else {
+    const rep = useWorldStore.getState().getFactionRep(node.intel.target);
+    result = `${factionName(node.intel.target)}（声望 ${rep}）`;
+  }
+  return raw.replace(/\$\{intel\}/g, result);
 }
 
 /** 打开一个分支树：取第一个满足条件的树，进入根节点 */

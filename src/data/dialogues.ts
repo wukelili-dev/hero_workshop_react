@@ -15,6 +15,14 @@ export const CHAT_TOPICS: Record<string, ChatTopic[]> = {
   // ── 老张头 · 铁匠铺 ──
   changan_blacksmith: [
     {
+      id: 'zhang_intel', kind: 'rumor', weight: 2, when: { affinity: { min: 15 } },
+      lines: ['${self}收锤顿了顿：「你可是想打听点什么？」'],
+      options: [
+        { id: 'a1', text: '“你和孙二娘什么交情？”', reply: ['${self}道：「老邻居了，几十年的交情。她家药铺缺个秤驼，还是我打的。」'], effects: [{ affinity: 2 }] },
+        { id: 'a2', text: '“这条街上，谁说话管用？”', reply: ['${self}压低声音：「西市这一亩三分地，得看商会的脸色。」'], effects: [{ affinity: 2 }] },
+      ],
+    },
+    {
       id: 'zhang_chat_forge', kind: 'personality', weight: 3,
       lines: ['${self}抡着锤，头也不抬：「这刀口，得淬三遍火，一遍都省不得。」', '${self}往炉里添了把炭：「好铁难寻，好主顾更难寻。」'],
       options: [
@@ -244,6 +252,30 @@ export const DIALOGUE_TREES: Record<string, DialogueTree[]> = {
 
   // ── 神秘老者 → 聂隐娘 解锁树 ──
   changan_mysterious: [
+    {
+      id: 'mysterious_intel',
+      npcId: 'changan_mysterious',
+      when: { worldFlag: 'nieyinniang_unlocked' },
+      root: 'ask',
+      nodes: {
+        ask: {
+          id: 'ask', speaker: 'npc',
+          text: '${self}把玩着龟甲：「女侠已见着了吧？还想问什么？」',
+          options: [
+            { id: 'rel', text: '“你与袁守城，究竟什么恩怨？”', reply: ['${self}脸色一沉：「他与老夫的账，${intel}——你自己去问罢。」'], next: 'rel' },
+            { id: 'leave', text: '“没什么了。”', reply: ['${self}点头：「去吧。」'], end: true },
+          ],
+        },
+        rel: {
+          id: 'rel', speaker: 'npc',
+          intel: { kind: 'relation', target: 'changan_fortune' },
+          text: '${self}淡淡道：「那术士与老夫的关系，如今已是 ${intel}。有些事，知道了不如不知道。」',
+          options: [
+            { id: 'ok', text: '“受教了。”', reply: ['${self}不再言语。'], end: true },
+          ],
+        },
+      },
+    },
     {
       id: 'mysterious_nieyinniang',
       npcId: 'changan_mysterious',

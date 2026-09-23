@@ -509,6 +509,8 @@ export interface WorldEffect {
   relationShift?: { target: string; affinity: number };
   /** 传播流言（写入生态事件） */
   rumor?: string;
+  /** 改势力声望 */
+  factionRep?: { factionId: string; delta: number };
 }
 
 /** 分支对话选项 */
@@ -534,11 +536,20 @@ export interface DialogueOption {
   locked?: boolean;
 }
 
+/** 情报节点：动态查询真实 store（关系/势力声望），用于"打听"类对话 */
+export interface DialogueIntel {
+  kind: 'relation' | 'factionRep';
+  /** relation=目标 NPC id；factionRep=势力 id */
+  target: string;
+}
+
 /** 分支树节点 */
 export interface DialogueNode {
   id: string;
   speaker: 'npc' | 'player' | 'system';
   text: string | string[];
+  /** 情报查询：${intel} 占位符会被替换为真实 store 查询结果 */
+  intel?: DialogueIntel;
   onEnter?: WorldEffect[];
   next?: string;
   options?: DialogueOption[];

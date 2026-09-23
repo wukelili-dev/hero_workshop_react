@@ -8,7 +8,7 @@ import { FaTimes } from 'react-icons/fa';
 import { useGameStore } from '../../store/useGameStore';
 import type { ChatTopic, DialogueOption, NpcDefinition } from '../../types';
 import {
-  pickTopic, resolveTopicOption, openTree, advanceTree, type TreeSession,
+  pickTopic, resolveTopicOption, openTree, advanceTree, resolveIntel, type TreeSession,
 } from '../../engine/DialogueSystem';
 
 interface DialogueModalProps {
@@ -40,7 +40,8 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({ npc, onClose }) =>
     const tree = openTree(npc);
     if (tree) {
       setTreeSession(tree);
-      setHistory([{ speaker: 'npc', text: Array.isArray(tree.node.text) ? tree.node.text[0] : tree.node.text }]);
+      const nodeText = Array.isArray(tree.node.text) ? tree.node.text[0] : tree.node.text;
+      setHistory([{ speaker: 'npc', text: resolveIntel(npc, tree.node, nodeText) }]);
       setOptions(tree.node.options ?? []);
       return;
     }
@@ -77,7 +78,7 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({ npc, onClose }) =>
         if (s) {
           setTreeSession(s);
           const nodeText = Array.isArray(s.node.text) ? s.node.text[Math.floor(Math.random() * s.node.text.length)] : s.node.text;
-          setHistory((h) => [...h, { speaker: 'npc', text: nodeText }]);
+          setHistory((h) => [...h, { speaker: 'npc', text: resolveIntel(npc, s.node, nodeText) }]);
           setOptions(s.node.options ?? []);
         } else {
           setOptions([]);
