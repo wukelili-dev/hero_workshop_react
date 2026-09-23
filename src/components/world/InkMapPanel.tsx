@@ -9,6 +9,7 @@ import { formatDayLabel, useWorldStore } from '../../store/useWorldStore';
 import { TERRAIN_CONFIG, findRoute, getCellById } from '../../data/cellMap';
 import { CELL_ENCOUNTERS, getCellEncounter } from '../../data/cellEncounters';
 import { gatherAtCell } from '../../engine/NpcBenefits';
+import { blockReasonFor } from '../../engine/FactionSystem';
 import { MAPS } from '../../data/maps';
 import { RARITY_COLOR, RARITY_NAME } from '../../types';
 import type { Monster } from '../../types';
@@ -186,6 +187,7 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
   const targetCell = selectedCellId ? getCellById(selectedCellId) : null;
   const targetEncounter = selectedCellId ? getCellEncounter(selectedCellId) : null;
   const targetRec = recommendOf(targetEncounter);
+  const blockReason = blockReasonFor(targetEncounter?.mapId);
   const currentTerrain = currentCell ? TERRAIN_CONFIG[currentCell.terrain] : undefined;
   const isSect = currentCell?.features[0]?.type === 'sect';
   const monsters = [...(currentEncounter?.monsters ?? [])].sort((a, b) => (a.level ?? 0) - (b.level ?? 0));
@@ -348,13 +350,16 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
                     : '此地无战事'}
                 </div>
               )}
+              {blockReason && (
+                <div className="mt-1 text-[11px] text-[#8f2b23]">{blockReason}</div>
+              )}
               <button
                 type="button"
                 onClick={handleTravel}
-                disabled={!route}
+                disabled={!route || Boolean(blockReason)}
                 className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-amber-600 py-1.5 text-xs font-bold text-white hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-400"
               >
-                <FaShoePrints /> 前往（{route?.days ?? 0} 天）
+                <FaShoePrints /> {blockReason ? '封城中' : `前往（${route?.days ?? 0} 天）`}
               </button>
             </div>
           )}

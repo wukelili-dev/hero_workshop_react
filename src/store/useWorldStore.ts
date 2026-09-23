@@ -114,6 +114,18 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
     const state = get();
     if (cellId === state.currentCellId) return { path: [cellId], days: 0 };
 
+    // 势力封锁：被封城的据点不允许进入（后果由 FactionSystem 结出）
+    const destMapId = getCellEncounter(cellId)?.mapId;
+    if (destMapId) {
+      const block = state.consequences.find(
+        (c) => c.kind === 'block' && c.scope.placeId === destMapId && c.untilDay > Math.floor(state.day)
+      );
+      if (block) {
+        useGameStore.getState().addGameLog(`无法前往：${block.reason}`);
+        return null;
+      }
+    }
+
     const route = findRoute(state.currentCellId, cellId);
     if (!route) return null;
 

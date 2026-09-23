@@ -2,7 +2,8 @@
  * FactionSystem — 势力声望查询与后果计算（活人世界 P1-3 / P1-5）
  * 声望 ≤-30：商人涨价 ×1.3 且部分拒卖；≤-60：封锁据点；≥40：庇护。
  */
-import { FACTIONS, REP_BAN, REP_BLOCK, REP_PROTECT, factionName, type FactionDef } from '../data/factions';
+import { FACTIONS, REP_BAN, REP_BLOCK, REP_PROTECT, factionName, factionOf, type FactionDef } from '../data/factions';
+import { MAPS } from '../data/maps';
 import { FACTION_BY_NPC } from '../data/npcEcology';
 import { useWorldStore } from '../store/useWorldStore';
 
@@ -10,8 +11,52 @@ export function repOf(factionId: string): number {
   return useWorldStore.getState().getFactionRep(factionId);
 }
 
+/** 势力据点对应的地图 id（factions.homePlace 存的是地图名） */
+function placeIdOf(factionId: string): string | undefined {
+  const def = FACTIONS.find((f) => f.id === factionId);
+  if (!def) return undefined;
+  return MAPS.find((m) => m.name === def.homePlace)?.id ?? def.homePlace;
+}
+
+/** 某据点是否被势力封锁；返回原因或 null（世界地图用于禁用「前往」） */
+export function blockReasonFor(placeId: string | undefined): string | null {
+  if (!placeId) return null;
+  const { consequences, day } = useWorldStore.getState();
+  const hit = consequences.find(
+    (c) => c.kind === 'block' && c.scope.placeId === placeId && c.untilDay > Math.floor(day)
+  );
+  return hit ? hit.reason : null;
+}
+
+/**
+ * 加减声望；跨越阈值时自动落后果：
+ * ≤ REP_BLOCK → 该势力据点对你封城 30 天；声望回到 -40 以上 → 自动解封。
+ */
 export function addRep(factionId: string, delta: number): void {
-  useWorldStore.getState().addFactionRep(factionId, delta);
+  const store = useWorldStore.getState();
+  store.addFactionRep(factionId, delta);
+
+  const world = useWorldStore.getState();
+  const rep = world.getFactionRep(factionId);
+  const day = Math.floor(world.day);
+  const placeId = placeIdOf(factionId);
+  const name = factionName(factionId);
+  const blocked = world.consequences.some((c) => c.kind === 'block' && c.scope.factionId === factionId);
+
+  if (rep <= REP_BLOCK && !blocked && placeId) {
+    world.addConsequence({
+      id: `blk_${factionId}_${day}`,
+      kind: 'block',
+      scope: { factionId, placeId },
+      value: 30,
+      untilDay: day + 30,
+      reason: `${name}已与你决裂，${factionOf(factionId)?.homePlace ?? placeId}的城门不再为你开`,
+    });
+  } else if (rep > REP_BLOCK + 20 && blocked) {
+    useWorldStore.setState({
+      consequences: world.consequences.filter((c) => !(c.kind === 'block' && c.scope.factionId === factionId)),
+    });
+  }
 }
 
 /** 某 NPC 所属势力 id（可能 undefined） */
