@@ -163,7 +163,8 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
         ? `行军 ${days} 天，抵达${where}（第 ${Math.floor(get().day)} 天）`
         : `抵达${where}`
     );
-    return route;
+    // 返回调整后的天数（行脚词条会减天），否则 UI/提示会显示未减天的旧值
+    return { ...route, days };
   },
 
   /** 让战斗系统读取当前格子的遭遇（开局 / 读档后调用） */

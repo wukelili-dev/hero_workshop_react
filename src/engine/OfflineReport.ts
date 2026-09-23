@@ -7,6 +7,7 @@ import { DAY_MS } from '../data/constants';
 import { MAPS } from '../data/maps';
 import { useGameStore } from '../store/useGameStore';
 import { executeBattle } from './Combat';
+import { sum as sumEffect } from './ItemEffects';
 import type { Monster } from '../types';
 
 const SEEN_KEY = 'hero_workshop_last_seen';
@@ -87,7 +88,9 @@ export function computeOffline(now: number = Date.now()): OfflineReport | null {
       materials[key] = (materials[key] ?? 0) + gain;
     });
   });
-  Object.keys(materials).forEach((k) => { materials[k] = Math.floor(materials[k]); });
+  // 词条：寻宝（gatherBonus）同样作用于离线收获，避免"离线绕过词条"
+  const gatherBonus = sumEffect('gatherBonus');
+  Object.keys(materials).forEach((k) => { materials[k] = Math.floor(materials[k] * (1 + gatherBonus)); });
 
   return { ms, days, autoBattle, battles, exp, gold, materials, placeName: map?.name ?? '此地', risky, claimed: false };
 }
@@ -95,6 +98,11 @@ export function computeOffline(now: number = Date.now()): OfflineReport | null {
 /** 领取离线收益 */
 export function claimOffline(r: OfflineReport): void {
   const game = useGameStore.getState();
+  // 词条：慈悲（每日善值）/ 嗜杀（每杀恶值）在离线结算时同样生效
+  const moralPerDay = sumEffect('moralPerDay');
+  const moralPerKill = sumEffect('moralPerKill');
+  if (moralPerDay !== 0 && r.days >= 1) game.changeMoral(Math.round(moralPerDay * Math.floor(r.days)));
+  if (moralPerKill !== 0 && r.battles > 0) game.changeMoral(-Math.round(moralPerKill * r.battles));
   if (r.exp > 0) game.addExp(r.exp);
   if (r.gold > 0) game.addGold(r.gold);
   Object.entries(r.materials).forEach(([k, v]) => { if (v > 0) game.addResource(k, v); });
