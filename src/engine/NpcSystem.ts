@@ -390,7 +390,14 @@ export function buyNpcTradeItem(npc: NpcDefinition, itemIdx: number): ActionResu
   if (isBanned(factionId)) {
     return { type: 'log', message: `${npc.name}冷冷道：「你在这条街上已经没生意可做了。」` };
   }
-  const factionMult = priceMultiplier(factionId);
+  // 跨系统后果：被躲开后 7 天拒卖
+  const dayNow = Math.floor(useWorldStore.getState().day);
+  const banned = useWorldStore.getState().consequences.some((c) => c.kind === 'ban' && c.scope.npcId === npc.id && c.untilDay > dayNow);
+  if (banned) {
+    return { type: 'log', message: `${npc.name}别过头去：「你躲我躲得够快，如今倒想起买卖来了？」` };
+  }
+  const priceConsequence = useWorldStore.getState().consequences.find((c) => c.kind === 'price' && c.scope.npcId === npc.id && c.untilDay > dayNow);
+  const factionMult = priceMultiplier(factionId) * (priceConsequence ? priceConsequence.value : 1);
   const bondBonus = bond === '夫妻' ? 0.15 : bond === '恋人' ? 0.1 : bond === '挚友' ? 0.06 : bond === '好友' ? 0.03 : 0;
   const discount = Math.max(0.6, npcStore.getAffinityDiscount(npc.id) - bondBonus);
   const actualPrice = Math.ceil(item.price * discount * factionMult);

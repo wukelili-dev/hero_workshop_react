@@ -98,6 +98,7 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
       const d = Math.floor(next);
       advanceNpcDay(d);
       tickVisits(d);
+      get().pruneConsequences(d);
       set({ dailyEvent: rollDailyEvent(d) });
     }
     set({ day: next, lastTickAt: t });
