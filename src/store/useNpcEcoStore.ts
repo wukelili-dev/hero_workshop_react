@@ -109,10 +109,18 @@ export const useNpcEcoStore = create<EcoStore>((set, get) => ({
     const states: Record<string, NpcEcoState> = {};
     for (const [id, st] of Object.entries(raw)) {
       states[id] = {
-        memory: [], flags: {}, cooldowns: {}, saidOnce: [], recentTopics: [],
-        health: 100, enemies: [], benefactors: [], lastActiveDay: 0,
         ...st,
+        mood: st.mood ?? '平静',
+        bond: st.bond ?? '陌生',
+        memory: st.memory ?? [],
+        flags: st.flags ?? {},
+        cooldowns: st.cooldowns ?? {},
+        saidOnce: st.saidOnce ?? [],
         recentTopics: st.recentTopics ?? [],
+        health: st.health ?? 100,
+        enemies: st.enemies ?? [],
+        benefactors: st.benefactors ?? [],
+        lastActiveDay: st.lastActiveDay ?? 0,
       };
     }
     set({

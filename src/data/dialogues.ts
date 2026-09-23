@@ -7,7 +7,7 @@
  *
  * 变量插值：${self}=自称 ${call}=对玩家称呼 ${name}=名 ${title}=称号 ${catch}=口头禅 ${day}=天
  */
-import type { ChatTopic, DialogueTree, NpcCondition } from '../types';
+import type { ChatTopic, DialogueTree } from '../types';
 
 // ═══════════ 闲聊话题池 ═══════════
 
@@ -66,7 +66,6 @@ export const CHAT_TOPICS: Record<string, ChatTopic[]> = {
           reply: ['${self}凑近：「金銮殿里出了怪事——值夜的侍卫说夜里听见有人唱曲，像是先皇的声音。」'],
           effects: [{ worldFlag: '听说宫闱秘辛', relationShift: { target: 'changan_weizheng', affinity: -10 }, rumor: '长安城开始流传宫闱闹鬼的传闻', affinity: 5 }],
           isEaster: true,
-        },
         },
         { id: 'a2', text: '“我不听，怕事。”', reply: ['${self}松了口气：「识趣。」'], effects: [{ affinity: 3 }] },
       ],

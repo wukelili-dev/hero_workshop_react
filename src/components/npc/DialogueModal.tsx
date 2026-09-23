@@ -4,7 +4,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaCommentDots } from 'react-icons/fa';
+import { FaTimes } from 'react-icons/fa';
 import { useGameStore } from '../../store/useGameStore';
 import type { ChatTopic, DialogueOption, NpcDefinition } from '../../types';
 import {
