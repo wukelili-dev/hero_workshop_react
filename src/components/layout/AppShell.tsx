@@ -28,6 +28,8 @@ import { BestiaryTab } from '../bestiary/BestiaryTab';
 import { InkMapPanel } from '../world/InkMapPanel';
 import { NpcEcology } from '../npc/NpcEcology';
 import { OfflineModal } from '../shared/OfflineModal';
+import { VisitModal } from '../shared/VisitModal';
+import { dueVisits } from '../../engine/VisitSystem';
 import { claimOffline, computeOffline, markSeen, type OfflineReport } from '../../engine/OfflineReport';
 import { bountiesFor, claimBounty } from '../../engine/Bounty';
 import { useGameStore } from '../../store/useGameStore';
@@ -91,6 +93,7 @@ export const AppShell: React.FC = () => {
   const [shop, setShop] = useState<ShopId>('none');
   const [cityView, setCityView] = useState<'eco' | 'team'>('eco');
   const [offline, setOffline] = useState<OfflineReport | null>(null);
+  const [visitQueue, setVisitQueue] = useState<ReturnType<typeof dueVisits>>([]);
   const day = Math.floor(useWorldStore((s) => s.day));
   const bountyClaimed = useWorldStore((s) => s.bountyClaimed);
   const killCounts = useGameStore((s) => s.killCounts);
@@ -114,6 +117,11 @@ export const AppShell: React.FC = () => {
       document.removeEventListener('visibilitychange', onHide);
     };
   }, []);
+
+  // 主动来访：到日子的来访弹窗（一次只弹一个）
+  useEffect(() => {
+    setVisitQueue(dueVisits(day));
+  }, [day]);
 
   const handleSave = () => {
     const ok = saveGame();
@@ -250,6 +258,12 @@ export const AppShell: React.FC = () => {
           report={offline}
           onClaim={() => { claimOffline(offline); markSeen(); setOffline(null); }}
           onSkip={() => setOffline(null)}
+        />
+      )}
+      {!offline && visitQueue.length > 0 && (
+        <VisitModal
+          visit={visitQueue[0]}
+          onClose={() => setVisitQueue((q) => q.slice(1))}
         />
       )}
 

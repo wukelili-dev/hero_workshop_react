@@ -505,6 +505,17 @@ export const GOAL_LINES: Record<NpcGoal['kind'], string[]> = {
   ],
 };
 
+/** NPC 所属势力（P1-3 会迁到 data/factions.ts，这里先轻量映射以支撑主动来访） */
+export const FACTION_BY_NPC: Record<string, string> = {
+  changan_blacksmith: 'changan_guild',
+  changan_herbalist: 'changan_guild',
+  changan_embroidery: 'changan_guild',
+  changan_biaotou: 'changan_escort',
+  changan_weizheng: 'changan_court',
+  changan_tangwang: 'changan_court',
+  changan_xuanzang: 'changan_temple',
+};
+
 /** 由 NPC 静态数据推导自身面板（战力 / 资产 / 目标），用于日推进真改数值 */
 export function buildSelf(npc: NpcDefinition): NpcSelfState {
   const lvl = npc.challengeStats ? Math.max(1, Math.round((npc.challengeStats.atk - 5) / 2)) : 1;
@@ -520,6 +531,7 @@ export function buildSelf(npc: NpcDefinition): NpcSelfState {
   else goal = { kind: 'fame', progress: 0 };
   return {
     power, assets: npc.initialGold ?? 200, injuries: 0,
+    factionId: FACTION_BY_NPC[npc.id],
     reputation: 20, goal,
   };
 }

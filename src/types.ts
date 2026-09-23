@@ -585,6 +585,27 @@ export interface NpcGoal {
   progress: number;
 }
 
+/** 待上门的行动：日推进时生成，到日子触发 */
+export interface PendingVisit {
+  id: string;
+  npcId: string;
+  kind: 'revenge' | 'challenge' | 'beg' | 'gift' | 'matchmake' | 'report';
+  createdDay: number;
+  arriveDay: number;
+  reason: string;
+  resolved?: boolean;
+}
+
+/** 跨系统后果：声望/恩怨带来的价格、拒卖、封锁、任务 */
+export interface Consequence {
+  id: string;
+  kind: 'price' | 'ban' | 'block' | 'quest' | 'service';
+  scope: { factionId?: string; npcId?: string; placeId?: string };
+  value: number;
+  untilDay: number;
+  reason: string;
+}
+
 /** NPC 自己的"面板"：没有它，NPC 就永远停在原地等你点 */
 export interface NpcSelfState {
   power: number;

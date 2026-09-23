@@ -7,6 +7,8 @@ import { TERRAIN_CONFIG, findRoute, getCellById, type CellRoute } from '../data/
 import { getCellEncounter } from '../data/cellEncounters';
 import { useGameStore } from './useGameStore';
 import { advanceNpcDay } from '../engine/NpcAutonomy';
+import { tickVisits } from '../engine/VisitSystem';
+import type { Consequence, PendingVisit } from '../types';
 
 /** 出生点：傲来国（新手区，与 useGameStore 默认 currentMapId='aolai' 对齐） */
 export const START_CELL_ID = 'cp_2_5';
@@ -25,6 +27,12 @@ export interface WorldSave {
   worldFlags: Record<string, boolean>;
   /** 今日世界事件（丰饶/妖气/集市…） */
   dailyEvent: { day: number; kind: 'battle' | 'industry' | 'calm'; text: string } | null;
+  /** 待上门的 NPC 行动队列 */
+  visits: PendingVisit[];
+  /** 跨系统后果（价格/拒卖/封锁/任务） */
+  consequences: Consequence[];
+  /** 玩家对每个势力的声望 */
+  factionRep: Record<string, number>;
 }
 
 type WorldState = WorldSave;
@@ -41,6 +49,12 @@ interface WorldActions {
   setWorldFlag: (key: string) => void;
   hasWorldFlag: (key: string) => boolean;
   setDailyEvent: (e: WorldSave['dailyEvent']) => void;
+  enqueueVisit: (v: Omit<PendingVisit, 'id'>) => void;
+  resolveVisit: (visitId: string) => void;
+  addConsequence: (c: Consequence) => void;
+  pruneConsequences: (day: number) => void;
+  addFactionRep: (factionId: string, delta: number) => void;
+  getFactionRep: (factionId: string) => number;
 }
 
 /** 每日世界事件：挂在日推进上，给世界一点周期感 */
@@ -61,6 +75,9 @@ const DEFAULT_WORLD: WorldState = {
   bountyClaimed: [],
   worldFlags: {},
   dailyEvent: null,
+  visits: [],
+  consequences: [],
+  factionRep: {},
 };
 
 export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
@@ -80,6 +97,7 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
     if (Math.floor(next) > Math.floor(day)) {
       const d = Math.floor(next);
       advanceNpcDay(d);
+      tickVisits(d);
       set({ dailyEvent: rollDailyEvent(d) });
     }
     set({ day: next, lastTickAt: t });
@@ -142,6 +160,9 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
       bountyClaimed: data.bountyClaimed ?? [],
       worldFlags: data.worldFlags ?? {},
       dailyEvent: data.dailyEvent ?? null,
+      visits: (data as WorldSave & { visits?: PendingVisit[] }).visits ?? [],
+      consequences: (data as WorldSave & { consequences?: Consequence[] }).consequences ?? [],
+      factionRep: (data as WorldSave & { factionRep?: Record<string, number> }).factionRep ?? {},
     });
   },
 
@@ -152,6 +173,27 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
   setWorldFlag: (key) => set((s) => ({ worldFlags: { ...s.worldFlags, [key]: true } })),
   hasWorldFlag: (key) => Boolean(get().worldFlags[key]),
   setDailyEvent: (e) => set({ dailyEvent: e }),
+
+  enqueueVisit: (v) => set((s) => {
+    if (s.visits.filter((x) => !x.resolved).length >= 3) return {};
+    const visit: PendingVisit = { ...v, id: `visit_${v.npcId}_${v.arriveDay}_${Date.now().toString(36)}` };
+    return { visits: [...s.visits, visit] };
+  }),
+
+  resolveVisit: (visitId) => set((s) => ({
+    visits: s.visits.map((v) => (v.id === visitId ? { ...v, resolved: true } : v)),
+  })),
+
+  addConsequence: (c) => set((s) => ({ consequences: [...s.consequences, c] })),
+
+  pruneConsequences: (day) => set((s) => ({ consequences: s.consequences.filter((c) => c.untilDay > day) })),
+
+  addFactionRep: (factionId, delta) => set((s) => {
+    const cur = s.factionRep[factionId] ?? 0;
+    return { factionRep: { ...s.factionRep, [factionId]: Math.max(-100, Math.min(100, cur + delta)) } };
+  }),
+
+  getFactionRep: (factionId) => get().factionRep[factionId] ?? 0,
 }));
 
 /** 第几天（1 起） */

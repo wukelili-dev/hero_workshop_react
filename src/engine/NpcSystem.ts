@@ -15,6 +15,7 @@ import { useNpcEcoStore } from '../store/useNpcEcoStore';
 import { useWorldStore } from '../store/useWorldStore';
 import { talk } from './NpcDialogue';
 import { addEvent, nameOf } from './NpcAutonomy';
+import { enqueueRevenge } from './VisitSystem';
 import type { NpcChannel } from '../types';
 
 const dayNow = () => Math.floor(useWorldStore.getState().day);
@@ -72,6 +73,7 @@ export function attackNpc(npc: NpcDefinition): ActionResult {
   eco.setMood(npc.id, '厌恶');
   eco.addFlag(npc.id, '被袭击');
   propagate(npc.id, 'attack');
+  enqueueRevenge(npc.id, `你当街袭击了${npc.name}，他咽不下这口气。`, 1);
   if (!result.victory) {
     game.setHp(result.heroFinalHp ?? 1);
     game.changeMoral(-4);
@@ -797,6 +799,7 @@ export function stealNpc(
   npcStore.modifyNpcAffinity(npc.id, -20);
 
   state.changeMoral(-15);
+  enqueueRevenge(npc.id, `你偷走了${npc.name}的${item?.name ?? '钱财'}，他迟早会找上门来。`, 2);
   state.addGameLog(
     `🫳 成功偷窃${npc.name}${item ? '，获得 ' + item.icon + item.name : ''}${goldBonus > 0 ? ' +' + goldBonus + 'G' : '（钱包空空）'}`
   );
