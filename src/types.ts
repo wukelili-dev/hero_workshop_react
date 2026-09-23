@@ -576,6 +576,25 @@ export interface NpcDialogueRule {
   effects?: NpcEffect[];
 }
 
+/** NPC 自身目标：驱动每日自主行动 */
+export type NpcGoalKind = 'wealth' | 'power' | 'revenge' | 'love' | 'fame' | 'wander';
+
+export interface NpcGoal {
+  kind: NpcGoalKind;
+  target?: string;
+  progress: number;
+}
+
+/** NPC 自己的"面板"：没有它，NPC 就永远停在原地等你点 */
+export interface NpcSelfState {
+  power: number;
+  assets: number;
+  injuries: number;
+  factionId?: string;
+  goal: NpcGoal;
+  reputation: number;
+}
+
 /** 运行时生态状态（进存档） */
 export interface NpcEcoState {
   mood: NpcMood;
@@ -590,6 +609,7 @@ export interface NpcEcoState {
   enemies: string[];
   benefactors: string[];
   lastActiveDay: number;
+  self: NpcSelfState;
 }
 
 export interface WorldEvent {

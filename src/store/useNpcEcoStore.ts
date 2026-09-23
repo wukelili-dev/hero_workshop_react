@@ -3,9 +3,9 @@
  * 与 useNpcStore 分开：前者是"活人"层，后者保留原有好感度与金钱。
  */
 import { create } from 'zustand';
-import type { NpcBond, NpcEcoState, NpcMood, WorldEvent } from '../types';
+import type { NpcBond, NpcEcoState, NpcMood, NpcSelfState, WorldEvent } from '../types';
 import { NPCS } from '../data/npcs';
-import { buildEco, GENERIC_RULES, getRelationDef, NPC_ECO } from '../data/npcEcology';
+import { buildEco, buildSelf, GENERIC_RULES, getRelationDef, NPC_ECO } from '../data/npcEcology';
 
 export interface NpcEcoSave {
   states: Record<string, NpcEcoState>;
@@ -32,12 +32,16 @@ interface EcoStore extends NpcEcoSave {
 
 const key = (a: string, b: string) => `${a}->${b}`;
 
-function defaultEco(affinity: number): NpcEcoState {
+const FALLBACK_SELF: NpcSelfState = { power: 26, assets: 200, injuries: 0, reputation: 20, goal: { kind: 'fame', progress: 0 } };
+
+function defaultEco(affinity: number, npcId: string): NpcEcoState {
   const bond: NpcBond = affinity >= 80 ? '挚友' : affinity >= 60 ? '好友' : affinity >= 30 ? '熟客' : affinity > 0 ? '相识' : '陌生';
   const mood: NpcMood = affinity >= 70 ? '喜悦' : affinity <= -30 ? '厌恶' : '平静';
+  const npc = NPCS.find((n) => n.id === npcId);
   return {
     mood, bond, memory: [], flags: {}, cooldowns: {}, saidOnce: [], recentTopics: [],
     health: 100, enemies: [], benefactors: [], lastActiveDay: 0,
+    self: npc ? buildSelf(npc) : FALLBACK_SELF,
   };
 }
 
@@ -50,7 +54,7 @@ export const useNpcEcoStore = create<EcoStore>((set, get) => ({
     const cur = get().states[npcId];
     if (cur) return cur;
     // 首次访问：按现有好感度推导一个合理初始状态
-    const eco = defaultEco(0);
+    const eco = defaultEco(0, npcId);
     set((s) => ({ states: { ...s.states, [npcId]: eco } }));
     return eco;
   },
@@ -108,6 +112,7 @@ export const useNpcEcoStore = create<EcoStore>((set, get) => ({
     const raw = data.states ?? {};
     const states: Record<string, NpcEcoState> = {};
     for (const [id, st] of Object.entries(raw)) {
+      const npc = NPCS.find((n) => n.id === id);
       states[id] = {
         ...st,
         mood: st.mood ?? '平静',
@@ -121,6 +126,7 @@ export const useNpcEcoStore = create<EcoStore>((set, get) => ({
         enemies: st.enemies ?? [],
         benefactors: st.benefactors ?? [],
         lastActiveDay: st.lastActiveDay ?? 0,
+        self: st.self ?? (npc ? buildSelf(npc) : FALLBACK_SELF),
       };
     }
     set({

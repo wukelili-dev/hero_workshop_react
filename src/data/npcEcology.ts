@@ -1,5 +1,5 @@
 // ═══════════ NPC 生态静态数据（关系网 / 语气 / 台词片段 / 自主行为） ═══════════
-import type { NpcChannel, NpcDefinition, NpcDialogueRule, NpcEcoDef, NpcRelation, NpcRelationType, NpcVoice } from '../types';
+import type { NpcChannel, NpcDefinition, NpcDialogueRule, NpcEcoDef, NpcGoal, NpcRelation, NpcRelationType, NpcSelfState, NpcVoice } from '../types';
 
 /** 关系定义索引：单向声明，读取时两个方向都成立 */
 const REL_OWNER: Record<string, NpcRelation[]> = {
@@ -462,5 +462,64 @@ export function buildEco(npc: NpcDefinition): NpcEcoDef {
     agenda: isMerchant ? ['trade', 'gossip'] : isChallenger ? ['patrol', 'cultivate', 'drink'] : ['gossip', 'rest', 'visit'],
     inventory,
     dialogueRules: GENERIC_RULES,
+  };
+}
+
+// ═══════════ NPC 自主体（活人世界 S1）：自身面板 + 目标 + 每日行动台词 ═══════════
+
+export const GOAL_LINES: Record<NpcGoal['kind'], string[]> = {
+  wealth: [
+    '${name}盘下了西市半间铺面，进项见涨。',
+    '${name}进了一批货，转手就赚了一笔。',
+    '${name}盘了半日账，脸上笑意渐浓。',
+    '${name}收了租子，荷包又鼓了几分。',
+  ],
+  power: [
+    '${name}闭门练功，据说刀法又精进了。',
+    '${name}天不亮就在后院打拳，惊得邻家鸡飞狗跳。',
+    '${name}寻了位前辈切磋，败了，却若有所思。',
+    '${name}在城外练了半日，气色大不相同。',
+  ],
+  revenge: [
+    '${name}四处打探仇人的下落。',
+    '${name}托人递了话，似在谋划什么。',
+    '${name}对着仇人的方向磨了一夜刀。',
+    '${name}寻了几个帮手，嘀嘀咕咕商议了半日。',
+  ],
+  love: [
+    '${name}备了份厚礼，登门拜访心上人。',
+    '${name}托人送了一封信，面有羞涩。',
+    '${name}在心上人门前徘徊了半日。',
+    '${name}添了件新衣裳，似是有了意中人。',
+  ],
+  fame: [
+    '${name}在街口摆擂，赢了满堂彩。',
+    '${name}当众露了一手，赢得一片叫好。',
+    '${name}的名头，又响亮了几分。',
+    '${name}在茶馆里说了半日书，听众围了三层。',
+  ],
+  wander: [
+    '${name}收拾行囊，似要远行。',
+    '${name}打听起外头的路况。',
+    '${name}在城门口站了半日，似在等人。',
+  ],
+};
+
+/** 由 NPC 静态数据推导自身面板（战力 / 资产 / 目标），用于日推进真改数值 */
+export function buildSelf(npc: NpcDefinition): NpcSelfState {
+  const lvl = npc.challengeStats ? Math.max(1, Math.round((npc.challengeStats.atk - 5) / 2)) : 1;
+  const power = 20 + lvl * 6 + Math.round((npc.initialGold ?? 200) / 100);
+  const rels = relationsOf(npc.id);
+  const enemy = rels.find((r) => r.type === 'enemy' || r.type === 'rival');
+  const lover = rels.find((r) => r.type === 'lover' || r.type === 'spouse');
+  let goal: NpcGoal;
+  if (enemy) goal = { kind: 'revenge', target: enemy.target, progress: 0 };
+  else if (lover) goal = { kind: 'love', target: lover.target, progress: 0 };
+  else if (npc.type === 'merchant') goal = { kind: 'wealth', progress: 0 };
+  else if (npc.type === 'challenger') goal = { kind: 'power', progress: 0 };
+  else goal = { kind: 'fame', progress: 0 };
+  return {
+    power, assets: npc.initialGold ?? 200, injuries: 0,
+    reputation: 20, goal,
   };
 }
