@@ -86,6 +86,26 @@ export const ITEM_DEFS: ItemDef[] = [
     source: 'npc',
     effects: [{ kind: 'moralPerDay', trigger: 'hold', value: 1 }],
   },
+  {
+    id: 'healing_balm',
+    name: '回春膏',
+    grade: 1,
+    category: 'consumable',
+    lore: '孙二娘亲手熬制，敷于伤处，血止如初。',
+    price: 90,
+    source: 'npc',
+    effects: [{ kind: 'heal', trigger: 'use', value: 60 }],
+  },
+  {
+    id: 'enlighten_pill',
+    name: '顿悟丹',
+    grade: 2,
+    category: 'consumable',
+    lore: '云游僧所赠，服之灵台清明，一日千里。',
+    price: 260,
+    source: 'shop',
+    effects: [{ kind: 'exp', trigger: 'use', value: 120 }],
+  },
 ];
 
 export const ITEM_DEF_BY_ID: Record<string, ItemDef> = Object.fromEntries(
@@ -94,4 +114,9 @@ export const ITEM_DEF_BY_ID: Record<string, ItemDef> = Object.fromEntries(
 
 export function getItemDef(id: string): ItemDef | undefined {
   return ITEM_DEF_BY_ID[id];
+}
+
+/** 按来源筛名物（M3 获取途径铺开用） */
+export function getItemsBySource(source: NonNullable<ItemDef['source']>): ItemDef[] {
+  return ITEM_DEFS.filter((d) => d.source === source);
 }

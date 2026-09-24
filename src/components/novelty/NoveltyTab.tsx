@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { FaGift } from 'react-icons/fa6';
+import { FaGift, FaGem } from 'react-icons/fa6';
 import { NOVELTY_ITEMS, NOVELTY_RARITY_COLORS, NOVELTY_RARITY_NAMES } from '../../data/inventory';
+import { getItemsBySource } from '../../data/items/items';
+import { ITEM_GRADE_NAME } from '../../types';
 import { useGameStore } from '../../store/useGameStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 
@@ -8,8 +10,11 @@ export const NoveltyTab: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
   const buyNovelty = useGameStore((s) => s.buyNovelty);
   const sellNovelty = useGameStore((s) => s.sellNovelty);
+  const buyItem = useGameStore((s) => s.buyItem);
   const novelties = useInventoryStore((s) => s.novelties);
   const [msg, setMsg] = useState<string | null>(null);
+
+  const shopItems = getItemsBySource('shop');
 
   const handleBuy = (item: { name: string; price: number }) => {
     if (hero.gold < item.price) {
@@ -51,6 +56,37 @@ export const NoveltyTab: React.FC = () => {
       )}
 
       <p className="text-xs text-gray-400">收藏各种稀奇古怪的玩意儿，纯装饰，无实际用途。可出售（80%价格）。</p>
+
+      {/* 名物（带词条，持在背包即生效） */}
+      {shopItems.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-xs font-bold text-purple-700 flex items-center gap-1"><FaGem /> 名物·词条生效</h3>
+          {shopItems.map((item) => {
+            const owned = novelties[item.id] ?? 0;
+            const canAfford = hero.gold >= item.price;
+            return (
+              <div key={item.id} className="flex items-center justify-between px-3 py-2 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sm text-purple-800">{item.name}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-200 text-purple-700">{ITEM_GRADE_NAME[item.grade]}</span>
+                  {owned > 0 && <span className="text-xs px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded">拥有: {owned}</span>}
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-purple-400 max-w-[140px] truncate">{item.lore}</span>
+                  <span className="text-xs text-yellow-600 font-medium">💰{item.price}</span>
+                  <button
+                    onClick={() => { if (!buyItem(item.id)) setMsg('❌ 金币不足'); }}
+                    disabled={!canAfford}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${canAfford ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                  >
+                    购买
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {NOVELTY_ITEMS.map((item) => {
         const owned = novelties[item.name] ?? 0;

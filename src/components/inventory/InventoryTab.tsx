@@ -1,6 +1,7 @@
 import React from 'react';
 import { FaBomb, FaShield, FaBagShopping, FaBox } from 'react-icons/fa6';
 import { EXP_PILL_BY_ID, EXP_PILL_IDS } from '../../data/inventory';
+import { getItemDef } from '../../data/items/items';
 import { useGameStore } from '../../store/useGameStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { RARITY_COLORS } from '../../data/constants';
@@ -43,6 +44,7 @@ export const InventoryTab: React.FC = () => {
   const equipWeapon = useGameStore((s) => s.equipWeapon);
   const equipArmor = useGameStore((s) => s.equipArmor);
   const useExpPill = useGameStore((s) => s.useExpPill);
+  const useItem = useGameStore((s) => s.useItem);
   const addGold = useGameStore((s) => s.addGold);
   const setHero = useGameStore((s) => s.setHero);
   const addGameLog = useGameStore((s) => s.addGameLog);
@@ -220,15 +222,33 @@ export const InventoryTab: React.FC = () => {
               {/* 药品/可使用物品：使用按钮 */}
               {(() => {
                 const hp = getPotionHp(slot.id);
-                if (hp <= 0) return null;
-                return (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleUsePotion(slot.id, hp, index); }}
-                    className="px-1.5 py-[1px] text-[9px] bg-green-100 hover:bg-green-200 text-green-700 rounded transition-colors"
-                  >
-                    使用 +{hp}HP
-                  </button>
-                );
+                if (hp > 0) {
+                  return (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleUsePotion(slot.id, hp, index); }}
+                      className="px-1.5 py-[1px] text-[9px] bg-green-100 hover:bg-green-200 text-green-700 rounded transition-colors"
+                    >
+                      使用 +{hp}HP
+                    </button>
+                  );
+                }
+                // 可消耗名物（heal/exp use 词条）
+                const def = getItemDef(slot.id);
+                const useEff = def && def.category === 'consumable' && (def.effects ?? []).some((e) => e.trigger === 'use');
+                if (useEff) {
+                  const heal = def!.effects!.find((e) => e.kind === 'heal')?.value;
+                  const exp = def!.effects!.find((e) => e.kind === 'exp')?.value;
+                  const label = heal ? `使用 +${heal}HP` : exp ? `使用 +${exp}经验` : '使用';
+                  return (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); useItem(slot.id); }}
+                      className="px-1.5 py-[1px] text-[9px] bg-purple-100 hover:bg-purple-200 text-purple-700 rounded transition-colors"
+                    >
+                      {label}
+                    </button>
+                  );
+                }
+                return null;
               })()}
             </div>
           )}

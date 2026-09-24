@@ -11,6 +11,7 @@ import { generateTavernRoster, type TavernRecruit } from '../data/tavern';
 import { BUILDING_CONFIGS, BUILDING_OUTPUTS } from '../data/buildings';
 import { getCellEncounter } from '../data/cellEncounters';
 import { sum as sumEffect, sumList } from '../engine/ItemEffects';
+import { getItemDef } from '../data/items/items';
 
 // 掉落物品 itemId → 资源 key 映射（怪物掉落用中文，资源状态用英文）
 const DROP_TO_RESOURCE: Record<string, string> = {
@@ -106,6 +107,8 @@ interface GameActions {
   equipArmor: (armor: Equipment) => boolean;
   buyNovelty: (itemName: string, price: number) => boolean;
   sellNovelty: (itemName: string, sellPrice: number) => boolean;
+  buyItem: (itemId: string) => boolean;
+  useItem: (itemId: string) => boolean;
   buyExpPill: (pillId: string, price: number) => boolean;
   useExpPill: (pillId: string) => boolean;
   plantCrop: (plotIdx: number, plantId: string) => boolean;
@@ -616,6 +619,42 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     // 记录到图鉴
     get().addDiscoveredNovelty(itemName);
     get().addGameLog(`购买杂货 ${itemName}，花费${price} 金币`);
+    return true;
+  },
+
+  // 按 ItemDef.id 购买名物（M3：持在背包即触发 hold 词条，存档只存 id）
+  buyItem: (itemId) => {
+    const def = getItemDef(itemId);
+    if (!def) return false;
+    const { hero } = get();
+    if (hero.gold < def.price) return false;
+    set((s) => ({ hero: { ...s.hero, gold: s.hero.gold - def.price } }));
+    useInventoryStore.getState().addNovelty(itemId, 1);
+    get().addDiscoveredNovelty(def.name);
+    get().addGameLog(`购得名物「${def.name}」，花费${def.price} 金币`);
+    return true;
+  },
+
+  // 使用可消耗名物（M3：结算 use 词条，如 heal/exp）
+  useItem: (itemId) => {
+    const def = getItemDef(itemId);
+    if (!def || def.category !== 'consumable') return false;
+    const removed = useInventoryStore.getState().removeNovelty(itemId, 1);
+    if (!removed) return false;
+    for (const e of def.effects ?? []) {
+      if (e.trigger !== 'use') continue;
+      switch (e.kind) {
+        case 'heal':
+          get().setHp(get().hero.hp + e.value);
+          break;
+        case 'exp':
+          get().addExp(e.value);
+          break;
+        default:
+          break;
+      }
+    }
+    get().addGameLog(`使用「${def.name}」`);
     return true;
   },
 

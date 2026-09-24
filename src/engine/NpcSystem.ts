@@ -18,6 +18,7 @@ import { addEvent, nameOf } from './NpcAutonomy';
 import { enqueueRevenge } from './VisitSystem';
 import { isBanned, priceMultiplier } from './FactionSystem';
 import { sum as sumEffect } from './ItemEffects';
+import { getItemsBySource } from '../data/items/items';
 import type { NpcChannel } from '../types';
 
 const dayNow = () => Math.floor(useWorldStore.getState().day);
@@ -825,6 +826,15 @@ export function stealNpc(
   if (item) {
     const inv = useInventoryStore.getState();
     inv.addNovelty(item.name, 1);
+  }
+
+  // 名物产出：steal 来源的名物有小概率被顺手牵羊
+  const stealItems = getItemsBySource('steal');
+  if (stealItems.length > 0 && Math.random() < 0.25) {
+    const si = stealItems[Math.floor(Math.random() * stealItems.length)];
+    const inv = useInventoryStore.getState();
+    inv.addNovelty(si.id, 1);
+    state.addGameLog(`🎁 顺手牵羊得名物「${si.name}」！`);
   }
 
   return { success: true, item, goldBonus, stealRate };

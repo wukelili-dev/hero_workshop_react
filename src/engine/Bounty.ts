@@ -2,6 +2,8 @@
 import { MONSTERS } from '../data/maps';
 import { useGameStore } from '../store/useGameStore';
 import { useWorldStore } from '../store/useWorldStore';
+import { useInventoryStore } from '../store/useInventoryStore';
+import { getItemsBySource } from '../data/items/items';
 
 export interface Bounty {
   id: string;
@@ -57,5 +59,15 @@ export function claimBounty(b: Bounty): string {
   if (b.resource) game.addResource(b.resource.key, b.resource.amount);
   world.claimBounty(b.id);
   game.addGameLog(`领悬赏：讨伐${b.monsterId}×${b.need}，得 ${b.gold} 金`);
+
+  // 名物产出：drop 来源的名物有小概率作为悬赏奖励掉落
+  const dropItems = getItemsBySource('drop');
+  if (dropItems.length > 0 && Math.random() < 0.2) {
+    const item = dropItems[Math.floor(Math.random() * dropItems.length)];
+    useInventoryStore.getState().addNovelty(item.id, 1);
+    game.addGameLog(`\u2728 悬赏额外掉落名物「${item.name}」！`);
+    return `领取成功：+${b.gold} 金${b.resource ? `、${b.resource.name}×${b.resource.amount}` : ''}，另得名物「${item.name}」`;
+  }
+
   return `领取成功：+${b.gold} 金${b.resource ? `、${b.resource.name}×${b.resource.amount}` : ''}`;
 }
