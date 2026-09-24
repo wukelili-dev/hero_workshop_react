@@ -100,4 +100,5 @@ for (const r of rows) console.log(`${(r.ok ? '✓ ' : '✗ ') + r.name}`.padEnd(
 const failed = rows.filter((r) => !r.ok);
 console.log('');
 console.log(failed.length === 0 ? '全部通过' : `${failed.length} 项未通过`);
-process.exit(failed.length === 0 ? 0 : 1);
+// 用 exitCode 而不是 process.exit()：让 Node 自然收尾，避免 --ui 下 fetch 句柄未释放触发的断言噪音
+process.exitCode = failed.length === 0 ? 0 : 1;
