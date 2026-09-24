@@ -360,6 +360,42 @@ export const NPC_ECO: Record<string, NpcEcoDef> = {
   },
 };
 
+// ═══════════ 把柄（揭发用）═══════════
+// 只有列在这里的 NPC 才有可揭发的秘密；每条只能揭一次。
+// 金额与善恶按"这把柄值多少"给，不再是一个固定值。
+
+export interface NpcSecret {
+  /** 揭发时的见闻文案 */
+  text: string;
+  /** 一次性赏金 */
+  gold: number;
+  /** 善恶值变化（正数 = 行善） */
+  moral: number;
+}
+
+export const NPC_SECRETS: Record<string, NpcSecret> = {
+  changan_mysterious: {
+    text: '神秘老者的斗篷下，藏着不该留在人间的旧物。',
+    gold: 150,
+    moral: 8,
+  },
+  changan_fortune: {
+    text: '袁守城替人卜卦只是明面上的营生，暗地里还替谁传话。',
+    gold: 90,
+    moral: 4,
+  },
+  changan_biaotou: {
+    text: '龙门镖局的镖箱是双层的，赵镖头押的东西从来不止账面上那些。',
+    gold: 120,
+    moral: 2,
+  },
+  changan_embroidery: {
+    text: '云锦绣坊那匹"蜀锦"的原主，其实不是她。',
+    gold: 70,
+    moral: 3,
+  },
+};
+
 // ═══════════ 「渠道 × 状态」通用矩阵：全部 NPC 共用，靠 ${self}/${call} 适配每人语气 ═══════════
 
 /** 语气档：自称与对玩家的称呼（陌生 / 相识 / 亲近 / 夫妻） */

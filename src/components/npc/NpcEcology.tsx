@@ -5,7 +5,7 @@
 import React, { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { getNpcsByMap, NPCS } from '../../data/npcs';
-import { allRelationPairs, relationsOf } from '../../data/npcEcology';
+import { allRelationPairs, NPC_SECRETS, relationsOf } from '../../data/npcEcology';
 import { useGameStore } from '../../store/useGameStore';
 import { useNpcEcoStore } from '../../store/useNpcEcoStore';
 import { useNpcStore } from '../../store/useNpcStore';
@@ -163,6 +163,9 @@ export const NpcEcology: React.FC = () => {
                 <span className="ink-tag">关系 {eco.bond}</span>
                 <span className="ink-tag">财富 {wealthOf(sel.id)}（{getNpcGold(sel.id)} 金）</span>
                 <span className="ink-tag">好感 {Math.round(getNpcAffinity(sel.id))}</span>
+                {NPC_SECRETS[sel.id] && (
+                  <span className="ink-tag">{(eco.flags['被揭发'] ?? 0) > 0 ? '把柄已揭' : '有把柄'}</span>
+                )}
                 {eco.self.factionId && <span className="ink-tag">势力 {factionName(eco.self.factionId)}</span>}
               </div>
               {eco.self && (
@@ -200,7 +203,9 @@ export const NpcEcology: React.FC = () => {
               <button className="ink-btn text-xs" onClick={() => run(() => befriendNpc(sel))}>结交</button>
               <button className="ink-btn text-xs" onClick={() => run(() => proposeNpc(sel))}>求婚</button>
               <button className="ink-btn text-xs" onClick={() => run(() => wedNpc(sel))}>成婚</button>
-              <button className="ink-btn text-xs" onClick={() => run(() => exposeSecretNpc(sel))}>揭发</button>
+              {NPC_SECRETS[sel.id] && (eco.flags['被揭发'] ?? 0) === 0 && (
+                <button className="ink-btn text-xs" onClick={() => run(() => exposeSecretNpc(sel))}>揭发</button>
+              )}
               <button className="ink-btn text-xs" onClick={() => run(() => attackNpc(sel))}>攻击</button>
               <button className="ink-btn text-xs" onClick={() => run(() => giftNpc(sel, 20))}>赠金 20</button>
               {relationsOf(sel.id)[0] && (

@@ -10,7 +10,7 @@ import { NPCS } from '../data/npcs';
 import { executeBattle, type HeroStats } from './Combat';
 
 // ═══════════ NPC 生态动作（M2-M7：攻击 / 结交 / 求婚 / 结婚 / 揭发 / 挑拨） ═══════════
-import { PROPAGATION, relationsOf } from '../data/npcEcology';
+import { FACTION_BY_NPC, NPC_SECRETS, PROPAGATION, relationsOf } from '../data/npcEcology';
 import { useNpcEcoStore } from '../store/useNpcEcoStore';
 import { useWorldStore } from '../store/useWorldStore';
 import { talk } from './NpcDialogue';
@@ -97,14 +97,18 @@ export function befriendNpc(npc: NpcDefinition): ActionResult {
   const npcStore = useNpcStore.getState();
   const eco = useNpcEcoStore.getState();
   const aff = npcStore.getNpcAffinity(npc.id);
+  const bond = eco.getEco(npc.id).bond;
+  if (bond === '好友' || bond === '挚友' || bond === '恋人' || bond === '夫妻') {
+    return { type: 'log', message: `你与${npc.name}已经是${bond}了。` };
+  }
   if (aff < 60) return { type: 'log', message: `${npc.name}还没把你当朋友（好感 ${Math.round(aff)}/60）。` };
-  const bond = aff >= 85 ? '挚友' : '好友';
-  eco.setBond(npc.id, bond, dayNow());
+  const nextBond = aff >= 85 ? '挚友' : '好友';
+  eco.setBond(npc.id, nextBond, dayNow());
   eco.addFlag(npc.id, '结交');
   eco.setMood(npc.id, '喜悦');
   npcStore.modifyNpcAffinity(npc.id, 5);
   propagate(npc.id, 'befriend');
-  return { type: 'log', message: `你与${npc.name}结为${bond}。` };
+  return { type: 'log', message: `你与${npc.name}结为${nextBond}。` };
 }
 
 /** 求婚：好感 ≥80，先成恋人 */
@@ -114,6 +118,7 @@ export function proposeNpc(npc: NpcDefinition): ActionResult {
   const inst = eco.getEco(npc.id);
   const aff = npcStore.getNpcAffinity(npc.id);
   if (inst.bond === '夫妻') return { type: 'log', message: `你与${npc.name}已是夫妻。` };
+  if (inst.bond === '恋人') return { type: 'log', message: `${npc.name}红着脸：「……你都问过一回了。」` };
   if (inst.bond === '仇敌') return { type: 'log', message: `${npc.name}冷冷看了你一眼，转身走了。` };
   if (aff < 80) return { type: 'log', message: `${npc.name}怔了一下，把话头岔开了。（好感 ${Math.round(aff)}/80）` };
   eco.setBond(npc.id, '恋人', dayNow());
@@ -141,14 +146,28 @@ export function exposeSecretNpc(npc: NpcDefinition): ActionResult {
   const eco = useNpcEcoStore.getState();
   const game = useGameStore.getState();
   const day = dayNow();
-  eco.addFlag(npc.id, '被揭发');
+
+  // 只有数据里登记过"把柄"的 NPC 才有可揭发的事；且每条只能揭一次
+  const secret = NPC_SECRETS[npc.id];
+  if (!secret) return { type: 'log', message: `${npc.name}没什么把柄可揭。` };
+  if ((eco.getEco(npc.id).flags['被揭发'] ?? 0) > 0) {
+    return { type: 'log', message: `${npc.name}的那点事，你早就揭过了。` };
+  }
+
+  eco.addFlag(npc.id, '被揭发', 1);
   eco.setMood(npc.id, '厌恶');
   eco.setBond(npc.id, '仇敌', day);
   useNpcStore.getState().modifyNpcAffinity(npc.id, -30);
-  game.addGold(120);
-  game.changeMoral(6);
-  addEvent({ day, kind: 'rumor', actors: [npc.id], text: `${npc.name}的旧事被人捅了出去，一时满城风雨。`, aboutPlayer: true });
-  return { type: 'log', message: `你揭发了${npc.name}的秘密，得赏金 120；他记恨上了你。` };
+  game.addGold(secret.gold);
+  game.changeMoral(secret.moral);
+  // 他背后的势力也不待见告密的人
+  const faction = eco.getEco(npc.id).self.factionId ?? FACTION_BY_NPC[npc.id];
+  if (faction) useWorldStore.getState().addFactionRep(faction, -10);
+  addEvent({ day, kind: 'rumor', actors: [npc.id], text: secret.text, aboutPlayer: true });
+  return {
+    type: 'log',
+    message: `你揭发了${npc.name}的秘密（${secret.text}），得赏银 ${secret.gold}、善恶 +${secret.moral}；他记恨上了你。`,
+  };
 }
 
 /** 挑拨：破坏两名 NPC 之间的关系（关系网会被改写） */
