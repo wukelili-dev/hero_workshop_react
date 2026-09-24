@@ -1,14 +1,12 @@
 import React from 'react';
 import { ITEM_GRADE_NAME, type ItemEffect, type ItemGrade } from '../../types';
+import { GRADES, gradeInk } from '../../data/grades';
 import { EFFECT_LABEL } from '../../engine/ItemEffects';
 
 /** 品阶五色（与 RarityBadge 水墨稀有度一致）：凡品墨灰/良品青/珍品金/秘宝朱/神物紫墨 */
 const GRADE_COLORS: Record<number, string> = {
-  0: '#6b6252',
-  1: '#4f7a8c',
-  2: '#b08a2e',
-  3: '#b5382f',
-  4: '#6b4a7a',
+  // 统一取 data/grades.ts 的六档水墨色阶（0 凡品 … 4 神物、5 仙品）
+  ...Object.fromEntries(GRADES.map((g) => [g.index, gradeInk(g.index)])),
 };
 
 /** 百分比类词条（显示 ×100 加 %） */

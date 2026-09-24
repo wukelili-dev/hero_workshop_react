@@ -1,4 +1,8 @@
 // ============================================================
+
+import { gradeInk } from './data/grades';
+
+// ============================================================
 // 勇者工坊 - 全局类型定义
 // ============================================================
 
@@ -10,7 +14,8 @@ export const RARITY_NAME: Record<Rarity, string> = {
 };
 
 export const RARITY_COLOR: Record<Rarity, string> = {
-  0: '#C0C0C0', 1: '#4CAF50', 2: '#2196F3', 3: '#9370DB', 4: '#FF9800',
+  // 统一取 data/grades.ts 的水墨色阶（原先是彩虹色，与物品品阶不一致）
+  0: gradeInk(0), 1: gradeInk(1), 2: gradeInk(2), 3: gradeInk(3), 4: gradeInk(4),
 };
 
 // ── 善恶值档位 ──
@@ -674,10 +679,10 @@ export interface NpcDefinition {
 // ============================================================
 
 /** 品阶：中文名物等级，替代"稀有度"在 UI 中的呈现 */
-export type ItemGrade = 0 | 1 | 2 | 3 | 4; // 凡品/良品/珍品/秘宝/神物
+export type ItemGrade = 0 | 1 | 2 | 3 | 4 | 5; // 凡品/良品/珍品/秘宝/神物/仙品
 
 export const ITEM_GRADE_NAME: Record<ItemGrade, string> = {
-  0: '凡品', 1: '良品', 2: '珍品', 3: '秘宝', 4: '神物',
+  0: '凡品', 1: '良品', 2: '珍品', 3: '秘宝', 4: '神物', 5: '仙品',
 };
 
 export type ItemCategory = 'material' | 'consumable' | 'treasure' | 'equipment' | 'keepsake';

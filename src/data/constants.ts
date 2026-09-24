@@ -1,12 +1,15 @@
 // ═══════════════ 稀有度系统（统一） ═══════════════
 
+import { gradeInk } from './grades';
+
 // 稀有度颜色（统一，适用于动物/植物/装备/杂物）
 export const RARITY_COLORS: Record<number, string> = {
-  0: "#888888",  // 普通
-  1: "#2E7D32",  // 少见
-  2: "#1565C0",  // 稀有
-  3: "#6A1B9A",  // 珍藏
-  4: "#E65100",   // 传说
+  // 统一取 data/grades.ts 的水墨色阶（原先是另一套彩虹色）
+  0: gradeInk(0),  // 普通
+  1: gradeInk(1),  // 少见
+  2: gradeInk(2),  // 稀有
+  3: gradeInk(3),  // 珍藏
+  4: gradeInk(4),  // 传说
 };
 
 // 稀有度名称（统一）
