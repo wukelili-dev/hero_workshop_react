@@ -6,6 +6,8 @@ import { useInventoryStore } from '../../store/useInventoryStore';
 import { MAPS } from '../../data/maps';
 import type { Monster } from '../../types';
 import { NOVELTY_ITEMS, NOVELTY_RARITY_COLORS, NOVELTY_RARITY_NAMES } from '../../data/inventory';
+import { ITEM_DEFS } from '../../data/items/items';
+import { ItemCard } from '../shared/ItemCard';
 import { PLANTS_CATALOG, PLANT_RARITY_COLORS, PLANT_RARITY_NAMES } from '../../data/plants';
 import { RANCH_CATALOG } from '../../data/ranch';
 import { NPCS } from '../../data/npcs';
@@ -207,6 +209,30 @@ export const BestiaryTab: React.FC = () => {
         {/* 杂货 Tab */}
         {activeTab === 'novelty' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {/* 名物（带词条） */}
+            {ITEM_DEFS.map((item) => {
+              const discovered = discoveredNovelties.includes(item.name);
+              const owned = (novelties[item.id] || 0) > 0;
+              return (
+                <ItemCard
+                  key={item.id}
+                  name={item.name}
+                  grade={item.grade}
+                  lore={item.lore}
+                  effects={item.effects}
+                  price={item.price}
+                  source={item.source}
+                  dimmed={!discovered && !owned}
+                  footer={
+                    owned ? (
+                      <span className="text-[10px] px-1 rounded bg-blue-100 text-blue-600">拥有: {novelties[item.id]}</span>
+                    ) : undefined
+                  }
+                />
+              );
+            })}
+
+            {/* 旧杂物 */}
             {NOVELTY_ITEMS.map((item) => {
               const discovered = discoveredNovelties.includes(item.name);
               const owned = (novelties[item.name] || 0) > 0;
