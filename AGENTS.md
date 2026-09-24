@@ -14,6 +14,13 @@
 - 跑起来看：`npm run dev`（默认 http://127.0.0.1:5173/），浏览器实跑无 console 异常再提交。
 - 动过数值/怪物/成长曲线后：`node scripts/balance-sim.mjs`，确认 Lv1→60 没有出现"无可刷地图"的卡点。
 
+## 核对 / 验收（省 token）
+
+- 核对文档或验收他人实现时，**默认只做三件事**：`npx tsc -p tsconfig.app.json --noEmit`、`node scripts/verify.mjs`、必要时**一次** grep。不要把同一个断言拆成多轮 grep。
+- **不要**为了核对反复启动 dev server / Chrome 跑浏览器冒烟：那是"改交互或 UI"时才值得付的成本（`node scripts/verify.mjs --ui` 会做轻量连通性检查）。
+- 核对结论一次性用表格给出（声称 → 实测 → 结论），不要在对话里逐项复述源码。
+- 冒烟脚本报错时，**先读被调用函数的签名再改测试**，避免"改一次跑一次"的试错循环。
+
 ## 美术与风格
 
 - 全项目水墨风，颜色只用 `src/index.css` 里的令牌：`--paper / --paper-2 / --paper-3 / --ink / --ink-2 / --ink-3 / --line / --cinnabar / --gold / --azure / --violet`，字体用 `--font-kai`（标题）/ `--font-song`（正文）。
