@@ -55,6 +55,10 @@ export interface InkMapOptions {
   routeDays?: number;
   /** 存档中额外揭开的格子 */
   revealedCells?: string[];
+  /** 渲染哪套格子（默认中原），供多区域地图切换 */
+  cells?: MapCell[];
+  /** 区域显示名（题款） */
+  regionName?: string;
 }
 
 // ── 小工具 ──
@@ -172,14 +176,16 @@ function centerOf(cell: MapCell): [number, number] {
 }
 
 export function buildInkMapSvg(opts: InkMapOptions): string {
+  const cells = opts.cells ?? CENTRAL_PLAIN_CELLS;
+  const regionName = opts.regionName ?? '中原地區';
   const revealedExtra = new Set(opts.revealedCells ?? []);
   const isExplored = (cell: MapCell) => Boolean(cell.isRevealed) || revealedExtra.has(cell.id);
-  const byId = new Map<string, MapCell>(CENTRAL_PLAIN_CELLS.map((c) => [c.id, c] as [string, MapCell]));
-  const explored = CENTRAL_PLAIN_CELLS.filter(isExplored);
+  const byId = new Map<string, MapCell>(cells.map((c) => [c.id, c] as [string, MapCell]));
+  const explored = cells.filter(isExplored);
   const route = opts.routePath ?? [];
 
   const out: string[] = [];
-  out.push(`<svg viewBox="0 0 ${VB_W} ${VB_H}" class="inkmap-svg" role="img" aria-label="中原地区世界地图">`);
+  out.push(`<svg viewBox="0 0 ${VB_W} ${VB_H}" class="inkmap-svg" role="img" aria-label="${regionName}世界地图">`);
   out.push(
     `<style>.inkmap-cell .hl{opacity:0;transition:opacity .12s}` +
       `.inkmap-cell:hover .hl{opacity:1}.inkmap-hit{fill:transparent;cursor:pointer}.inkmap-label{font-family:${FONT_KAI};fill:#3f3527;paint-order:stroke;stroke:#efe9dc;stroke-width:3px}</style>`
@@ -199,7 +205,7 @@ export function buildInkMapSvg(opts: InkMapOptions): string {
 
   // 未探索：空白宣纸上的淡墨界格
   out.push('<g opacity="0.55">');
-  CENTRAL_PLAIN_CELLS.filter((c) => !isExplored(c)).forEach((c) => {
+  cells.filter((c) => !isExplored(c)).forEach((c) => {
     const [px, py] = centerOf(c);
     out.push(`<path d="${blobPath(px, py, S * 0.5, c.x * 31 + c.y * 17 + 3, 9, 0.18)}" fill="#e9e3d5" stroke="#c7bfab" stroke-width="0.9" stroke-dasharray="4 5"/>`);
   });
@@ -290,14 +296,14 @@ export function buildInkMapSvg(opts: InkMapOptions): string {
   }
 
   // 题款 + 闲章
-  out.push(`<text x="56" y="96" class="inkmap-label" font-size="20" letter-spacing="4" style="writing-mode:vertical-rl">中原地區</text>`);
+  out.push(`<text x="56" y="96" class="inkmap-label" font-size="20" letter-spacing="4" style="writing-mode:vertical-rl">${regionName}</text>`);
   out.push(`<rect x="40" y="252" width="30" height="30" rx="3" fill="#b5382f"/>`);
   out.push(`<text x="55" y="273" text-anchor="middle" font-size="15" fill="#f7f1e4" font-family="${FONT_KAI}">勇</text>`);
   out.push(`<text x="704" y="549" text-anchor="end" font-size="11" fill="#9c917b" font-family="${FONT_KAI}">未探之地，云雾缭绕</text>`);
 
   // 悬停 / 点击热区（放在最上层）
   out.push('<g>');
-  CENTRAL_PLAIN_CELLS.forEach((c) => {
+  cells.forEach((c) => {
     const [px, py] = centerOf(c);
     out.push(
       `<g class="inkmap-cell">` +

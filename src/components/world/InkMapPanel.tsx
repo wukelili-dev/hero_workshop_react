@@ -6,11 +6,12 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useGameStore } from '../../store/useGameStore';
 import { formatDayLabel, useWorldStore } from '../../store/useWorldStore';
-import { TERRAIN_CONFIG, findRoute, getCellById } from '../../data/cellMap';
+import { TERRAIN_CONFIG, findRoute, getCellById, cellsOfPrefix } from '../../data/cellMap';
 import { CELL_ENCOUNTERS, getCellEncounter } from '../../data/cellEncounters';
 import { gatherAtCell } from '../../engine/NpcBenefits';
 import { blockReasonFor } from '../../engine/FactionSystem';
 import { MAPS } from '../../data/maps';
+import { regionOf } from '../../data/regions';
 import { RARITY_COLOR, RARITY_NAME } from '../../types';
 import type { Monster } from '../../types';
 import { buildInkMapSvg } from './inkMapSvg';
@@ -75,6 +76,7 @@ const MonsterCard: React.FC<{ monster: Monster; disabled: boolean; onFight: (m: 
 export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = false }) => {
   const day = useWorldStore((s) => s.day);
   const currentCellId = useWorldStore((s) => s.currentCellId);
+  const currentRegionId = useWorldStore((s) => s.currentRegionId);
   const revealedCells = useWorldStore((s) => s.revealedCells);
   const moveTo = useWorldStore((s) => s.moveTo);
 
@@ -84,6 +86,9 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
 
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<FightResult | null>(null);
+
+  const currentRegion = regionOf(currentRegionId);
+  const regionCells = useMemo(() => cellsOfPrefix(currentRegion?.cellPrefix ?? 'cp'), [currentRegion]);
 
   const currentCell = getCellById(currentCellId);
   const currentEncounter = useMemo(() => getCellEncounter(currentCellId), [currentCellId]);
@@ -100,8 +105,10 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
         routePath: route?.path ?? [],
         routeDays: route?.days ?? 0,
         revealedCells,
+        cells: regionCells,
+        regionName: currentRegion ? currentRegion.name : '中原',
       }),
-    [currentCellId, selectedCellId, route, revealedCells]
+    [currentCellId, selectedCellId, route, revealedCells, regionCells, currentRegion]
   );
 
   const boundMap = currentEncounter?.mapId ? MAPS.find((m) => m.id === currentEncounter.mapId) : undefined;
@@ -184,6 +191,20 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
     toast.success(`已解锁${boundMap.name}`, { icon: '🔓' });
   };
 
+  /** 经关隘前往另一区域：moveTo 内部会做门槛校验（不足则拦截） */
+  const handleGateTravel = (toRegionId: string) => {
+    const target = regionOf(toRegionId);
+    if (!target) return;
+    const result = moveTo(target.centerCellId);
+    if (!result) {
+      toast.error('关隘尚未可通行');
+      return;
+    }
+    toast.success(`经关隘进入${target.name}（${result.days} 天）`, { icon: '🏔️' });
+    setSelectedCellId(null);
+    setLastResult(null);
+  };
+
   const targetCell = selectedCellId ? getCellById(selectedCellId) : null;
   const targetEncounter = selectedCellId ? getCellEncounter(selectedCellId) : null;
   const targetRec = recommendOf(targetEncounter);
@@ -197,7 +218,7 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
       {/* 顶栏 */}
       <div className="flex flex-wrap items-center gap-2 border-b border-amber-900/10 bg-white/85 px-3 py-2 backdrop-blur">
         <FaMapLocationDot className="text-amber-700" />
-        <span className="text-sm font-bold text-gray-800">世界地图 · 中原地区</span>
+        <span className="text-sm font-bold text-gray-800">世界地图 · {currentRegion?.name ?? '中原'}</span>
         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
           {formatDayLabel(day)}
         </span>
@@ -324,6 +345,53 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
               <div className="mt-1 text-[11px] text-gray-500">
                 需要 Lv.{nextGoal.minLevel}，或花 {nextGoal.unlockCost} 金解锁
                 {goalLabel ? `；在地图上找「${goalLabel}」` : ''}
+              </div>
+            </div>
+          )}
+
+          {/* 关隘（通往其它区域） */}
+          {currentRegion && currentRegion.gates.length > 0 && (
+            <div className="rounded-2xl border border-amber-900/10 bg-white p-3 shadow-sm">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-sm font-bold text-gray-900">关隘</span>
+                <span className="ml-auto text-[11px] text-gray-400">通往外域</span>
+              </div>
+              <div className="space-y-1.5">
+                {currentRegion.gates.map((gate) => {
+                  const target = regionOf(gate.toRegionId);
+                  if (!target) return null;
+                  const req = gate.require;
+                  const lvOk = !req?.minLevel || hero.level >= req.minLevel;
+                  const label = gate.kind === 'pass' ? '山关' : gate.kind === 'ferry' ? '渡口' : '官道';
+                  const reqText = req
+                    ? (req.minLevel ? `需 Lv.${req.minLevel}` : '')
+                      + (req.itemId ? ` · 需「${req.itemId}」` : '')
+                      + (req.factionRep ? ` · 需声望` : '')
+                    : '无门槛';
+                  return (
+                    <div key={gate.toRegionId} className="flex items-center gap-2 rounded-lg bg-amber-50/60 px-2.5 py-1.5">
+                      <span className="text-base">🏔️</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-gray-800">
+                          {target.name} <span className="text-[10px] text-amber-600">{label}</span>
+                        </div>
+                        <div className="text-[10px] text-gray-500">
+                          {reqText} · 耗时 {gate.days} 天 · 等级 {target.levelRange[0]}~{target.levelRange[1]}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleGateTravel(gate.toRegionId)}
+                        disabled={!lvOk}
+                        className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                          lvOk ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        {lvOk ? '通关' : '未达门槛'}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

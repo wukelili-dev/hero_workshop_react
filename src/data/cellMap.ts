@@ -314,18 +314,36 @@ export const CENTRAL_PLAIN_REGION: MapRegion = {
 };
 
 // ============ 工具函数 ============
-export function getCellById(id: string): MapCell | undefined {
-  return CENTRAL_PLAIN_CELLS.find(c => c.id === id);
+import { HEXI_CELLS } from './hexiCells';
+
+/** 所有区域的格子合集（中原 + 河西 + …），按 cell id 前缀区分区域 */
+export const ALL_CELLS: MapCell[] = [...CENTRAL_PLAIN_CELLS, ...HEXI_CELLS];
+
+/** 由 cell id 推断区域格子前缀（cp / hx / …） */
+export function cellPrefixOf(cellId: string): string {
+  const idx = cellId.indexOf('_');
+  return idx > 0 ? cellId.slice(0, idx) : cellId;
 }
 
-export function getCellByCoord(x: number, y: number): MapCell | undefined {
-  return CENTRAL_PLAIN_CELLS.find(c => c.x === x && c.y === y);
+/** 某区域前缀下的全部格子 */
+export function cellsOfPrefix(prefix: string): MapCell[] {
+  return ALL_CELLS.filter((c) => cellPrefixOf(c.id) === prefix);
+}
+
+export function getCellById(id: string): MapCell | undefined {
+  return ALL_CELLS.find(c => c.id === id);
+}
+
+/** 按「区域前缀 + 坐标」查找格子（跨区域，避免不同区域同坐标串格） */
+export function getCellByCoord(prefix: string, x: number, y: number): MapCell | undefined {
+  return ALL_CELLS.find(c => cellPrefixOf(c.id) === prefix && c.x === x && c.y === y);
 }
 
 export function getNeighbors(cellId: string): string[] {
   const cell = getCellById(cellId);
   if (!cell) return [];
   
+  const prefix = cellPrefixOf(cellId);
   const neighbors: string[] = [];
   const directions = [
     { dx: 0, dy: -1 }, // 上
@@ -335,7 +353,7 @@ export function getNeighbors(cellId: string): string[] {
   ];
   
   for (const dir of directions) {
-    const neighbor = getCellByCoord(cell.x + dir.dx, cell.y + dir.dy);
+    const neighbor = getCellByCoord(prefix, cell.x + dir.dx, cell.y + dir.dy);
     if (neighbor) neighbors.push(neighbor.id);
   }
   

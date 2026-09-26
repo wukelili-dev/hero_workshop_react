@@ -6,9 +6,11 @@ import { DAY_MS, SHICHEN } from '../data/constants';
 import { TERRAIN_CONFIG, findRoute, getCellById, getNeighbors, type CellRoute } from '../data/cellMap';
 import { getCellEncounter } from '../data/cellEncounters';
 import { useGameStore } from './useGameStore';
+import { useInventoryStore } from './useInventoryStore';
 import { advanceNpcDay } from '../engine/NpcAutonomy';
 import { tickVisits } from '../engine/VisitSystem';
 import { sum as sumEffect } from '../engine/ItemEffects';
+import { regionOfCell, gateBetween, type RegionGate } from '../data/regions';
 import type { Consequence, PendingVisit } from '../types';
 
 /** 出生点：傲来国（新手区，与 useGameStore 默认 currentMapId='aolai' 对齐） */
@@ -17,6 +19,8 @@ export const START_CELL_ID = 'cp_2_5';
 export interface WorldSave {
   day: number;
   currentCellId: string;
+  /** 当前所在区域 id（多区域世界 R1） */
+  currentRegionId: string;
   revealedCells: string[];
   visitedCells: string[];
   lastTickAt: number;
@@ -66,9 +70,33 @@ export function rollDailyEvent(day: number): WorldSave['dailyEvent'] {
   return null;
 }
 
+/** 关隘通行校验：返回拦截原因（null = 放行） */
+export function checkGate(gate: RegionGate): string | null {
+  const game = useGameStore.getState();
+  const world = useWorldStore.getState();
+  const req = gate.require;
+  if (!req) return null;
+  if (req.minLevel !== undefined && game.hero.level < req.minLevel) {
+    return `需等级 ${req.minLevel}（当前 Lv.${game.hero.level}）`;
+  }
+  if (req.itemId) {
+    const has = (useInventoryStore.getState().novelties[req.itemId] ?? 0) > 0
+      || (useInventoryStore.getState().materials[req.itemId] ?? 0) > 0;
+    if (!has) return `需持有「${req.itemId}」`;
+  }
+  if (req.factionRep) {
+    const rep = world.getFactionRep(req.factionRep.id);
+    if (rep < req.factionRep.min) {
+      return `需 ${req.factionRep.id} 声望 ≥ ${req.factionRep.min}（当前 ${rep}）`;
+    }
+  }
+  return null;
+}
+
 const DEFAULT_WORLD: WorldState = {
   day: 1,
   currentCellId: START_CELL_ID,
+  currentRegionId: 'central_plain',
   revealedCells: [],
   visitedCells: [START_CELL_ID],
   lastTickAt: Date.now(),
@@ -110,7 +138,7 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
     set((s) => ({ day: s.day + days }));
   },
 
-  /** 移动到任意格子：按地形累计天数、沿途揭开迷雾 */
+  /** 移动到任意格子：按地形累计天数、沿途揭开迷雾；跨区域走关隘（校验门槛） */
   moveTo: (cellId) => {
     const state = get();
     if (cellId === state.currentCellId) return { path: [cellId], days: 0 };
@@ -127,12 +155,31 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
       }
     }
 
+    // 关隘校验：目标格跨区域时，须满足通往该区域的关隘门槛
+    const destRegion = regionOfCell(cellId);
+    if (destRegion && destRegion.id !== state.currentRegionId) {
+      const gate = gateBetween(state.currentRegionId, destRegion.id);
+      if (!gate) {
+        useGameStore.getState().addGameLog(`此去${destRegion.name}并无通路。`);
+        return null;
+      }
+      const refuse = checkGate(gate);
+      if (refuse) {
+        useGameStore.getState().addGameLog(`无法前往${destRegion.name}：${refuse}`);
+        return null;
+      }
+    }
+
     const route = findRoute(state.currentCellId, cellId);
     if (!route) return null;
 
     // 行脚词条：行军天数减少（最低 1 天）
     const travelCut = sumEffect('travelDays');
-    const days = Math.max(route.days > 0 ? 1 : 0, route.days - travelCut);
+    // 关隘通行耗时叠加在行军天数上
+    const gateExtra = destRegion && destRegion.id !== state.currentRegionId
+      ? (gateBetween(state.currentRegionId, destRegion.id)?.days ?? 0)
+      : 0;
+    const days = Math.max(route.days > 0 ? 1 : 0, route.days + gateExtra - travelCut);
 
     const revealed = new Set(state.revealedCells);
     route.path.forEach((id) => revealed.add(id));
@@ -145,6 +192,7 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
 
     set({
       currentCellId: cellId,
+      currentRegionId: destRegion?.id ?? state.currentRegionId,
       revealedCells: Array.from(revealed),
       visitedCells: Array.from(visited),
       day: state.day + days,
@@ -158,10 +206,11 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
     const enc = getCellEncounter(cellId);
     const terrain = cell ? TERRAIN_CONFIG[cell.terrain] : undefined;
     const where = enc?.label ?? terrain?.name ?? cellId;
+    const regionTag = destRegion && destRegion.id !== state.currentRegionId ? `（进入${destRegion.name}）` : '';
     game.addGameLog(
       days > 0
-        ? `行军 ${days} 天，抵达${where}（第 ${Math.floor(get().day)} 天）`
-        : `抵达${where}`
+        ? `行军 ${days} 天，抵达${where}${regionTag}（第 ${Math.floor(get().day)} 天）`
+        : `抵达${where}${regionTag}`
     );
     // 返回调整后的天数（行脚词条会减天），否则 UI/提示会显示未减天的旧值
     return { ...route, days };
@@ -173,9 +222,11 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
   },
 
   loadWorld: (data) => {
+    const cellId = data.currentCellId ?? START_CELL_ID;
     set({
       day: typeof data.day === 'number' && data.day >= 1 ? data.day : 1,
-      currentCellId: data.currentCellId ?? START_CELL_ID,
+      currentCellId: cellId,
+      currentRegionId: data.currentRegionId ?? regionOfCell(cellId)?.id ?? 'central_plain',
       revealedCells: data.revealedCells ?? [],
       visitedCells: data.visitedCells ?? [START_CELL_ID],
       lastTickAt: data.lastTickAt ?? Date.now(),

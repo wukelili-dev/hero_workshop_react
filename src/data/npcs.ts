@@ -1436,6 +1436,101 @@ export const NPCS: NpcDefinition[] = [
     tradeItems: [],
     personalItem: { name: '太极图残卷', icon: '☯️', description: '太上老君随身携带的太极图，蕴含无上道法', sellPrice: 0 },
   },
+
+  // ── 河西（阳关城）──
+  {
+    id: 'yangguan_merchant',
+    name: '马掌柜',
+    title: '丝路行商',
+    type: 'merchant',
+    location: 'yangguan',
+    avatarEmoji: '🐪',
+    description: '一位饱经风霜的商贾坐在驼队旁，\n面前摆着琳琅满目的西域货品。',
+    greetings: [
+      '客官从关内来？这西域的玉石、皮毛，关内可不多见。',
+      '大漠的风沙磨人，可磨不灭我马某人做买卖的心。',
+    ],
+    chatDialogues: [
+      '马掌柜眯着眼："阳关的玉石便宜，长安的丝绸值钱。这一来一回，就是白花花的银子。你要是有胆，我教你怎么走这条商路。"',
+      '"关外的马贼多如牛毛。可赚的就是这个险钱——越是没人敢走的路，利越大。"',
+      '"我在这条丝路上走了二十年，什么风沙没见过。告诉你，别信那些说大漠里有鬼的，都是吓唬人的。"',
+    ],
+    tradeItems: [
+      { label: '和田玉 [杂货]', type: 'novelty', price: 400, dialogue: '上好的和田玉，关内贵人抢着要。' },
+      { label: '雪狐裘 [杂货]', type: 'novelty', price: 350, dialogue: '雪狐裘，御寒又体面。' },
+      { label: '葡萄酒 [恢复50HP]', type: 'potion', price: 80, potionCount: 1, dialogue: '西域葡萄酿的美酒，解乏提神。' },
+    ],
+    challengeStats: { hp: 1200, atk: 50, def: 30 },
+    challengeReward: { exp: 30, gold: 50, message: '马掌柜连连拱手："好汉饶命！这锭银子你拿去！"' },
+    personalItem: { name: '丝路商册', icon: '📜', description: '记载丝路商道与各城行情的册子', sellPrice: 300 },
+    bestiary: { source: '丝路商旅', era: '唐代', notes: '往来中原与西域的行商，见多识广，最重信誉。' },
+  },
+  {
+    id: 'yangguan_guard',
+    name: '李校尉',
+    title: '戍边校尉',
+    type: 'challenger',
+    location: 'yangguan',
+    avatarEmoji: '🛡️',
+    description: '一个身披铁甲的边军校尉按刀而立，\n目光如鹰，扫视着进出关口的行人。',
+    greetings: [
+      '通关文牒拿出来！没有文牒，休想出关。',
+      '最近关外马贼猖獗，过往客商都小心些。',
+    ],
+    chatDialogues: [
+      '李校尉压低声音："出关容易，活着回来难。前几日一队商旅，被马贼堵在流沙河，货物全被抢了。"',
+      '"阳关是大唐的门户，守不住阳关，就等于放虎入中原。我这条命，就钉在这城墙上了。"',
+    ],
+    challengeStats: { hp: 2500, atk: 110, def: 65 },
+    challengeReward: { exp: 60, gold: 80, message: '李校尉抱拳："好身手！若肯投军，定是栋梁之才。"' },
+    tradeItems: [],
+    personalItem: { name: '通关虎符', icon: '🐯', description: '调兵的虎符，见符如见将军', sellPrice: 200 },
+  },
+  {
+    id: 'yangguan_innkeeper',
+    name: '金镶玉',
+    title: '龙门客栈掌柜',
+    type: 'merchant',
+    location: 'yangguan',
+    avatarEmoji: '🍶',
+    description: '一个风情万种的老板娘倚在柜台后，\n眼角一颗泪痣，笑里藏着刀。',
+    greetings: [
+      '客官打尖还是住店？我这儿的酒，喝了忘忧。',
+      '大漠里赶路，最要紧的是口热汤。快进来坐。',
+    ],
+    chatDialogues: [
+      '金镶玉似笑非笑："这大漠里啊，白天是人，晚上是鬼。住店的，别乱走。"',
+      '"你打听马贼？"她压低声音，"我劝你别多管闲事，有些买卖，见不得光。"',
+    ],
+    tradeItems: [
+      { label: '女儿红 [恢复100HP]', type: 'potion', price: 120, potionCount: 1, dialogue: '十八年的女儿红，一口下去，暖到心窝。' },
+      { label: '酱牛肉 [恢复50HP]', type: 'potion', price: 60, potionCount: 1, dialogue: '下酒的好菜，大漠里最顶饱。' },
+    ],
+    challengeStats: { hp: 1800, atk: 85, def: 40 },
+    challengeReward: { exp: 45, gold: 70, message: '金镶玉娇笑一声："客官好俊的身手，这杯酒，我请。"' },
+    personalItem: { name: '龙泉夜光杯', icon: '🏺', description: '夜光杯，盛酒如盛月', sellPrice: 250 },
+  },
+  {
+    id: 'yangguan_hermit',
+    name: '无名术士',
+    title: '大漠隐者',
+    type: 'flavor',
+    location: 'yangguan',
+    avatarEmoji: '🧙',
+    description: '一个裹着破旧斗篷的老人盘坐在沙丘上，\n双目紧闭，似在入定，又似已死去多年。',
+    greetings: [
+      '有缘人，你终于来了。',
+      '大漠无垠，人心却有界。你为何而来？',
+    ],
+    chatDialogues: [
+      '无名术士缓缓睁眼："这楼兰故城下，埋着三百年的秘密。你若要寻，须先破了自己的执念。"',
+      '"沙暴将至，烽烟将起。"他望向西方，"这天下，又要不太平了。"',
+    ],
+    challengeStats: { hp: 3000, atk: 130, def: 70 },
+    challengeReward: { exp: 80, gold: 100, message: '术士抚掌而笑："你过了这一关，老夫便告诉你楼兰的秘密。"' },
+    tradeItems: [],
+    personalItem: { name: '大漠星图', icon: '🌌', description: '绘有大漠星象与古城的星图', sellPrice: 350 },
+  },
 ];
 
 
