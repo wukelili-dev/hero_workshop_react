@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Equipment } from '../types';
 import { EXP_PILL_IDS, EXP_PILL_MAX_STACK } from '../data/inventory';
+import { goodOf } from '../data/tradeGoods';
 
 // 背包格子项
 export interface InventorySlot {
@@ -22,6 +23,8 @@ interface InventoryState {
   materials: Record<string, number>;
   novelties: Record<string, number>;
   slots: (InventorySlot | null)[];  // 10格通用背包
+  /** 跑商货物：goodId → 数量（只算运力，不占背包格子） */
+  cargo: Record<string, number>;
 }
 
 interface InventoryActions {
@@ -35,6 +38,11 @@ interface InventoryActions {
   setWeapons: (weapons: Equipment[]) => void;
   setArmors: (armors: Equipment[]) => void;
   setNovelties: (novelties: Record<string, number>) => void;
+  // 跑商货物
+  addCargo: (goodId: string, count: number) => boolean;
+  removeCargo: (goodId: string, count: number) => boolean;
+  setCargo: (cargo: Record<string, number>) => void;
+  getCargoWeight: () => number;
   // 背包格子相关
   addToInventory: (type: 'weapon' | 'armor' | 'novelty', id: string, qty?: number, data?: Equipment) => void;
   removeFromInventory: (slotIndex: number, qty?: number) => void;
@@ -46,6 +54,7 @@ export const useInventoryStore = create<InventoryState & InventoryActions>((set,
   materials: {},
   novelties: {},
   slots: new Array(10).fill(null) as (InventorySlot | null)[],
+  cargo: {},
 
   addEquipment: (equip) =>
     set((s) => {
@@ -189,6 +198,28 @@ export const useInventoryStore = create<InventoryState & InventoryActions>((set,
   setArmors: (armors) => set({ armors }),
 
   setNovelties: (novelties) => set({ novelties }),
+
+  // 跑商货物：只算运力，不占背包格子
+  addCargo: (goodId, count) => {
+    const cur = get().cargo[goodId] ?? 0;
+    set((s) => ({ cargo: { ...s.cargo, [goodId]: cur + count } }));
+    return true;
+  },
+
+  removeCargo: (goodId, count) => {
+    const cur = get().cargo[goodId] ?? 0;
+    if (cur < count) return false;
+    set((s) => ({ cargo: { ...s.cargo, [goodId]: cur - count } }));
+    return true;
+  },
+
+  setCargo: (cargo) => set({ cargo }),
+
+  getCargoWeight: () => {
+    return Object.entries(get().cargo).reduce((sum, [goodId, count]) => {
+      return sum + (goodOf(goodId)?.weight ?? 1) * count;
+    }, 0);
+  },
 
   // 添加物品到背包格子（10格通用背包）
   addToInventory: (type: 'weapon' | 'armor' | 'novelty', id: string, qty: number = 1, data?: Equipment) => {

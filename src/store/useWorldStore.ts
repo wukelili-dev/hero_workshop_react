@@ -40,6 +40,8 @@ export interface WorldSave {
   factionRep: Record<string, number>;
   /** 市场库存（跑商价格冲击）：key = `${cityId}:${goodId}` → 偏离基准的存量 */
   marketStock: Record<string, number>;
+  /** 打听到的行情情报（3 天过期） */
+  marketIntel: { cityId: string; goodId: string; price: number; day: number }[];
 }
 
 type WorldState = WorldSave;
@@ -65,6 +67,9 @@ interface WorldActions {
   /** 调整某城某货的库存（正=买入推高价格，负=卖出压低），并返回新库存 */
   adjustMarketStock: (cityId: string, goodId: string, delta: number) => number;
   getMarketStock: (cityId: string, goodId: string) => number;
+  /** 记录一条行情情报（同城同货覆盖为最新） */
+  setMarketIntel: (intel: { cityId: string; goodId: string; price: number; day: number }) => void;
+  getMarketIntel: (cityId: string, goodId: string) => { cityId: string; goodId: string; price: number; day: number } | undefined;
 }
 
 /** 每日世界事件：挂在日推进上，给世界一点周期感 */
@@ -113,6 +118,7 @@ const DEFAULT_WORLD: WorldState = {
   consequences: [],
   factionRep: {},
   marketStock: {},
+  marketIntel: [],
 };
 
 export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
@@ -244,6 +250,7 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
       consequences: (data as WorldSave & { consequences?: Consequence[] }).consequences ?? [],
       factionRep: (data as WorldSave & { factionRep?: Record<string, number> }).factionRep ?? {},
       marketStock: (data as WorldSave & { marketStock?: Record<string, number> }).marketStock ?? {},
+      marketIntel: (data as WorldSave & { marketIntel?: { cityId: string; goodId: string; price: number; day: number }[] }).marketIntel ?? [],
     });
   },
 
@@ -284,6 +291,13 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
   },
 
   getMarketStock: (cityId, goodId) => get().marketStock[`${cityId}:${goodId}`] ?? 0,
+
+  setMarketIntel: (intel) => set((s) => {
+    const rest = s.marketIntel.filter((i) => !(i.cityId === intel.cityId && i.goodId === intel.goodId));
+    return { marketIntel: [intel, ...rest].slice(0, 60) };
+  }),
+
+  getMarketIntel: (cityId, goodId) => get().marketIntel.find((i) => i.cityId === cityId && i.goodId === goodId),
 }));
 
 /** 第几天（1 起） */

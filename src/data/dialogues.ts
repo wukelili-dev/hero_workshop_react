@@ -251,8 +251,7 @@ export const DIALOGUE_TREES: Record<string, DialogueTree[]> = {
   ],
 
   // ── 神秘老者 → 聂隐娘 解锁树 ──
-  changan_mysterious: [
-    {
+  changan_mysterious: [    {
       id: 'mysterious_intel',
       npcId: 'changan_mysterious',
       when: { worldFlag: 'nieyinniang_unlocked' },
@@ -295,6 +294,44 @@ export const DIALOGUE_TREES: Record<string, DialogueTree[]> = {
           text: '${self}伸出枯瘦的手，指向东市方向：「她在东市云锦绣坊附近出没。魏征丞相府，她也常去。夜里子时，你到绣坊后巷转转，或可见她。」',
           options: [
             { id: 'go', text: '“多谢指点。”', reply: ['${self}咧嘴一笑：「不必谢。她若知道是老夫多嘴，少不得要来找老夫算账。」'], effects: [{ worldFlag: 'nieyinniang_unlocked' }], end: true },
+          ],
+        },
+      },
+    },
+  ],
+
+  // ── 阳关行商马掌柜：打听行情（market intel 节点返回真实报价） ──
+  yangguan_merchant: [
+    {
+      id: 'yangguan_market_intel',
+      npcId: 'yangguan_merchant',
+      root: 'ask',
+      nodes: {
+        ask: {
+          id: 'ask', speaker: 'npc',
+          text: '${self}压低声音：「客官是想打听行情？老夫在丝路上走，各城什么价，心里门清。你想问哪样？」',
+          options: [
+            { id: 'silk', text: '“长安的丝绸什么价？”', next: 'silk' },
+            { id: 'jade', text: '“阳关的玉石呢？”', next: 'jade' },
+            { id: 'leave', text: '“不问了，多谢。”', reply: ['${self}拱手：「慢走，客官。」'], end: true },
+          ],
+        },
+        silk: {
+          id: 'silk', speaker: 'npc',
+          intel: { kind: 'market', target: 'silk', cityId: 'changan' },
+          text: '${self}掐指一算：「${intel}。你若要贩，现在正是时候。」',
+          options: [
+            { id: 'back', text: '“再问别的。”', next: 'ask' },
+            { id: 'leave', text: '“多谢。”', reply: ['${self}拱手：「慢走，客官。」'], end: true },
+          ],
+        },
+        jade: {
+          id: 'jade', speaker: 'npc',
+          intel: { kind: 'market', target: 'jade', cityId: 'yangguan' },
+          text: '${self}道：「${intel}。这玉，越往东越值钱。」',
+          options: [
+            { id: 'back', text: '“再问别的。”', next: 'ask' },
+            { id: 'leave', text: '“多谢。”', reply: ['${self}拱手：「慢走，客官。」'], end: true },
           ],
         },
       },

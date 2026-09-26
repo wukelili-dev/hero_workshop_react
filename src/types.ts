@@ -541,11 +541,13 @@ export interface DialogueOption {
   locked?: boolean;
 }
 
-/** 情报节点：动态查询真实 store（关系/势力声望），用于"打听"类对话 */
+/** 情报节点：动态查询真实 store（关系/势力声望/行情），用于"打听"类对话 */
 export interface DialogueIntel {
-  kind: 'relation' | 'factionRep';
-  /** relation=目标 NPC id；factionRep=势力 id */
+  kind: 'relation' | 'factionRep' | 'market';
+  /** relation=目标 NPC id；factionRep=势力 id；market=货物 id */
   target: string;
+  /** market 专属：打听哪座城的行情（默认长安） */
+  cityId?: string;
 }
 
 /** 分支树节点 */
@@ -697,6 +699,7 @@ export interface ItemEffect {
     | 'armorPen' | 'lifesteal' | 'combo' | 'reflect' | 'damageCut'
     | 'travelDays' | 'revealExtra' | 'gatherBonus'
     | 'shopPrice' | 'sellPrice'
+    | 'carry'
     | 'affinityGain' | 'proposeBonus' | 'reputation'
     | 'moralPerDay' | 'moralPerKill'
     | 'heal' | 'exp';

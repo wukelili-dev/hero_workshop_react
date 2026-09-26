@@ -27,6 +27,7 @@ export const EFFECT_LABEL: Record<EffectKind, string> = {
   gatherBonus: '寻宝',
   shopPrice: '通商',
   sellPrice: '囤积',
+  carry: '负重',
   affinityGain: '亲和',
   proposeBonus: '求亲',
   reputation: '声望',

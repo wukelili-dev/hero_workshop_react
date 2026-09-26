@@ -14,6 +14,9 @@ import { useWorldStore } from '../store/useWorldStore';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { nameOf } from './NpcAutonomy';
 import { factionName } from '../data/factions';
+import { inquirePrice } from './Trade';
+import { goodName } from './Market';
+import { cityOf } from '../data/regions';
 import type {
   ChatTopic, DialogueNode, DialogueOption, DialogueTree, NpcDefinition, WorldEffect,
 } from '../types';
@@ -142,6 +145,14 @@ export function resolveIntel(npc: NpcDefinition, node: DialogueNode, raw: string
     const strength = ecoStore.relationStrength(npc.id, t);
     const targetName = nameOf(t);
     result = `${targetName}（关系强度 ${strength}）`;
+  } else if (node.intel.kind === 'market') {
+    // 行情情报：返回该城该货的真实报价，并写入 marketIntel（3 天过期）
+    const cityId = node.intel.cityId ?? 'changan';
+    const goodId = node.intel.target;
+    const day = Math.floor(useWorldStore.getState().day);
+    const intel = inquirePrice(cityId, goodId, day);
+    useWorldStore.getState().setMarketIntel(intel);
+    result = `${goodName(goodId)}在${cityOf(cityId)?.name ?? cityId}现价 ${intel.price} 金`;
   } else {
     const rep = useWorldStore.getState().getFactionRep(node.intel.target);
     result = `${factionName(node.intel.target)}（声望 ${rep}）`;
