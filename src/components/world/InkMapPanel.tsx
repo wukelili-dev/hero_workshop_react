@@ -15,6 +15,7 @@ import { regionOf } from '../../data/regions';
 import { RARITY_COLOR, RARITY_NAME } from '../../types';
 import type { Monster } from '../../types';
 import { buildInkMapSvg } from './inkMapSvg';
+import { WorldOverview } from './WorldOverview';
 import { FaMapLocationDot, FaSkullCrossbones, FaXmark, FaLock, FaShoePrints } from 'react-icons/fa6';
 
 interface InkMapPanelProps {
@@ -86,6 +87,7 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
 
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<FightResult | null>(null);
+  const [showOverview, setShowOverview] = useState(false);
 
   const currentRegion = regionOf(currentRegionId);
   const regionCells = useMemo(() => cellsOfPrefix(currentRegion?.cellPrefix ?? 'cp'), [currentRegion]);
@@ -205,6 +207,25 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
     setLastResult(null);
   };
 
+  /** 天下总览：点击区域卡片进入（同区域则切回棋盘视图） */
+  const handleEnterRegion = (regionId: string) => {
+    if (regionId === currentRegionId) {
+      setShowOverview(false);
+      return;
+    }
+    const target = regionOf(regionId);
+    if (!target) return;
+    const result = moveTo(target.centerCellId);
+    if (!result) {
+      toast.error('关隘尚未可通行');
+      return;
+    }
+    toast.success(`经关隘进入${target.name}（${result.days} 天）`, { icon: '🏔️' });
+    setShowOverview(false);
+    setSelectedCellId(null);
+    setLastResult(null);
+  };
+
   const targetCell = selectedCellId ? getCellById(selectedCellId) : null;
   const targetEncounter = selectedCellId ? getCellEncounter(selectedCellId) : null;
   const targetRec = recommendOf(targetEncounter);
@@ -225,6 +246,13 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
         <span className="hidden text-xs text-gray-500 sm:inline">
           所在：{currentEncounter?.label ?? currentTerrain?.name ?? '未知'}
         </span>
+        <button
+          type="button"
+          onClick={() => setShowOverview((v) => !v)}
+          className={showOverview ? 'ink-btn-seal text-xs' : 'ink-btn text-xs'}
+        >
+          {showOverview ? '返回棋盘' : '🗺 天下'}
+        </button>
         {!embedded && (
           <button type="button" onClick={onClose} className="ink-btn ml-auto text-xs">
             <FaXmark /> 返回主城
@@ -232,7 +260,15 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
         )}
       </div>
 
-      {/* 主体 */}
+      {/* 天下总览视图 */}
+      {showOverview && (
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <WorldOverview onEnter={handleEnterRegion} />
+        </div>
+      )}
+
+      {/* 主体（棋盘视图） */}
+      {!showOverview && (
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* 地图 */}
         <div
@@ -439,6 +475,7 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
           )}
         </aside>
       </div>
+      )}
 
       {/* 图例 */}
       <div className="flex flex-wrap items-center gap-3 border-t border-amber-900/10 bg-white/85 px-3 py-1.5 text-[11px] text-gray-500">
