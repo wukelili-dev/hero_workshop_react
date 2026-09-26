@@ -102,6 +102,29 @@ export const CITY_SUPPLY_DEMAND: CitySupplyDemand[] = [
       arms: { supply: 2, demand: 2 },
     },
   },
+  {
+    cityId: 'donghai',
+    entries: {
+      // 东海龙宫：珍珠海盐（特产）便宜；缺陆上丝绸瓷器铁器
+      grain: { supply: 2, demand: 3 },
+      salt: { supply: 4, demand: 1 },
+      tea: { supply: 1, demand: 3 },
+      wine: { supply: 2, demand: 3 },
+      silk: { supply: 0, demand: 4 },
+      porcelain: { supply: 0, demand: 3 },
+      ironware: { supply: 1, demand: 3 },
+      paper: { supply: 1, demand: 3 },
+      jade: { supply: 2, demand: 3 },
+      fur: { supply: 1, demand: 3 },
+      pearl: { supply: 4, demand: 1 },
+      spice: { supply: 2, demand: 2 },
+      herb: { supply: 2, demand: 2 },
+      ginseng: { supply: 2, demand: 2 },
+      bezoar: { supply: 2, demand: 2 },
+      opium: { supply: 1, demand: 2 },
+      arms: { supply: 1, demand: 2 },
+    },
+  },
 ];
 
 export function supplyDemandOf(cityId: string, goodId: string): { supply: number; demand: number } {

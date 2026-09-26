@@ -93,6 +93,22 @@ export const REGIONS: WorldRegion[] = [
     centerCellId: 'hx_3_3',
     gates: [
       { toRegionId: 'central_plain', kind: 'road', days: 2, require: { minLevel: 5 } },
+      { toRegionId: 'donghai', kind: 'ferry', days: 3, require: { minLevel: 20 } },
+    ],
+    contentBudget: { monster: 20, gather: 9, encounter: 5, discovery: 5, npc: 3, dungeon: 2 },
+  },
+  {
+    id: 'donghai',
+    name: '东海',
+    description: '碧波万顷，龙宫巍峨。仙岛星罗，海市蜃楼隐现其间。',
+    levelRange: [25, 45],
+    size: 7,
+    terrainBias: ['water', 'celestial', 'mountain'],
+    cellPrefix: 'dh',
+    cityId: 'donghai',
+    centerCellId: 'dh_3_3',
+    gates: [
+      { toRegionId: 'hexi', kind: 'ferry', days: 3, require: { minLevel: 20 } },
     ],
     contentBudget: { monster: 20, gather: 9, encounter: 5, discovery: 5, npc: 3, dungeon: 2 },
   },
@@ -128,6 +144,20 @@ export const CITIES: CityDef[] = [
     priceIndex: 1.25,
     security: 0.45,
     description: '西域门户，边贸驼队云集。鱼龙混杂，盗匪出没。',
+  },
+  {
+    id: 'donghai',
+    name: '东海龙宫',
+    regionId: 'donghai',
+    factionIds: [],
+    npcIds: ['donghai_aoguang', 'donghai_turtle', 'donghai_merchant', 'donghai_fisherman'],
+    specialties: [
+      { goodId: 'pearl', supply: 4 },
+      { goodId: 'salt', supply: 3 },
+    ],
+    priceIndex: 1.1,
+    security: 0.7,
+    description: '东海龙宫，敖广坐镇。虾兵蟹将侍立，海货丰饶。',
   },
 ];
 

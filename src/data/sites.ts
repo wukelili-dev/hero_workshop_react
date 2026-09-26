@@ -96,7 +96,35 @@ export const HEXI_SITES: SiteDef[] = [
   { id: 'hx_site_sunset', kind: 'landmark', regionId: 'hexi', terrain: ['desert'], levelRange: [15, 35], weight: 3, payload: { text: '大漠尽头，长河落日，壮美如画。' } },
 ];
 
-export const ALL_SITES: SiteDef[] = [...CENTRAL_SITES, ...HEXI_SITES];
+// ── 东海内容池 ──
+
+export const DONGHAI_SITES: SiteDef[] = [
+  // 野怪
+  { id: 'dh_site_patrol', kind: 'monster', regionId: 'donghai', terrain: ['water'], levelRange: [25, 40], weight: 4, payload: { monsterIds: ['海蛇', '沙虫'] } },
+  { id: 'dh_site_shark', kind: 'monster', regionId: 'donghai', terrain: ['water'], levelRange: [27, 42], weight: 4, payload: { monsterIds: ['海蛇'] } },
+  { id: 'dh_site_crab', kind: 'monster', regionId: 'donghai', terrain: ['water', 'plains'], levelRange: [25, 38], weight: 4, payload: { monsterIds: ['海蛇', '沙虫'] } },
+  { id: 'dh_site_kraken', kind: 'monster', regionId: 'donghai', terrain: ['water'], levelRange: [30, 45], weight: 4, payload: { monsterIds: ['海蛇', '沙虫'] } },
+  { id: 'dh_site_island_beast', kind: 'monster', regionId: 'donghai', terrain: ['mountain', 'plains'], levelRange: [28, 45], weight: 4, payload: { monsterIds: ['沼泽巨蜥', '灰狼'] } },
+  // 采集
+  { id: 'dh_site_pearl', kind: 'gather', regionId: 'donghai', terrain: ['water'], levelRange: [25, 45], weight: 5, payload: { resourceType: 'pearl' } },
+  { id: 'dh_site_coral', kind: 'gather', regionId: 'donghai', terrain: ['water', 'mountain'], levelRange: [25, 45], weight: 4, payload: { resourceType: 'coral' } },
+  { id: 'dh_site_fish', kind: 'gather', regionId: 'donghai', terrain: ['water'], levelRange: [25, 45], weight: 4, payload: { resourceType: 'fish' } },
+  { id: 'dh_site_wild', kind: 'gather', regionId: 'donghai', terrain: ['water', 'mountain', 'plains', 'celestial'], levelRange: [25, 45], weight: 4, payload: { resourceType: 'herbs' } },
+  // 奇遇/发现
+  { id: 'dh_site_shipwreck', kind: 'discovery', regionId: 'donghai', terrain: ['water'], levelRange: [26, 45], weight: 3, once: true, payload: { text: '一艘沉船，舱底散落着几枚锈蚀的银锭。' } },
+  { id: 'dh_site_whirlpool', kind: 'encounter', regionId: 'donghai', terrain: ['celestial', 'water'], levelRange: [28, 45], weight: 3, once: true, payload: { text: '大漩涡深处，隐隐透出龙宫的珠光。' } },
+  { id: 'dh_site_island', kind: 'discovery', regionId: 'donghai', terrain: ['plains', 'mountain'], levelRange: [27, 45], weight: 3, once: true, payload: { text: '一座海外仙山，云雾缭绕，似有仙人。' } },
+  // 遭遇 NPC
+  { id: 'dh_site_turtle', kind: 'npc', regionId: 'donghai', terrain: ['water', 'plains'], levelRange: [25, 45], weight: 3, payload: { npcId: 'donghai_turtle' } },
+  { id: 'dh_site_fisherman', kind: 'npc', regionId: 'donghai', terrain: ['water', 'plains', 'mountain'], levelRange: [25, 45], weight: 3, payload: { npcId: 'donghai_fisherman' } },
+  // 副本
+  { id: 'dh_site_tomb', kind: 'dungeon', regionId: 'donghai', terrain: ['mountain'], levelRange: [28, 45], weight: 4, payload: { dungeonMapId: 'donghai' } },
+  { id: 'dh_site_fort', kind: 'dungeon', regionId: 'donghai', terrain: ['mountain', 'water'], levelRange: [30, 45], weight: 4, payload: { dungeonMapId: 'donghai' } },
+  // 地标
+  { id: 'dh_site_sunrise', kind: 'landmark', regionId: 'donghai', terrain: ['water', 'celestial'], levelRange: [25, 45], weight: 3, payload: { text: '东海尽头，日出扶桑，霞光万道。' } },
+];
+
+export const ALL_SITES: SiteDef[] = [...CENTRAL_SITES, ...HEXI_SITES, ...DONGHAI_SITES];
 
 export function sitesOfRegion(regionId: string): SiteDef[] {
   return ALL_SITES.filter((s) => s.regionId === regionId);

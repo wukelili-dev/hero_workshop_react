@@ -1531,6 +1531,77 @@ export const NPCS: NpcDefinition[] = [
     tradeItems: [],
     personalItem: { name: '大漠星图', icon: '🌌', description: '绘有大漠星象与古城的星图', sellPrice: 350 },
   },
+
+  // ── 东海 ──
+  {
+    id: 'donghai_turtle',
+    name: '龟仙人',
+    title: '东海寿龟',
+    type: 'flavor',
+    location: 'donghai',
+    avatarEmoji: '🐢',
+    description: '一只须发皆白的巨龟，\n背甲上刻满了看不懂的古老纹路。',
+    greetings: [
+      '老朽在此地，已活了九千九百九十九年。',
+      '你身上有海风的味道，是从岸上来的吧？',
+    ],
+    chatDialogues: [
+      '龟仙人慢悠悠道："这东海的水，深不见底。龙宫在海底，凡人下不去，得靠大漩涡。"',
+      '"当年那猴子来借兵器，一棒搅得东海天翻地覆。老朽的龟壳上，现在还有一道裂痕。"',
+      '"你要去龙宫？沿着大漩涡往下，但小心巡海夜叉。"',
+    ],
+    challengeStats: { hp: 4000, atk: 160, def: 120 },
+    challengeReward: { exp: 120, gold: 150, message: '龟仙人哈哈大笑："好！你我有缘，这片龟甲送你。"' },
+    tradeItems: [],
+    personalItem: { name: '千年龟甲', icon: '🐢', description: '刻有古老纹路的龟甲，可占卜吉凶', sellPrice: 400 },
+  },
+  {
+    id: 'donghai_merchant',
+    name: '海市商人',
+    title: '海市行商',
+    type: 'merchant',
+    location: 'donghai',
+    avatarEmoji: '🐚',
+    description: '一个背着海螺货箱的商人，\n在海底市集摆摊，卖的都是稀奇海货。',
+    greetings: [
+      '客官好眼力！我这儿的珊瑚、珍珠，都是深海里的好货。',
+      '陆上来的？那可要看看我这夜明珠。',
+    ],
+    chatDialogues: [
+      '海市商人压低声音："东海的珍珠便宜，陆上的丝绸值钱。你要是能带货，来回一趟，利厚着呢。"',
+      '"龙宫的货，得走大漩涡那条路。水路有风险，可赚的就是这个险钱。"',
+    ],
+    tradeItems: [
+      { label: '夜明珠 [杂货]', type: 'novelty', price: 600, dialogue: '深海夜明珠，夜里能照亮一丈方圆。' },
+      { label: '珊瑚 [恢复50HP]', type: 'potion', price: 90, potionCount: 1, dialogue: '海底珊瑚磨粉，入药极佳。' },
+      { label: '珍珠 ×3', type: 'material', price: 250, resourceKey: 'herb', dialogue: '东海珍珠，颗颗圆润。' },
+    ],
+    challengeStats: { hp: 2200, atk: 95, def: 50 },
+    challengeReward: { exp: 70, gold: 90, message: '海市商人连连作揖："好汉饶命！这锭银子你拿去！"' },
+    personalItem: { name: '海市商册', icon: '📜', description: '记载海市行情的册子', sellPrice: 450 },
+  },
+  {
+    id: 'donghai_fisherman',
+    name: '老渔翁',
+    title: '海边渔翁',
+    type: 'flavor',
+    location: 'donghai',
+    avatarEmoji: '🎣',
+    description: '一个蓑衣斗笠的老翁坐在礁石上，\n鱼竿垂在海里，一动不动。',
+    greetings: [
+      '嘘——小声些，别惊了鱼。',
+      '你是来打鱼的，还是来寻仙的？',
+    ],
+    chatDialogues: [
+      '老渔翁头也不回："这东海里，鱼虾虽多，却也有吃人的海怪。夜里别出海。"',
+      '"我年轻时见过龙——真龙。它从海里跃起，遮天蔽日，转瞬又没入海底。"',
+      '"你要寻仙？海外有三座仙山：蓬莱、方丈、瀛洲。可那得有缘人才能寻见。"',
+    ],
+    challengeStats: { hp: 1800, atk: 80, def: 45 },
+    challengeReward: { exp: 50, gold: 60, message: '老渔翁哈哈大笑："好小子！这条金鲤送你。"' },
+    tradeItems: [],
+    personalItem: { name: '金鲤', icon: '🐟', description: '一条会发光的金色鲤鱼，似是灵物', sellPrice: 300 },
+  },
 ];
 
 

@@ -48,6 +48,22 @@ export const CELL_ENCOUNTERS: Record<string, CellEncounter> = {
   hx_6_5: { label: '沙鬼', monsters: ['沙虫', '沼泽巨蜥'] },
   hx_4_6: { label: '毒蝎沙丘', monsters: ['沙虫', '毒蛇'] },
 
+  // ── 东海区域 ──
+  dh_3_3: { label: '东海龙宫', mapId: 'donghai' },
+  dh_6_1: { label: '海屿古墓', mapId: 'donghai' },
+  dh_5_4: { label: '海屿要塞', mapId: 'donghai' },
+  dh_0_6: { label: '海外仙山', mapId: 'donghai' },
+  dh_1_0: { label: '巡海夜叉', monsters: ['海蛇'] },
+  dh_4_0: { label: '鲨群', monsters: ['海蛇', '沙虫'] },
+  dh_4_1: { label: '水母群', monsters: ['海蛇'] },
+  dh_2_2: { label: '巨蟹群', monsters: ['海蛇', '沙虫'] },
+  dh_0_3: { label: '蛟龙出没', monsters: ['海蛇', '沙虫'] },
+  dh_5_3: { label: '章鱼海妖', monsters: ['海蛇', '沙虫'] },
+  dh_6_4: { label: '巨鲸', monsters: ['海蛇'] },
+  dh_0_5: { label: '海岛巨蜥', monsters: ['沼泽巨蜥', '灰狼'] },
+  dh_6_5: { label: '幽灵船', monsters: ['海蛇', '沙虫'] },
+  dh_4_6: { label: '海怪', monsters: ['海蛇', '沙虫'] },
+
   // ── 野外遭遇 ──
   cp_2_0: { label: '狼群', monsters: ['灰狼', '毒蛇'], boss: '狼王' },
   cp_5_0: { label: '河妖', monsters: ['河妖', '毒蛇'] },

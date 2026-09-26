@@ -37,13 +37,14 @@ const regions = [];
   }
 }
 
-// ── 解析格子地形（cellMap.ts 的 CENTRAL + hexiCells.ts 的 HEXI） ──
+// ── 解析格子地形（cellMap.ts 的 CENTRAL + hexiCells.ts 的 HEXI + donghaiCells.ts 的 DONGHAI） ──
 const cellMapSrc = read('src/data/cellMap.ts');
 const hexiSrc = read('src/data/hexiCells.ts');
+const donghaiSrc = read('src/data/donghaiCells.ts');
 const cellTerrains = []; // { id, terrain }
 {
   const re = /id:\s*'([^']+)',\s*x:\s*\d+,\s*y:\s*\d+,\s*terrain:\s*'([^']+)'/g;
-  for (const src of [cellMapSrc, hexiSrc]) {
+  for (const src of [cellMapSrc, hexiSrc, donghaiSrc]) {
     let m;
     while ((m = re.exec(src)) !== null) {
       cellTerrains.push({ id: m[1], terrain: m[2] });

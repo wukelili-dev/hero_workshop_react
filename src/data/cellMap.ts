@@ -315,9 +315,10 @@ export const CENTRAL_PLAIN_REGION: MapRegion = {
 
 // ============ 工具函数 ============
 import { HEXI_CELLS } from './hexiCells';
+import { DONGHAI_CELLS } from './donghaiCells';
 
-/** 所有区域的格子合集（中原 + 河西 + …），按 cell id 前缀区分区域 */
-export const ALL_CELLS: MapCell[] = [...CENTRAL_PLAIN_CELLS, ...HEXI_CELLS];
+/** 所有区域的格子合集（中原 + 河西 + 东海 + …），按 cell id 前缀区分区域 */
+export const ALL_CELLS: MapCell[] = [...CENTRAL_PLAIN_CELLS, ...HEXI_CELLS, ...DONGHAI_CELLS];
 
 /** 由 cell id 推断区域格子前缀（cp / hx / …） */
 export function cellPrefixOf(cellId: string): string {
