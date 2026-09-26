@@ -79,7 +79,7 @@ export const REGIONS: WorldRegion[] = [
     gates: [
       { toRegionId: 'hexi', kind: 'pass', days: 2, require: { minLevel: 5 } },
     ],
-    contentBudget: { monster: 20, gather: 8, encounter: 6, discovery: 6, npc: 4, dungeon: 2 },
+    contentBudget: { monster: 20, gather: 9, encounter: 5, discovery: 5, npc: 3, dungeon: 2 },
   },
   {
     id: 'hexi',
@@ -94,7 +94,7 @@ export const REGIONS: WorldRegion[] = [
     gates: [
       { toRegionId: 'central_plain', kind: 'road', days: 2, require: { minLevel: 5 } },
     ],
-    contentBudget: { monster: 20, gather: 8, encounter: 6, discovery: 6, npc: 4, dungeon: 2 },
+    contentBudget: { monster: 20, gather: 9, encounter: 5, discovery: 5, npc: 3, dungeon: 2 },
   },
 ];
 
