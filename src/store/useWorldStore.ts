@@ -38,6 +38,8 @@ export interface WorldSave {
   consequences: Consequence[];
   /** 玩家对每个势力的声望 */
   factionRep: Record<string, number>;
+  /** 市场库存（跑商价格冲击）：key = `${cityId}:${goodId}` → 偏离基准的存量 */
+  marketStock: Record<string, number>;
 }
 
 type WorldState = WorldSave;
@@ -60,6 +62,9 @@ interface WorldActions {
   pruneConsequences: (day: number) => void;
   addFactionRep: (factionId: string, delta: number) => void;
   getFactionRep: (factionId: string) => number;
+  /** 调整某城某货的库存（正=买入推高价格，负=卖出压低），并返回新库存 */
+  adjustMarketStock: (cityId: string, goodId: string, delta: number) => number;
+  getMarketStock: (cityId: string, goodId: string) => number;
 }
 
 /** 每日世界事件：挂在日推进上，给世界一点周期感 */
@@ -107,6 +112,7 @@ const DEFAULT_WORLD: WorldState = {
   visits: [],
   consequences: [],
   factionRep: {},
+  marketStock: {},
 };
 
 export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
@@ -237,6 +243,7 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
       visits: (data as WorldSave & { visits?: PendingVisit[] }).visits ?? [],
       consequences: (data as WorldSave & { consequences?: Consequence[] }).consequences ?? [],
       factionRep: (data as WorldSave & { factionRep?: Record<string, number> }).factionRep ?? {},
+      marketStock: (data as WorldSave & { marketStock?: Record<string, number> }).marketStock ?? {},
     });
   },
 
@@ -268,6 +275,15 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
   }),
 
   getFactionRep: (factionId) => get().factionRep[factionId] ?? 0,
+
+  adjustMarketStock: (cityId, goodId, delta) => {
+    const key = `${cityId}:${goodId}`;
+    const next = Math.max(-50, Math.min(50, (get().marketStock[key] ?? 0) + delta));
+    set((s) => ({ marketStock: { ...s.marketStock, [key]: next } }));
+    return next;
+  },
+
+  getMarketStock: (cityId, goodId) => get().marketStock[`${cityId}:${goodId}`] ?? 0,
 }));
 
 /** 第几天（1 起） */

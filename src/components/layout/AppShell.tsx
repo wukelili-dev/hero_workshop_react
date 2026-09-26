@@ -12,6 +12,7 @@ import { TabBar } from './TabBar';
 import { SideNav, type PageId } from './SideNav';
 import { MainCityPanel } from '../city/MainCityPanel';
 import { CenterPanel } from '../city/CenterPanel';
+import { MarketPanel } from '../city/MarketPanel';
 import { GameLogPanel } from '../city/GameLogPanel';
 import { HeroInfoPanel } from '../city/HeroInfoPanel';
 import { WeaponTab } from '../equipment/WeaponTab';
@@ -35,6 +36,7 @@ import { bountiesFor, claimBounty } from '../../engine/Bounty';
 import { useGameStore } from '../../store/useGameStore';
 import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils';
 import { startWorldClock, useWorldStore } from '../../store/useWorldStore';
+import { regionOfCell } from '../../data/regions';
 import {
   FaFloppyDisk, FaFolderOpen, FaBookOpen, FaCircleQuestion, FaMapLocationDot, FaCity,
   FaUser, FaWheatAwn, FaSkullCrossbones, FaBagShopping, FaHammer, FaPaw,
@@ -91,7 +93,7 @@ export const AppShell: React.FC = () => {
   const [heroTab, setHeroTab] = useState<TabId>('status');
   const [homeTab, setHomeTab] = useState<TabId>('farm');
   const [shop, setShop] = useState<ShopId>('none');
-  const [cityView, setCityView] = useState<'eco' | 'team'>('eco');
+  const [cityView, setCityView] = useState<'eco' | 'team' | 'market'>('eco');
   const [offline, setOffline] = useState<OfflineReport | null>(null);
   const [visitQueue, setVisitQueue] = useState<ReturnType<typeof dueVisits>>([]);
   const day = Math.floor(useWorldStore((s) => s.day));
@@ -177,7 +179,10 @@ export const AppShell: React.FC = () => {
   };
 
   /** 据点：城中铺子（兵器/甲胄/杂货）+ 队伍与遭遇 */
-  const renderCity = () => (
+  const renderCity = () => {
+    const region = regionOfCell(useWorldStore.getState().currentCellId);
+    const marketCityId = region?.cityId ?? 'changan';
+    return (
     <div className="flex h-full min-h-0 flex-col gap-2 p-3">
       <div className="ink-panel ink-frame flex-shrink-0">
         <div className="ink-head">
@@ -233,12 +238,20 @@ export const AppShell: React.FC = () => {
         >
           队伍与遭遇
         </button>
+        <button
+          type="button"
+          onClick={() => setCityView('market')}
+          className={cityView === 'market' ? 'ink-btn-seal text-sm' : 'ink-btn text-sm'}
+        >
+          🏪 市场行情
+        </button>
       </div>
       <div className="min-h-0 flex-1 overflow-hidden">
-        {cityView === 'eco' ? <NpcEcology /> : <CenterPanel />}
+        {cityView === 'eco' ? <NpcEcology /> : cityView === 'team' ? <CenterPanel /> : <MarketPanel cityId={marketCityId} />}
       </div>
     </div>
-  );
+    );
+  };
 
   const renderMain = () => {
     if (page === 'map') return <InkMapPanel embedded />;
