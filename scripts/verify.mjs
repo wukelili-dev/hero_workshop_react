@@ -45,6 +45,7 @@ check('关键文件存在', () => {
     'src/components/shared/ItemCard.tsx', 'src/engine/VisitSystem.ts', 'src/components/shared/VisitModal.tsx',
     'src/data/factions.ts', 'src/engine/FactionSystem.ts', 'src/engine/OfflineReport.ts',
     'src/engine/Chronicle.ts', 'src/data/sense.ts', 'src/data/placeLore.ts', 'src/engine/PlaceSystem.ts',
+    'src/data/titles.ts', 'src/engine/TitleSystem.ts',
   ];
   const miss = must.filter((f) => !existsSync(f));
   return { ok: miss.length === 0, out: miss.length ? `缺失: ${miss.join(', ')}` : `OK（${must.length} 个）` };

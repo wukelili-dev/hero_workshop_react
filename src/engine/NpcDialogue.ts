@@ -8,6 +8,7 @@ import { useNpcEcoStore, ecoDef } from '../store/useNpcEcoStore';
 import { useNpcStore } from '../store/useNpcStore';
 import { useWorldStore } from '../store/useWorldStore';
 import { query as queryChronicle } from './Chronicle';
+import { titleName } from './TitleSystem';
 import type { NpcChannel, NpcCondition, NpcDefinition, NpcEffect, NpcVoice } from '../types';
 
 export interface DialogueResult {
@@ -88,7 +89,9 @@ export function matches(cond: NpcCondition | undefined, npc: NpcDefinition): boo
 }
 
 function callName(voice: NpcVoice, affinity: number, bond: string): string {
-  if (bond === '夫妻') return voice.callPlayer.spouse;
+  if (bond === '夫妻') return voice.callPlayer.spouse;   // 夫妻仍优先亲密称呼（避免"血手人屠，饭好了"）
+  const t = titleName();                                  // 称号 > 关系称呼
+  if (t) return t;
   if (affinity >= 60) return voice.callPlayer.close;
   if (affinity >= 25) return voice.callPlayer.acquaintance;
   return voice.callPlayer.stranger;

@@ -18,6 +18,7 @@ import { GiftModal } from './GiftModal';
 import { factionName } from '../../data/factions';
 import { allFactionRep } from '../../engine/FactionSystem';
 import { query as queryChronicle } from '../../engine/Chronicle';
+import { buildPlayerChronicle } from '../../engine/TitleSystem';
 
 const GOAL_ZH: Record<string, string> = {
   wealth: '敛财', power: '精进', revenge: '寻仇', love: '求偶', fame: '扬名', wander: '云游',
@@ -146,6 +147,9 @@ export const NpcEcology: React.FC = () => {
             </span>
           ))}
         </div>
+
+        {/* 我的志（玩家自己） */}
+        <PlayerBiography />
       </div>
 
       {/* 档案 + 互动 */}
@@ -270,6 +274,43 @@ export const NpcEcology: React.FC = () => {
           </div>
         </div>
       </div>
+    </div>
+  );
+};
+
+/** 玩家自己的志：称号 + 行迹时间线 + 恩怨 + 婚配 + 击杀数 */
+const PlayerBiography: React.FC = () => {
+  const pc = buildPlayerChronicle();
+  return (
+    <div className="mt-2 border-t border-[#8a7a63]/40 pt-2">
+      <div className="ink-title mb-1 text-[13px]">我的志</div>
+      {pc.title && (
+        <div className="mb-1 text-[12px] font-bold text-[#8f2b23]">
+          名号 · {pc.title.name}
+          {pc.titleFlavor && <span className="ml-1 text-[10px] font-normal text-[#6b6252]">（{pc.titleFlavor}）</span>}
+        </div>
+      )}
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-[#6b6252]">
+        <span>击杀 {pc.kills}</span>
+        {pc.spouse && <span>婚配 {pc.spouse}</span>}
+        <span>涉足 {pc.visitedRegions.length} 地</span>
+      </div>
+      {pc.enemies.length > 0 && (
+        <div className="mt-1 text-[11px] text-[#8f2b23]">结怨：{pc.enemies.join('、')}</div>
+      )}
+      {pc.benefactors.length > 0 && (
+        <div className="mt-1 text-[11px] text-[#4f7a8c]">有恩于：{pc.benefactors.join('、')}</div>
+      )}
+      {pc.timeline.length > 0 && (
+        <div className="mt-1.5 space-y-0.5 text-[10px] leading-relaxed text-[#6b6252]">
+          {pc.timeline.slice(0, 5).map((t, i) => (
+            <div key={i}>第{t.day}天 · {t.text}</div>
+          ))}
+        </div>
+      )}
+      {pc.timeline.length === 0 && !pc.title && (
+        <div className="text-[10px] text-[#9c917b]">尚未在这世上留下什么痕迹。</div>
+      )}
     </div>
   );
 };

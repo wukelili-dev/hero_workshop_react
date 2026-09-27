@@ -3,12 +3,14 @@ import { FaCoins } from 'react-icons/fa6';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 import { useGameStore } from '../../store/useGameStore';
 import { dayNumber, shichenOf, useWorldStore } from '../../store/useWorldStore';
+import { titleName } from '../../engine/TitleSystem';
 
 export const TopBar: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
   const dayNo = useWorldStore((s) => dayNumber(s.day));
   const shichen = useWorldStore((s) => shichenOf(s.day));
   const dailyEvent = useWorldStore((s) => s.dailyEvent);
+  const title = titleName();
   return (
     <div className="flex items-center gap-2 border-b border-[#8a7a63] bg-[#faf6ea]/95 px-3 py-1.5 md:gap-3 md:px-4 md:py-2">
       {/* 左：印 + 题名 */}
@@ -20,6 +22,7 @@ export const TopBar: React.FC = () => {
       </div>
       <span className="ink-tag hidden px-2 py-0.5 sm:inline-block">第 {dayNo} 天 · {shichen}</span>
       <span className="ink-tag px-2 py-0.5 sm:hidden">{dayNo} 天</span>
+      {title && <span className="ink-tag gold px-2 py-0.5" title={titleName()}>{title}</span>}
       {dailyEvent && (
         <span className="ink-tag gold hidden px-2 py-0.5 lg:inline-block">{dailyEvent.text}</span>
       )}
