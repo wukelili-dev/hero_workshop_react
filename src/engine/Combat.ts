@@ -7,11 +7,11 @@
 // 内部改由 Combatant（主属性→派生属性）驱动，结算规则切换为多轴。
 // 怪物/NPC 目前仍是旧 hp/atk/def，由 migrateLegacyStats 反解为派生属性；
 // C3 起怪物改为「等级+主属性」直接 buildDerived，无需再迁移。
-import type { Monster, Equipment, ItemEffect, Lineage, Combatant, StatusEffectId } from '../types';
+import type { Monster, Equipment, ItemEffect, Lineage, Combatant, StatusEffectId, PrimaryStats, DerivedStats } from '../types';
 import { generateDrop } from './equipmentDrops';
 import { useGameStore } from '../store/useGameStore';
 import { sum as sumEffect, sumList, equipEffectsOf } from './ItemEffects';
-import { migrateLegacyStats, STAT_CAPS } from './Stats';
+import { buildDerived, STAT_CAPS } from './Stats';
 
 export interface HeroStats {
   hp: number;
@@ -85,14 +85,22 @@ function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// ── Combatant 构建（C2：由旧四维反解；C3 起怪物改 buildDerived） ──
-// 英雄 lineage 固定为 human（玩家凡人；西游记里人克妖、被仙克），克制关系见 §5。
+// ── Combatant 构建 ──
+// 过渡期策略（C2/C3）：核心三项 hp/atk/def 保持原始手调值（等价，不破坏平衡），
+// 新轴（命中/闪避/速度/破甲/暴击）先给中性默认，由 C3 怪物主属性 / C4 装备词条逐步赋予真值。
+// 英雄 lineage 固定 human（玩家凡人；人克妖、被仙克），克制关系见 §5。
+const NEUTRAL_AXES = { hit: 0.85, dodge: 0, speed: 14, pen: 0, tenacity: 0, resist: 0 } as const;
+
 function heroCombatant(heroStats: HeroStats, equipEffects: ItemEffect[]): Combatant {
   const hero = useGameStore.getState().hero;
-  const { derived } = migrateLegacyStats(
-    { hp: hero.maxHp, atk: heroStats.atk, def: heroStats.def, crit: heroStats.crit, critDmg: hero.critDmg ?? 1.5 },
-    hero.level,
-  );
+  const derived: DerivedStats = {
+    hpMax: hero.maxHp,
+    atk: heroStats.atk,
+    def: heroStats.def,
+    ...NEUTRAL_AXES,
+    crit: heroStats.crit,
+    critDmg: hero.critDmg ?? 1.5,
+  };
   return {
     id: 'hero', name: '勇者', side: 'ally', level: hero.level,
     primary: { root: 1, qi: 1, agility: 1, spirit: 1, fortune: 1 },
@@ -105,13 +113,19 @@ function heroCombatant(heroStats: HeroStats, equipEffects: ItemEffect[]): Combat
 
 function monsterCombatant(monster: Monster): Combatant {
   const level = monster.level ?? 1;
-  const { derived } = migrateLegacyStats(
-    { hp: monster.hp, atk: monster.atk, def: monster.def, crit: 0 },
-    level,
-  );
+  // C3：有 primary 则正向 buildDerived（怪物/NPC 重算）；否则用原始手调值（等价）
+  const { primary, derived } = monster.primary
+    ? { primary: monster.primary, derived: buildDerived(monster.primary, level) }
+    : {
+        primary: { root: 1, qi: 1, agility: 1, spirit: 1, fortune: 1 } as PrimaryStats,
+        derived: {
+          hpMax: monster.hp, atk: monster.atk, def: monster.def,
+          ...NEUTRAL_AXES, crit: 0, critDmg: 1.5,
+        } as DerivedStats,
+      };
   return {
     id: monster.id, name: monster.name, side: 'foe', level,
-    primary: { root: 1, qi: 1, agility: 1, spirit: 1, fortune: 1 },
+    primary,
     derived,
     vars: { rage: 0, shield: 0, statuses: [] },
     lineage: lineageOf(monster),

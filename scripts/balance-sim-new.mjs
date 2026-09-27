@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 /**
- * balance-sim-new.mjs —— C2 起的新结算平衡模拟。
- * 镜像 src/engine/Stats.ts 换算表 + src/engine/Combat.ts 多轴结算（确定性期望值），
+ * balance-sim-new.mjs —— C2 起的新结算平衡模拟（镜像运行时 Combat.ts）。
+ * 运行时（Combat.ts）当前等价策略：
+ *   - 英雄/怪物核心 hp/atk/def 用原始手调值（等价，不破坏平衡）
+ *   - 新轴中性默认：hit=0.85、dodge=0、speed=14、pen=0、crit(怪)=0
+ *   - 克制：人克妖 +15%、妖克人 −10%（英雄 human，普通怪 demon）
  * 读 maps.ts 真实怪物，跑 Lv1→60，找"无可刷地图"卡点。
- * 英雄仍按旧成长（BASE_HP/ATK/DEF）反解派生（与 useGameStore 一致），直到 C3 改成长。
  * 用法：node scripts/balance-sim-new.mjs
  */
 import { readFileSync } from 'node:fs';
@@ -12,51 +14,23 @@ import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const CAPS = { dodge: 0.40, hit: 0.99, crit: 0.60, critDmg: 4.0, penRatio: 0.60 };
 
-// ── Stats.ts 换算 ──
-function buildDerived(p, lv) {
-  const { root, qi, agility, spirit, fortune } = p;
-  return {
-    hpMax: 60 + root * 12 + lv * 10,
-    def: 2 + root * 0.8 + lv * 0.5,
-    atk: 4 + qi * 1.6 + lv * 0.8,
-    pen: qi * 0.25,
-    speed: 8 + agility * 1.2,
-    dodge: clamp(agility * 0.004, 0, CAPS.dodge),
-    hit: clamp(0.85 + spirit * 0.006, 0, CAPS.hit),
-    crit: clamp(0.03 + spirit * 0.004, 0, CAPS.crit),
-    critDmg: clamp(1.5 + fortune * 0.01, 0, CAPS.critDmg),
-  };
-}
-function migrate(hp, atk, def, crit, critDmg, lv) {
-  const qi = clamp((atk - 4 - lv * 0.8) / 1.6, 1, 999);
-  const rootDef = clamp((def - 2 - lv * 0.5) / 0.8, 1, 999);
-  const rootHp = clamp((hp - 60 - lv * 10) / 12, 1, 999);
-  const root = Math.max(rootDef, rootHp);
-  const spirit = clamp((crit - 0.03) / 0.004, 1, 999);
-  const fortune = clamp((critDmg - 1.5) / 0.01, 1, 999);
-  return buildDerived({ root, qi, agility: 5, spirit, fortune }, lv);
-}
+// ── 运行时中性轴（与 Combat.ts NEUTRAL_AXES 一致） ──
+const NEUTRAL = { hit: 0.85, dodge: 0, speed: 14, pen: 0 };
+const PEN_RATIO = 0.60;
 
 // ── 旧英雄成长 ──
 const BASE_HP = (lv) => Math.floor(80 + lv * 18 + Math.floor(lv / 5) * 5);
 const BASE_ATK = (lv) => 5 + lv * 2;
 const BASE_DEF = (lv) => 2 + lv;
 
-// ── 多轴单次期望伤害（克制：human→demon 1.15） ──
-function heroDmgPerAtk(hero, mon) {
-  const hitRate = clamp(hero.hit - mon.dodge, 0.35, 0.99);
-  const effDef = Math.max(0, mon.def - Math.min(hero.pen, mon.def * CAPS.penRatio));
-  const base = hero.atk * (1 - effDef / (effDef + 50));
-  const critFactor = 1 + hero.crit * (hero.critDmg - 1);
-  return base * hitRate * critFactor * 1.15; // 人克妖
-}
-function monDmgPerAtk(mon, hero) {
-  const hitRate = clamp(mon.hit - hero.dodge, 0.35, 0.99);
-  const effDef = Math.max(0, hero.def - Math.min(mon.pen, hero.def * CAPS.penRatio));
-  const base = mon.atk * (1 - effDef / (effDef + 50));
-  return base * hitRate * 0.9; // 妖克人被反克 −10%
+// 单次期望伤害（命中 × 伤害；破甲扣防；克制）
+function dmg(atk, def, pen, hit, dodge, crit, critDmg, lf) {
+  const hitRate = clamp(hit - dodge, 0.35, 0.99);
+  const effDef = Math.max(0, def - Math.min(pen, def * PEN_RATIO));
+  const base = atk * (1 - effDef / (effDef + 50));
+  const critFactor = 1 + crit * (critDmg - 1);
+  return Math.max(1, base * hitRate * critFactor * lf);
 }
 
 // ── 解析怪物 ──
@@ -64,9 +38,11 @@ const src = readFileSync(join(root, 'src/data/maps.ts'), 'utf8');
 const lines = src.split(/\r?\n/);
 const monsters = {};
 for (const line of lines) {
-  const m = line.match(/^\s*'([^']+)':\s*\{\s*id:\s*'[^']*',\s*name:\s*'[^']*',\s*level:\s*(\d+),\s*hp:\s*(\d+),\s*atk:\s*(\d+),\s*def:\s*(\d+),\s*rarity:\s*\d+,\s*expReward:\s*(\d+),\s*goldReward:\s*(\d+)/);
+  const m = line.match(/^\s*'([^']+)':\s*\{\s*id:\s*'[^']*',\s*name:\s*'[^']*',\s*level:\s*(\d+),\s*hp:\s*(\d+),\s*atk:\s*(\d+),\s*def:\s*(\d+),/);
   if (!m) continue;
-  monsters[m[1]] = { id: m[1], level: +m[2], hp: +m[3], atk: +m[4], def: +m[5], exp: +m[6], gold: +m[7], boss: /isBoss:\s*true/.test(line) };
+  const expM = line.match(/expReward:\s*(\d+)/);
+  const goldM = line.match(/goldReward:\s*(\d+)/);
+  monsters[m[1]] = { id: m[1], level: +m[2], hp: +m[3], atk: +m[4], def: +m[5], exp: expM ? +expM[1] : 0, gold: goldM ? +goldM[1] : 0, boss: /isBoss:\s*true/.test(line) };
 }
 const maps = [];
 for (const line of lines) {
@@ -80,10 +56,12 @@ for (const line of lines) {
 }
 
 function wins(lv, mon, hpRatio = 1) {
-  const hero = migrate(BASE_HP(lv) * hpRatio, BASE_ATK(lv), BASE_DEF(lv), 0.05, 1.5, lv);
-  const m = migrate(mon.hp, mon.atk, mon.def, 0, 1.5, mon.level);
-  const roundsToKill = Math.ceil(mon.hp / Math.max(1, heroDmgPerAtk(hero, m)));
-  const roundsToDie = Math.ceil((BASE_HP(lv) * hpRatio) / Math.max(1, monDmgPerAtk(m, hero)));
+  const heroHp = BASE_HP(lv) * hpRatio;
+  const heroAtk = BASE_ATK(lv), heroDef = BASE_DEF(lv);
+  const heroDmg = dmg(heroAtk, mon.def, NEUTRAL.pen, NEUTRAL.hit, 0, 0.05, 1.5, 1.15);
+  const monDmg = dmg(mon.atk, heroDef, NEUTRAL.pen, NEUTRAL.hit, NEUTRAL.dodge, 0, 1.5, 0.9);
+  const roundsToKill = Math.ceil(mon.hp / Math.max(1, heroDmg));
+  const roundsToDie = Math.ceil(heroHp / Math.max(1, monDmg));
   return roundsToKill <= roundsToDie;
 }
 
@@ -98,7 +76,7 @@ for (let lv = 1; lv <= 60; lv++) {
     const beatable = normals.filter((m) => wins(lv, m, 1) && wins(lv, m, 0.75));
     if (beatable.length === 0) continue;
     const target = beatable.reduce((a, b) => (a.exp > b.exp ? a : b));
-    if (!best || target.exp > best.exp) best = { map, target, bossReady: wins(lv, monsters[map.boss] ?? target, 1) };
+    if (!best || target.exp > best.target.exp) best = { map, target, bossReady: wins(lv, monsters[map.boss] ?? target, 1) };
   }
   if (!best) {
     if (firstGap === null) firstGap = lv;

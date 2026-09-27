@@ -98,6 +98,20 @@ export interface LegacyStats {
   critDmg?: number; // 暴伤倍率（缺省 1.5）
 }
 
+/** 把旧四维反解为主属性（供 C3 数据迁移把怪物/NPC 表达为「等级+主属性」）。 */
+export function legacyToPrimary(legacy: LegacyStats, level: number): PrimaryStats {
+  const crit = legacy.crit ?? 0.05;
+  const critDmg = legacy.critDmg ?? 1.5;
+  const qi = clamp((legacy.atk - 4 - level * 0.8) / 1.6, PRIMARY_MIN, PRIMARY_MAX);
+  const rootDef = clamp((legacy.def - 2 - level * 0.5) / 0.8, PRIMARY_MIN, PRIMARY_MAX);
+  const rootHp = clamp((legacy.hp - 60 - level * 10) / 12, PRIMARY_MIN, PRIMARY_MAX);
+  const root = Math.max(rootDef, rootHp); // 保证血量不降
+  const spirit = clamp((crit - 0.03) / 0.004, PRIMARY_MIN, PRIMARY_MAX);
+  const fortune = clamp((critDmg - 1.5) / 0.01, PRIMARY_MIN, PRIMARY_MAX);
+  const agility = 5; // 旧数据无身法维度 → 中性默认
+  return { root, qi, agility, spirit, fortune };
+}
+
 /**
  * 把旧四维（+暴击）反解为主属性，并给出派生快照。
  * 反解用新换算表的逆公式，保证 buildDerived 反算出的 atk/def 精确还原；
@@ -107,23 +121,40 @@ export function migrateLegacyStats(
   legacy: LegacyStats,
   level: number,
 ): { primary: PrimaryStats; derived: DerivedStats } {
-  const crit = legacy.crit ?? 0.05;
-  const critDmg = legacy.critDmg ?? 1.5;
-
-  const qi = clamp((legacy.atk - 4 - level * 0.8) / 1.6, PRIMARY_MIN, PRIMARY_MAX);
-  const rootDef = clamp((legacy.def - 2 - level * 0.5) / 0.8, PRIMARY_MIN, PRIMARY_MAX);
-  const rootHp = clamp((legacy.hp - 60 - level * 10) / 12, PRIMARY_MIN, PRIMARY_MAX);
-  const root = Math.max(rootDef, rootHp); // 保证血量不降
-  const spirit = clamp((crit - 0.03) / 0.004, PRIMARY_MIN, PRIMARY_MAX);
-  const fortune = clamp((critDmg - 1.5) / 0.01, PRIMARY_MIN, PRIMARY_MAX);
-  // 旧数据无身法维度 → 中性默认（C2 启用速度轴前无影响）
-  const agility = 5;
-
-  const primary: PrimaryStats = { root, qi, agility, spirit, fortune };
+  const primary = legacyToPrimary(legacy, level);
   return { primary, derived: buildDerived(primary, level) };
 }
 
 /** 派生 → 旧四维（只读映射，供旧面板/验证显示）。 */
 export function derivedToLegacy(d: DerivedStats): { hp: number; atk: number; def: number; crit: number; critDmg: number } {
   return { hp: Math.floor(d.hpMax), atk: Math.floor(d.atk), def: Math.floor(d.def), crit: d.crit, critDmg: d.critDmg };
+}
+
+// ═══════════════════════════ 怪物/NPC 生成（C3：等级 + 主属性） ═══════════════════════════
+
+/**
+ * 由「等级」正向生成怪物主属性（新增一只怪只需一行：等级 + 是否 Boss + 派系）。
+ * 与英雄不同：怪物根骨/气力随等级线性成长且无装备，用同一张换算表派生。
+ * isBoss 整体放大主属性（Boss 更高血/攻/防）。
+ */
+export function monsterPrimary(level: number, isBoss = false): PrimaryStats {
+  const k = isBoss ? 1.6 : 1.0;
+  const lv = Math.max(1, level);
+  return {
+    root: lv * 1.3 * k,
+    qi: lv * 1.5 * k,
+    agility: lv * 0.9,
+    spirit: lv * 0.6,
+    fortune: lv * 0.4,
+  };
+}
+
+/** 由等级生成怪物派生属性 + 旧四维（供 Combat 与面板回退显示）。 */
+export function deriveMonster(
+  level: number,
+  isBoss = false,
+): { primary: PrimaryStats; derived: DerivedStats; legacy: { hp: number; atk: number; def: number } } {
+  const primary = monsterPrimary(level, isBoss);
+  const derived = buildDerived(primary, level);
+  return { primary, derived, legacy: derivedToLegacy(derived) };
 }

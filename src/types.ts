@@ -221,6 +221,8 @@ export interface Monster {
   icon?: string;
   /** 所属派系类型，影响派系亲和度加成 */
   npcType?: 'normal' | 'demon' | 'human' | 'divine';
+  /** C3：由「等级+主属性」派生的主属性（缺省则用原始手调 hp/atk/def） */
+  primary?: PrimaryStats;
 }
 
 export interface GameMap {
