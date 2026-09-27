@@ -14,6 +14,7 @@ import { MAPS } from '../../data/maps';
 import { regionOf } from '../../data/regions';
 import { RARITY_COLOR, RARITY_NAME } from '../../types';
 import type { Monster } from '../../types';
+import { monsterStatsOf } from '../../engine/Stats';
 import { buildInkMapSvg } from './inkMapSvg';
 import { WorldOverview } from './WorldOverview';
 import { senseOf } from '../../data/sense';
@@ -57,9 +58,9 @@ const MonsterCard: React.FC<{ monster: Monster; disabled: boolean; onFight: (m: 
         {monster.level !== undefined && <span className="ml-auto text-[11px] text-gray-400">Lv.{monster.level}</span>}
       </div>
       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-gray-500">
-        <span>HP {monster.hp}</span>
-        <span>攻 {monster.atk}</span>
-        <span>防 {monster.def}</span>
+        <span>HP {monsterStatsOf(monster).hp}</span>
+        <span>攻 {monsterStatsOf(monster).atk}</span>
+        <span>防 {monsterStatsOf(monster).def}</span>
         <span className="text-blue-500">{monster.expReward} EXP</span>
         <span className="text-amber-600">{monster.goldReward} 金</span>
       </div>

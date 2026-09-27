@@ -41,8 +41,14 @@ function expectedDmg(atk, def, pen, hit, dodge, crit, critDmg) {
 
 // 取一只代表性怪物（Lv 10 左右）
 const src = readFileSync(join(root, 'src/data/maps.ts'), 'utf8');
-const mm = src.match(/'([^']+)':\s*\{[^}]*level:\s*(\d+),\s*hp:\s*(\d+),\s*atk:\s*(\d+),\s*def:\s*(\d+)/);
-const mon = { id: mm[1], level: +mm[2], hp: +mm[3], atk: +mm[4], def: +mm[5] };
+const mm = src.match(/'([^']+)':\s*\{[^}]*level:\s*(\d+),\s*primary:\s*\{\s*root:\s*([\d.]+),\s*qi:\s*([\d.]+),\s*spirit:\s*([\d.]+)/);
+const _lv = +mm[2], _root = +mm[3], _qi = +mm[4], _spirit = +mm[5];
+const mon = {
+  id: mm[1], level: _lv,
+  hp: Math.round(_root * 12 + _lv * 10),
+  atk: Math.round(_qi * 1.6 + _lv * 0.8),
+  def: Math.round(_spirit * 0.8 + _lv * 0.5),
+};
 const L = 10;
 
 // 中立基线主属性（按 2:2:2:2:1 约等于 L 级自动分配）

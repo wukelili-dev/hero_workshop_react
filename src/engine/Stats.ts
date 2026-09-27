@@ -158,3 +158,59 @@ export function deriveMonster(
   const derived = buildDerived(primary, level);
   return { primary, derived, legacy: derivedToLegacy(derived) };
 }
+
+// ═══════════════════════════ 怪物专用派生（C3 等价主属性化） ═══════════════════════════
+//
+// 为什么不用 buildDerived？英雄换算表里 root 双职（同时决定 hpMax 与 def），
+// 反解手调的怪物 hp/def 时会出现「血量优先则防御被抬高」的地板效应（C3 已踩过）。
+// 怪物需要表达「高血低防 / 低血高防」的多样性，故将 def 从 root 解耦到 spirit：
+//   root → hpMax、qi → atk、spirit → def（三独立映射，精确等价反解手调数值）。
+// 其余轴怪物给中性默认（速度固定、不闪避、不暴击）。
+
+/** 怪物主属性 → 派生（无地板，三轴独立；其余轴中性 = 旧 NEUTRAL_AXES 行为，保证等价）。 */
+export function buildMonsterDerived(
+  primary: PrimaryStats,
+  level: number,
+): DerivedStats {
+  const { root, qi, spirit } = primary;
+  return {
+    hpMax: Math.round(root * 12 + level * 10),
+    atk: Math.round(qi * 1.6 + level * 0.8),
+    def: Math.round(spirit * 0.8 + level * 0.5),
+    pen: 0,         // 中性（怪物暂无破甲轴）
+    speed: 14,      // 中性固定
+    dodge: 0,       // 怪物不闪避
+    hit: 0.85,      // 中性命中
+    crit: 0,        // 怪物不暴击
+    critDmg: 1.5,
+    tenacity: 0,    // 中性
+    resist: 0,      // 中性
+  };
+}
+
+/** 旧怪物四维 → 主属性（三独立反解，与 buildMonsterDerived 互为逆运算，round 后等价）。 */
+export function legacyToMonsterPrimary(legacy: LegacyStats, level: number): PrimaryStats {
+  return {
+    root: clamp((legacy.hp - level * 10) / 12, PRIMARY_MIN, PRIMARY_MAX),
+    qi: clamp((legacy.atk - level * 0.8) / 1.6, PRIMARY_MIN, PRIMARY_MAX),
+    spirit: clamp((legacy.def - level * 0.5) / 0.8, PRIMARY_MIN, PRIMARY_MAX),
+    agility: 5,   // 中性
+    fortune: 1,   // 中性（怪物不暴击）
+  };
+}
+
+/** 怪物当前 hp/atk/def（有 primary 则正向派生；否则回退原始手调值）。供显示层与回退逻辑统一读。 */
+export function monsterStatsOf(monster: {
+  level?: number;
+  primary?: PrimaryStats;
+  hp?: number;
+  atk?: number;
+  def?: number;
+}): { hp: number; atk: number; def: number } {
+  const level = monster.level ?? 1;
+  if (monster.primary) {
+    const d = buildMonsterDerived(monster.primary, level);
+    return { hp: d.hpMax, atk: d.atk, def: d.def };
+  }
+  return { hp: monster.hp ?? 0, atk: monster.atk ?? 0, def: monster.def ?? 0 };
+}

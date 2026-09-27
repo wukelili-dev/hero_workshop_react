@@ -213,9 +213,6 @@ export interface DropItem {
 export interface Monster {
   id: string;
   name: string;
-  hp: number;
-  atk: number;
-  def: number;
   expReward: number;
   goldReward: number;
   drops: DropItem[];
@@ -225,8 +222,12 @@ export interface Monster {
   icon?: string;
   /** 所属派系类型，影响派系亲和度加成 */
   npcType?: 'normal' | 'demon' | 'human' | 'divine';
-  /** C3：由「等级+主属性」派生的主属性（缺省则用原始手调 hp/atk/def） */
+  /** C3：由「等级+主属性」派生的主属性（新怪的权威数据源）；派生 hp/atk/def 走 Stats.buildMonsterDerived */
   primary?: PrimaryStats;
+  /** 旧四维（兼容：缺省 primary 的动态构造怪物/NPC 挑战用） */
+  hp?: number;
+  atk?: number;
+  def?: number;
 }
 
 export interface GameMap {

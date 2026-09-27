@@ -38,11 +38,18 @@ const src = readFileSync(join(root, 'src/data/maps.ts'), 'utf8');
 const lines = src.split(/\r?\n/);
 const monsters = {};
 for (const line of lines) {
-  const m = line.match(/^\s*'([^']+)':\s*\{\s*id:\s*'[^']*',\s*name:\s*'[^']*',\s*level:\s*(\d+),\s*hp:\s*(\d+),\s*atk:\s*(\d+),\s*def:\s*(\d+),/);
+  const m = line.match(/^\s*'([^']+)':\s*\{\s*id:\s*'[^']*',\s*name:\s*'[^']*',\s*level:\s*(\d+),\s*primary:\s*\{\s*root:\s*([\d.]+),\s*qi:\s*([\d.]+),\s*spirit:\s*([\d.]+),/);
   if (!m) continue;
   const expM = line.match(/expReward:\s*(\d+)/);
   const goldM = line.match(/goldReward:\s*(\d+)/);
-  monsters[m[1]] = { id: m[1], level: +m[2], hp: +m[3], atk: +m[4], def: +m[5], exp: expM ? +expM[1] : 0, gold: goldM ? +goldM[1] : 0, boss: /isBoss:\s*true/.test(line) };
+  const lv = +m[2], root = +m[3], qi = +m[4], spirit = +m[5];
+  monsters[m[1]] = {
+    id: m[1], level: lv,
+    hp: Math.round(root * 12 + lv * 10),
+    atk: Math.round(qi * 1.6 + lv * 0.8),
+    def: Math.round(spirit * 0.8 + lv * 0.5),
+    exp: expM ? +expM[1] : 0, gold: goldM ? +goldM[1] : 0, boss: /isBoss:\s*true/.test(line),
+  };
 }
 const maps = [];
 for (const line of lines) {

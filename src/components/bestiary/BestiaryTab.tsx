@@ -5,6 +5,7 @@ import { useGameStore } from '../../store/useGameStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { MAPS } from '../../data/maps';
 import type { Monster } from '../../types';
+import { monsterStatsOf } from '../../engine/Stats';
 import { NOVELTY_ITEMS, NOVELTY_RARITY_COLORS, NOVELTY_RARITY_NAMES } from '../../data/inventory';
 import { ITEM_DEFS } from '../../data/items/items';
 import { ItemCard } from '../shared/ItemCard';
@@ -177,7 +178,7 @@ export const BestiaryTab: React.FC = () => {
                           <div className="space-y-1">
                             <div className="font-bold">{monster.name}</div>
                             <div>等级：Lv.{monster.level ?? '?'}</div>
-                            <div>HP：{monster.hp}　ATK：{monster.atk}　DEF：{monster.def}</div>
+                            <div>HP：{monsterStatsOf(monster).hp}　ATK：{monsterStatsOf(monster).atk}　DEF：{monsterStatsOf(monster).def}</div>
                             {drops.length > 0 && (
                               <div className="text-[11px] text-gray-300">
                                 掉落：{drops.map((d, i) => (

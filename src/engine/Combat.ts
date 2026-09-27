@@ -11,7 +11,7 @@ import type { Monster, Equipment, ItemEffect, Lineage, Combatant, StatusEffectId
 import { generateDrop } from './equipmentDrops';
 import { useGameStore } from '../store/useGameStore';
 import { sum as sumEffect, sumList, equipEffectsOf } from './ItemEffects';
-import { buildDerived, STAT_CAPS } from './Stats';
+import { buildMonsterDerived, STAT_CAPS } from './Stats';
 import { setBonusEffects } from '../data/equipmentForms';
 import { getSkill, DEFAULT_HERO_SKILLS } from '../data/skills';
 
@@ -136,13 +136,13 @@ function heroCombatant(heroStats: HeroStats, equipEffects: ItemEffect[]): Combat
 
 function monsterCombatant(monster: Monster): Combatant {
   const level = monster.level ?? 1;
-  // C3：有 primary 则正向 buildDerived（怪物/NPC 重算）；否则用原始手调值（等价）
+  // C3：有 primary 则正向派生（怪物用独立换算表，三轴精确等价）；否则用原始手调值
   const { primary, derived } = monster.primary
-    ? { primary: monster.primary, derived: buildDerived(monster.primary, level) }
+    ? { primary: monster.primary, derived: buildMonsterDerived(monster.primary, level) }
     : {
         primary: { root: 1, qi: 1, agility: 1, spirit: 1, fortune: 1 } as PrimaryStats,
         derived: {
-          hpMax: monster.hp, atk: monster.atk, def: monster.def,
+          hpMax: monster.hp ?? 0, atk: monster.atk ?? 0, def: monster.def ?? 0,
           ...NEUTRAL_AXES, crit: 0, critDmg: 1.5,
         } as DerivedStats,
       };
@@ -230,7 +230,7 @@ export function executeBattle(
   const monC = monsterCombatant(monster);
 
   let heroHP = heroStats.hp;
-  let monsterHP = monster.hp;
+  let monsterHP = monC.derived.hpMax;
   const heroMaxHP = heroC.derived.hpMax;
 
   let round = 1;
