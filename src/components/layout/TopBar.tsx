@@ -1,9 +1,11 @@
-import React from 'react';
-import { FaCoins } from 'react-icons/fa6';
+import React, { useState } from 'react';
+import { FaCoins, FaEnvelope } from 'react-icons/fa6';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 import { useGameStore } from '../../store/useGameStore';
 import { dayNumber, shichenOf, useWorldStore } from '../../store/useWorldStore';
 import { titleName } from '../../engine/TitleSystem';
+import { unreadCount } from '../../engine/LetterSystem';
+import { Mailbox } from '../shared/Mailbox';
 
 export const TopBar: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
@@ -11,6 +13,8 @@ export const TopBar: React.FC = () => {
   const shichen = useWorldStore((s) => shichenOf(s.day));
   const dailyEvent = useWorldStore((s) => s.dailyEvent);
   const title = titleName();
+  const [showMailbox, setShowMailbox] = useState(false);
+  const unread = unreadCount();
   return (
     <div className="flex items-center gap-2 border-b border-[#8a7a63] bg-[#faf6ea]/95 px-3 py-1.5 md:gap-3 md:px-4 md:py-2">
       {/* 左：印 + 题名 */}
@@ -36,10 +40,19 @@ export const TopBar: React.FC = () => {
           <FaCoins />
           <AnimatedNumber value={hero.gold} />
         </span>
+        <button className="ink-btn relative px-2 py-0.5 text-sm" type="button" onClick={() => setShowMailbox(true)} aria-label="信箱">
+          <FaEnvelope />
+          {unread > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#b5382f] px-1 text-[10px] font-bold text-[#fdf6e8]">
+              {unread}
+            </span>
+          )}
+        </button>
         <button className="ink-btn px-2 py-0.5 text-sm" type="button" aria-label="菜单">
           ☰
         </button>
       </div>
+      {showMailbox && <Mailbox onClose={() => setShowMailbox(false)} />}
     </div>
   );
 };

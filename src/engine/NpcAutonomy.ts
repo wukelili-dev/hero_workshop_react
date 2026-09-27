@@ -8,6 +8,7 @@ import { useGameStore } from '../store/useGameStore';
 import { useNpcEcoStore } from '../store/useNpcEcoStore';
 import { useNpcStore } from '../store/useNpcStore';
 import { sum as sumEffect } from './ItemEffects';
+import { scanLetters } from './LetterSystem';
 import type { NpcDefinition, NpcSelfState, WorldEvent } from '../types';
 
 export function nameOf(id: string): string {
@@ -66,6 +67,8 @@ export function advanceNpcDay(day: number): void {
   const npcStore = useNpcStore.getState();
   const game = useGameStore.getState();
   store.pruneEvents(day);
+  // 书信扫描：条件命中的信在日推进时投递到信箱
+  scanLetters(day);
 
   // 慈悲词条：每日善值（持有即生效）
   const moralPerDay = sumEffect('moralPerDay');
