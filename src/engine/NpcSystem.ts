@@ -20,6 +20,7 @@ import { isBanned, priceMultiplier } from './FactionSystem';
 import { sum as sumEffect } from './ItemEffects';
 import { getItemsBySource } from '../data/items/items';
 import { record } from './Chronicle';
+import { adjustUnrest } from './PlaceSystem';
 import type { NpcChannel } from '../types';
 
 const dayNow = () => Math.floor(useWorldStore.getState().day);
@@ -91,6 +92,7 @@ export function attackNpc(npc: NpcDefinition): ActionResult {
   game.changeMoral(-10);
   addEvent({ day, kind: 'fight', actors: [npc.id], text: `${npc.name}在街头被人打伤，据说是位外乡人。`, aboutPlayer: true });
   record({ kind: 'crime', actors: [npc.id, 'player'], placeId: npc.location, text: `你在${npc.name}处动了手，当街将他打伤。`, importance: 3, tags: ['袭击', '结仇'] });
+  adjustUnrest(npc.location, 5);
   return { type: 'log', message: `你击败了${npc.name}。善恶值下降，其亲友已记恨于你。` };
 }
 
@@ -789,6 +791,7 @@ export function stealNpc(
       const itemMsg = itemStolen ? ` 获得 ${itemStolen.icon}${itemStolen.name}` : '';
       state.addGameLog(`⚔️ 偷窃败露后血战${npc.name}取胜！${goldMsg}${itemMsg}（亲密度 -20）`);
       record({ kind: 'crime', actors: [npc.id, 'player'], placeId: npc.location, text: `你偷${npc.name}败露，血战后取胜。`, importance: 2, tags: ['偷窃', '败露'] });
+      adjustUnrest(npc.location, 2);
 
       return {
         success: false,
@@ -810,6 +813,7 @@ export function stealNpc(
       npcStore.modifyNpcAffinity(npc.id, -25);
       state.addGameLog(`💀 偷窃${npc.name}败露后不敌，被打得只剩一口气…自动复活至 50% HP（${reviveHp}/${hero.maxHp}），亲密度 -25`);
       record({ kind: 'crime', actors: [npc.id, 'player'], placeId: npc.location, text: `你偷${npc.name}败露，不敌被撂倒。`, importance: 2, tags: ['偷窃', '败露'] });
+      adjustUnrest(npc.location, 2);
 
       return {
         success: false,
@@ -863,6 +867,7 @@ export function stealNpc(
   }
 
   record({ kind: 'crime', actors: [npc.id, 'player'], placeId: npc.location, text: `你偷了${npc.name}的${item?.name ?? '钱财'}，他迟早会找上门来。`, importance: 2, tags: ['偷窃'] });
+  adjustUnrest(npc.location, 3);
   return { success: true, item, goldBonus, stealRate };
 }
 

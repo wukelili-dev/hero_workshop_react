@@ -19,6 +19,7 @@ import { priceMultiplier } from './FactionSystem';
 import { sum as sumEffect } from './ItemEffects';
 import { hash01 } from './hash';
 import { useWorldStore } from '../store/useWorldStore';
+import { unrestOf } from './PlaceSystem';
 
 function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
@@ -48,6 +49,11 @@ export function quote(cityId: string, goodId: string, day: number): number {
 
   const factionMult = city.factionIds.reduce((acc, f) => acc * priceMultiplier(f), 1);
   const shopCut = sumEffect('shopPrice');
+  // 地方状态：治安恶化 → 涨价；繁荣 → 略降
+  const unrest = unrestOf(cityId);
+  const prosperity = useWorldStore.getState().places?.[cityId]?.prosperity ?? 0;
+  const unrestMult = unrest >= 70 ? 1.3 : unrest >= 40 ? 1.15 : 1;
+  const prosperityMult = prosperity >= 50 ? 0.95 : 1;
 
   const raw =
     good.basePrice
@@ -55,6 +61,8 @@ export function quote(cityId: string, goodId: string, day: number): number {
     * supplyDemandFactor(cityId, goodId)
     * factionMult
     * eventFactor(day, cityId, goodId)
+    * unrestMult
+    * prosperityMult
     * (1 - shopCut);
 
   return Math.max(1, Math.round(raw));

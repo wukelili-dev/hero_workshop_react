@@ -16,6 +16,10 @@ import { RARITY_COLOR, RARITY_NAME } from '../../types';
 import type { Monster } from '../../types';
 import { buildInkMapSvg } from './inkMapSvg';
 import { WorldOverview } from './WorldOverview';
+import { senseOf } from '../../data/sense';
+import { loreForTerrain, cityLore } from '../../data/placeLore';
+import { unrestNote } from '../../engine/PlaceSystem';
+import { hash01 } from '../../engine/hash';
 import { FaMapLocationDot, FaSkullCrossbones, FaXmark, FaLock, FaShoePrints } from 'react-icons/fa6';
 
 interface InkMapPanelProps {
@@ -234,6 +238,18 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
   const isSect = currentCell?.features[0]?.type === 'sect';
   const monsters = [...(currentEncounter?.monsters ?? [])].sort((a, b) => (a.level ?? 0) - (b.level ?? 0));
 
+  // 感官/地名志：城市进入显示感官 note + 盘查；野外格显示地名志开场句（按 day+cell 轮换）
+  const sense = boundMap?.isCity && boundMap?.id ? senseOf(boundMap.id) : null;
+  const unrest = boundMap?.isCity && boundMap?.id ? unrestNote(boundMap.id) : null;
+  const lorePool = useMemo(() => {
+    if (sense) return cityLore(boundMap!.id);
+    if (currentCell) return loreForTerrain(currentCell.terrain);
+    return [];
+  }, [sense, currentCell, boundMap]);
+  const loreLine = lorePool.length > 0
+    ? lorePool[Math.floor(hash01(`${day}:${currentCellId}`) * lorePool.length) % lorePool.length]
+    : null;
+
   return (
     <div className={embedded ? 'flex h-full min-h-0 flex-col bg-[#f3efe4]' : 'fixed inset-0 z-50 flex flex-col bg-[#f3efe4]'}>
       {/* 顶栏 */}
@@ -293,6 +309,17 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
             <div className="mt-1 text-[11px] text-gray-500">
               {currentTerrain?.name} · 海拔 {currentCell?.elevation ?? 0} · 坐标 ({currentCell?.x ?? 0}, {currentCell?.y ?? 0})
             </div>
+            {sense && (
+              <div className="mt-1.5 rounded-lg bg-[#f3efe4] px-2 py-1.5 text-[11px] italic leading-relaxed text-[#6b6252]">
+                {sense.note}
+              </div>
+            )}
+            {unrest && (
+              <div className="mt-1 text-[11px] text-[#8f2b23]">⚠ {unrest}</div>
+            )}
+            {loreLine && !sense && (
+              <div className="mt-1 text-[11px] italic leading-relaxed text-[#6b6252]">{loreLine}</div>
+            )}
             {currentRec && (
               <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
                 <span className="ink-tag">推荐 Lv.{currentRec.lv}</span>
