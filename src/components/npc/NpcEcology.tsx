@@ -17,6 +17,7 @@ import {
 import { GiftModal } from './GiftModal';
 import { factionName } from '../../data/factions';
 import { allFactionRep } from '../../engine/FactionSystem';
+import { query as queryChronicle } from '../../engine/Chronicle';
 
 const GOAL_ZH: Record<string, string> = {
   wealth: '敛财', power: '精进', revenge: '寻仇', love: '求偶', fame: '扬名', wander: '云游',
@@ -253,12 +254,19 @@ export const NpcEcology: React.FC = () => {
         <div className="border-t border-[#8a7a63]/40 p-3">
           <div className="ink-title mb-1 text-[13px]">城中见闻</div>
           <div className="space-y-1 text-[11px] leading-relaxed text-[#6b6252]">
+            {queryChronicle({ minImportance: 2, limit: 4 }).map((c) => (
+              <div key={c.id} className="text-[#8f2b23]">
+                第{c.day}天 · {c.text}
+              </div>
+            ))}
             {events.slice(0, 5).map((e) => (
               <div key={e.id} className={e.aboutPlayer ? 'text-[#8f2b23]' : ''}>
                 第{e.day}天 · {e.text}
               </div>
             ))}
-            {events.length === 0 && <div className="text-[#9c917b]">暂时风平浪静。</div>}
+            {queryChronicle({ minImportance: 2, limit: 4 }).length === 0 && events.length === 0 && (
+              <div className="text-[#9c917b]">暂时风平浪静。</div>
+            )}
           </div>
         </div>
       </div>

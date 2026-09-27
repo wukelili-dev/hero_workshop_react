@@ -11,7 +11,7 @@ import { advanceNpcDay } from '../engine/NpcAutonomy';
 import { tickVisits } from '../engine/VisitSystem';
 import { sum as sumEffect } from '../engine/ItemEffects';
 import { regionOfCell, gateBetween, type RegionGate } from '../data/regions';
-import type { Consequence, PendingVisit } from '../types';
+import type { ChronicleEntry, Consequence, PendingVisit, PlaceState } from '../types';
 
 /** 出生点：傲来国（新手区，与 useGameStore 默认 currentMapId='aolai' 对齐） */
 export const START_CELL_ID = 'cp_2_5';
@@ -42,6 +42,12 @@ export interface WorldSave {
   marketStock: Record<string, number>;
   /** 打听到的行情情报（3 天过期） */
   marketIntel: { cityId: string; goodId: string; price: number; day: number }[];
+  /** 世界叙事台账（回声层：玩家行为史） */
+  chronicle: ChronicleEntry[];
+  /** 地方状态（城市/区域记忆） */
+  places: Record<string, PlaceState>;
+  /** 信箱：NPC 来信 */
+  letters: import('../types').LetterInstance[];
 }
 
 type WorldState = WorldSave;
@@ -119,6 +125,9 @@ const DEFAULT_WORLD: WorldState = {
   factionRep: {},
   marketStock: {},
   marketIntel: [],
+  chronicle: [],
+  places: {},
+  letters: [],
 };
 
 export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
@@ -251,6 +260,9 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
       factionRep: (data as WorldSave & { factionRep?: Record<string, number> }).factionRep ?? {},
       marketStock: (data as WorldSave & { marketStock?: Record<string, number> }).marketStock ?? {},
       marketIntel: (data as WorldSave & { marketIntel?: { cityId: string; goodId: string; price: number; day: number }[] }).marketIntel ?? [],
+      chronicle: (data as WorldSave & { chronicle?: ChronicleEntry[] }).chronicle ?? [],
+      places: (data as WorldSave & { places?: Record<string, PlaceState> }).places ?? {},
+      letters: (data as WorldSave & { letters?: import('../types').LetterInstance[] }).letters ?? [],
     });
   },
 

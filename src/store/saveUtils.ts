@@ -66,6 +66,7 @@ export function saveGame(): boolean {
       world: {
         day: worldState.day,
         currentCellId: worldState.currentCellId,
+        currentRegionId: worldState.currentRegionId,
         revealedCells: worldState.revealedCells,
         visitedCells: worldState.visitedCells,
         lastTickAt: worldState.lastTickAt,
@@ -73,6 +74,14 @@ export function saveGame(): boolean {
         bountyClaimed: worldState.bountyClaimed,
         worldFlags: worldState.worldFlags,
         dailyEvent: worldState.dailyEvent,
+        visits: worldState.visits,
+        consequences: worldState.consequences,
+        factionRep: worldState.factionRep,
+        marketStock: worldState.marketStock,
+        marketIntel: worldState.marketIntel,
+        chronicle: worldState.chronicle,
+        places: worldState.places,
+        letters: worldState.letters,
       },
       ranch: { slots: ranchState.slots },
       factory: {

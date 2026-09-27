@@ -19,6 +19,7 @@ import { enqueueRevenge } from './VisitSystem';
 import { isBanned, priceMultiplier } from './FactionSystem';
 import { sum as sumEffect } from './ItemEffects';
 import { getItemsBySource } from '../data/items/items';
+import { record } from './Chronicle';
 import type { NpcChannel } from '../types';
 
 const dayNow = () => Math.floor(useWorldStore.getState().day);
@@ -89,6 +90,7 @@ export function attackNpc(npc: NpcDefinition): ActionResult {
   eco.patch(npc.id, { health: Math.max(0, inst.health - 40), enemies: [...inst.enemies, 'player'] });
   game.changeMoral(-10);
   addEvent({ day, kind: 'fight', actors: [npc.id], text: `${npc.name}在街头被人打伤，据说是位外乡人。`, aboutPlayer: true });
+  record({ kind: 'crime', actors: [npc.id, 'player'], placeId: npc.location, text: `你在${npc.name}处动了手，当街将他打伤。`, importance: 3, tags: ['袭击', '结仇'] });
   return { type: 'log', message: `你击败了${npc.name}。善恶值下降，其亲友已记恨于你。` };
 }
 
@@ -138,6 +140,7 @@ export function wedNpc(npc: NpcDefinition): ActionResult {
   useGameStore.getState().addGameLog(`你与${npc.name}成婚。`);
   propagate(npc.id, 'wed');
   addEvent({ day, kind: 'bond', actors: [npc.id], text: `城中传闻：${npc.name}成亲了，喜宴摆了三条街。`, aboutPlayer: true });
+  record({ kind: 'bond', actors: [npc.id, 'player'], placeId: npc.location, text: `你与${npc.name}成婚，喜宴摆了三条街。`, importance: 3, tags: ['成婚'] });
   return { type: 'log', message: `礼成。你与${npc.name}结为夫妻。` };
 }
 
@@ -164,6 +167,7 @@ export function exposeSecretNpc(npc: NpcDefinition): ActionResult {
   const faction = eco.getEco(npc.id).self.factionId ?? FACTION_BY_NPC[npc.id];
   if (faction) useWorldStore.getState().addFactionRep(faction, -10);
   addEvent({ day, kind: 'rumor', actors: [npc.id], text: secret.text, aboutPlayer: true });
+  record({ kind: 'crime', actors: [npc.id, 'player'], placeId: npc.location, text: `你揭发了${npc.name}的秘密，他记恨上了你。`, importance: 2, tags: ['揭发'] });
   return {
     type: 'log',
     message: `你揭发了${npc.name}的秘密（${secret.text}），得赏银 ${secret.gold}、善恶 +${secret.moral}；他记恨上了你。`,
@@ -784,6 +788,7 @@ export function stealNpc(
       const goldMsg = goldTaken > 0 ? ` +${goldTaken}G` : '';
       const itemMsg = itemStolen ? ` 获得 ${itemStolen.icon}${itemStolen.name}` : '';
       state.addGameLog(`⚔️ 偷窃败露后血战${npc.name}取胜！${goldMsg}${itemMsg}（亲密度 -20）`);
+      record({ kind: 'crime', actors: [npc.id, 'player'], placeId: npc.location, text: `你偷${npc.name}败露，血战后取胜。`, importance: 2, tags: ['偷窃', '败露'] });
 
       return {
         success: false,
@@ -804,6 +809,7 @@ export function stealNpc(
       state.setHero({ hp: reviveHp });
       npcStore.modifyNpcAffinity(npc.id, -25);
       state.addGameLog(`💀 偷窃${npc.name}败露后不敌，被打得只剩一口气…自动复活至 50% HP（${reviveHp}/${hero.maxHp}），亲密度 -25`);
+      record({ kind: 'crime', actors: [npc.id, 'player'], placeId: npc.location, text: `你偷${npc.name}败露，不敌被撂倒。`, importance: 2, tags: ['偷窃', '败露'] });
 
       return {
         success: false,
@@ -856,6 +862,7 @@ export function stealNpc(
     state.addGameLog(`🎁 顺手牵羊得名物「${si.name}」！`);
   }
 
+  record({ kind: 'crime', actors: [npc.id, 'player'], placeId: npc.location, text: `你偷了${npc.name}的${item?.name ?? '钱财'}，他迟早会找上门来。`, importance: 2, tags: ['偷窃'] });
   return { success: true, item, goldBonus, stealRate };
 }
 

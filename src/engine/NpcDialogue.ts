@@ -7,6 +7,7 @@ import { useGameStore } from '../store/useGameStore';
 import { useNpcEcoStore, ecoDef } from '../store/useNpcEcoStore';
 import { useNpcStore } from '../store/useNpcStore';
 import { useWorldStore } from '../store/useWorldStore';
+import { query as queryChronicle } from './Chronicle';
 import type { NpcChannel, NpcCondition, NpcDefinition, NpcEffect, NpcVoice } from '../types';
 
 export interface DialogueResult {
@@ -93,22 +94,29 @@ function callName(voice: NpcVoice, affinity: number, bond: string): string {
   return voice.callPlayer.stranger;
 }
 
-/** 渲染一行台词：替换 ${self}/${call}/${name}/${title}/${catch}/${day} */
+/** 渲染一行台词：替换 ${self}/${call}/${name}/${title}/${catch}/${day}/${chron} */
 export function renderLine(npc: NpcDefinition, raw: string): string {
   const eco = useNpcEcoStore.getState().getEco(npc.id);
   const affinity = useNpcStore.getState().getNpcAffinity(npc.id);
   const day = Math.floor(useWorldStore.getState().day);
-  return interpolate(raw, npc, voiceOf(npc), affinity, eco.bond, day);
+  return interpolate(raw, npc, voiceOf(npc), affinity, eco.bond, day, chronFor(npc.id));
 }
 
-function interpolate(line: string, npc: NpcDefinition, voice: NpcVoice, affinity: number, bond: string, day: number): string {
+/** 取该 NPC 相关的最近一条 importance≥2 回声句；取不到返回空串 */
+export function chronFor(npcId: string): string {
+  const e = queryChronicle({ aboutNpc: npcId, minImportance: 2, limit: 1 })[0];
+  return e ? e.text : '';
+}
+
+function interpolate(line: string, npc: NpcDefinition, voice: NpcVoice, affinity: number, bond: string, day: number, chron = ''): string {
   return line
     .replace(/\$\{self\}/g, voice.selfCall)
     .replace(/\$\{call\}/g, callName(voice, affinity, bond))
     .replace(/\$\{name\}/g, npc.name)
     .replace(/\$\{title\}/g, npc.title)
     .replace(/\$\{catch\}/g, voice.catchphrase ?? '……')
-    .replace(/\$\{day\}/g, String(day));
+    .replace(/\$\{day\}/g, String(day))
+    .replace(/\$\{chron\}/g, chron);
 }
 
 interface Candidate {
@@ -132,7 +140,7 @@ function pick(list: Candidate[]): Candidate | null {
 }
 
 /** 模板组合：渠道 × 状态档，命中越多组合越多 */
-function templateCandidates(npc: NpcDefinition, channel: NpcChannel, affinity: number, bond: string, mood: string): Candidate[] {
+function templateCandidates(npc: NpcDefinition, channel: NpcChannel, affinity: number, bond: string, mood: string, chron: string): Candidate[] {
   const pools = CHANNEL_LINES[channel];
   if (!pools) return [];
   const out: Candidate[] = [];
@@ -147,6 +155,8 @@ function templateCandidates(npc: NpcDefinition, channel: NpcChannel, affinity: n
   if (wealth === 'rich') push(pools.rich, 2, 'rich');
   if (wealth === 'poor') push(pools.poor, 2, 'poor');
   if (channel === 'greet') push(TONE_GREET[voiceOf(npc).tone], 2, 'tone');
+  // 回声池：有台账回声时才加入（含 ${chron}，无回声则整池不出现）
+  if (chron) push((pools as { echo?: string[] }).echo, 4, 'echo');
   return out;
 }
 
@@ -159,13 +169,16 @@ export function talk(npc: NpcDefinition, channel: NpcChannel = 'chat'): Dialogue
   const eco = ecoStore.getEco(npc.id);
   const affinity = npcStore.getNpcAffinity(npc.id);
   const voice = voiceOf(npc);
+  const chron = chronFor(npc.id);
 
   const authored: Candidate[] = (ecoDef(npc.id).dialogueRules ?? [])
     .filter((r) =>
       r.channel === channel
       && !(r.once && eco.saidOnce.includes(r.id))
       && (r.cooldownDays === undefined || (eco.cooldowns[r.id] ?? 0) <= day)
-      && matches(r.when, npc))
+      && matches(r.when, npc)
+      // 含 ${chron} 的规则：无回声时自动不命中，避免"上次你。"半句
+      && (chron !== '' || !r.lines.some((l) => l.includes('${chron}'))))
     .map((r) => {
       const base = (r.weight ?? 2) * 3;
       // 近期说过的规则降权 90%，避免复读；once/冷却已在上层过滤
@@ -174,11 +187,11 @@ export function talk(npc: NpcDefinition, channel: NpcChannel = 'chat'): Dialogue
     });
   const authoredIds = new Set(authored.map((c) => c.id));
 
-  const chosen = pick([...authored, ...templateCandidates(npc, channel, affinity, eco.bond, eco.mood)])
+  const chosen = pick([...authored, ...templateCandidates(npc, channel, affinity, eco.bond, eco.mood, chron)])
     ?? { id: 'fallback', lines: [`${voice.selfCall}没有多说什么。`], weight: 1 };
 
   const raw = chosen.lines[Math.floor(Math.random() * chosen.lines.length)];
-  const text = interpolate(raw, npc, voice, affinity, eco.bond, day);
+  const text = interpolate(raw, npc, voice, affinity, eco.bond, day, chron);
 
   ecoStore.addMemory(npc.id, channel, day, chosen.id);
   // 手写规则（非模板/兜底）记入近期话题，供下次降权

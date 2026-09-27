@@ -85,6 +85,7 @@ export const TONE_GREET: Record<string, string[]> = {
 /** 各渠道台词池：base + 状态附加池，命中越多组合越多 */
 export const CHANNEL_LINES: Record<NpcChannel, {
   base: string[]; warm?: string[]; cold?: string[]; spouse?: string[]; rich?: string[]; poor?: string[];
+  echo?: string[];
 }> = {
   greet: {
     base: [
@@ -121,6 +122,12 @@ export const CHANNEL_LINES: Record<NpcChannel, {
       '${self}叹了口气，把空钱袋往里塞了塞。',
       '${self}苦笑：「这阵子，糊口都难。」',
     ],
+    echo: [
+      '${self}见你，压低了声音：「${chron}，这事我可听说了。」',
+      '${self}上下打量你：「${chron}——外头都传遍了。」',
+      '「${chron}。」${self}顿了顿，「是${call}你干的吧？」',
+      '${self}拉着你到一旁：「${chron}，如今城里谁不知道。」',
+    ],
   },
   chat: {
     base: [
@@ -143,6 +150,11 @@ export const CHANNEL_LINES: Record<NpcChannel, {
       '「你出门在外，夜里冷。」${self}说着又给你添了一件。',
       '${self}把近来的家长里短一件件说给你听。',
       '「外头的事，说给我听。」${self}坐到你身边。',
+    ],
+    echo: [
+      '${self}凑近道：「${chron}——如今满城都在传。」',
+      '「${chron}。」${self}意味深长地看了你一眼。',
+      '${self}把声音压得更低：「${chron}，你听说了没有？」',
     ],
   },
   trade: {
@@ -254,6 +266,11 @@ export const CHANNEL_LINES: Record<NpcChannel, {
       '「听说了吗？${catch}」${self}压低声音。',
       '${self}左右看看，凑近你耳边嘀咕了几句。',
       '「这话我只跟你说，别传出去。」${self}神秘兮兮。',
+    ],
+    echo: [
+      '${self}压着嗓子：「${chron}——就这几日的事。」',
+      '「${chron}。」${self}朝你使了个眼色，「你知道的。」',
+      '${self}左右张望，低声道：「${chron}，风声紧着呢。」',
     ],
   },
   idle: {
@@ -455,6 +472,10 @@ export const GENERIC_RULES: NpcDialogueRule[] = [
   { id: 'g_befriend_1', channel: 'befriend', weight: 2, lines: ['${self}点了点头：「往后算你一个。」'] },
   { id: 'g_rumor_1', channel: 'rumor', weight: 2, lines: ['「听说了吗？」${self}压低声音，「街头巷尾都在传。」', '${self}左右看了看：「这事我只跟你说。」', '「有桩新鲜事，${call}听了准来精神。」${self}凑近道。'] },
   { id: 'g_chat_1', channel: 'chat', weight: 1, lines: ['${self}想了想：「这条街上，人多，话也多。」', '${self}随口应了两句，又忙自己的去了。'] },
+  // ── 回声（含 ${chron}，无台账回声时被 NpcDialogue 自动跳过） ──
+  { id: 'g_echo_greet', channel: 'greet', weight: 6, cooldownDays: 3, lines: ['${self}见是你，神色有些复杂：「${chron}，这事，我劝${call}最近收敛些。」', '${self}把你拉到一边：「${chron}——你还有心思来？」'] },
+  { id: 'g_echo_chat', channel: 'chat', weight: 5, cooldownDays: 3, lines: ['${self}顿了顿：「${chron}。往后行事，多留个心眼。」', '「${chron}。」${self}说得轻，「这城里，可没不透风的墙。」'] },
+  { id: 'g_echo_rumor', channel: 'rumor', weight: 5, cooldownDays: 3, lines: ['${self}神神秘秘：「${chron}。可别再声张了。」'] },
 ];
 
 /** 从 NPC 的称号/描述推断语气 */

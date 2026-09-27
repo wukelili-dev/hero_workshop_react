@@ -677,6 +677,88 @@ export interface NpcDefinition {
 }
 
 // ============================================================
+// 沉浸感与文字内容（I1~I5）：回声台账 / 地方状态 / 称号 / 书信 / 列传
+// ============================================================
+
+/** 回声台账条目类型 */
+export type ChronicleKind =
+  | 'battle' | 'crime' | 'bond' | 'trade' | 'discover' | 'faction' | 'travel' | 'npc' | 'death';
+
+export interface ChronicleEntry {
+  id: string;
+  day: number;
+  kind: ChronicleKind;
+  /** 相关 NPC / 势力 / 地点 */
+  actors: string[];
+  placeId?: string;
+  /** 人类可读的叙述句（写入时渲染好，读取只做检索） */
+  text: string;
+  /** 1 小 / 2 中 / 3 大 */
+  importance: 1 | 2 | 3;
+  tags: string[];
+}
+
+/** 地方状态（城市/区域记住"这里发生过什么"） */
+export interface PlaceState {
+  placeId: string;
+  prosperity: number;
+  unrest: number;
+  scars: { kind: 'fire' | 'raid' | 'plague' | 'festival'; day: number; text: string }[];
+  flags: Record<string, number>;
+}
+
+/** 感官指纹（每座城一套） */
+export interface SenseProfile {
+  cityId: string;
+  smell: string[];
+  sound: string[];
+  sight: string[];
+  note: string;
+}
+
+/** 地名志（每格一句，按地形取） */
+export interface PlaceLore { id: string; terrain: string[]; lines: string[]; }
+
+/** 玩家称号（身份来自行为史，从台账标签算出） */
+export interface PlayerTitle {
+  id: string;
+  name: string;
+  when: { moral?: { min?: number; max?: number }; flags?: Record<string, { min?: number }>; tags?: Record<string, { min?: number }> };
+  priority: number;
+  flavor: string;
+}
+
+/** 书信定义（NPC 主动来信，可回信） */
+export interface LetterDef {
+  id: string;
+  fromNpcId: string;
+  when: { bond?: NpcBond[]; tags?: Record<string, { min?: number }>; daysSinceBond?: { min: number } };
+  once?: boolean;
+  subject: string;
+  body: string[];
+  options?: { id: string; text: string; effects: WorldEffect[]; reply: string }[];
+}
+
+/** 书信实例（存 useWorldStore.letters） */
+export interface LetterInstance {
+  defId: string;
+  fromNpcId: string;
+  day: number;
+  read: boolean;
+  repliedOptionIds: string[];
+}
+
+/** 列传定义（NPC 小传 / Boss 志 / 地名志） */
+export interface BiographyDef {
+  id: string;
+  subjectId: string;
+  kind: 'npc' | 'boss' | 'place';
+  unlock: { bond?: NpcBond[]; tags?: Record<string, { min?: number }>; worldFlag?: string };
+  title: string;
+  body: string[];
+}
+
+// ============================================================
 // 物品与词条系统（M1/M2）
 // ============================================================
 

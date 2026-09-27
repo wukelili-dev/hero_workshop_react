@@ -44,9 +44,17 @@ check('关键文件存在', () => {
     'src/engine/ItemEffects.ts', 'src/data/items/items.ts', 'src/data/items/nameParts.ts',
     'src/components/shared/ItemCard.tsx', 'src/engine/VisitSystem.ts', 'src/components/shared/VisitModal.tsx',
     'src/data/factions.ts', 'src/engine/FactionSystem.ts', 'src/engine/OfflineReport.ts',
+    'src/engine/Chronicle.ts',
   ];
   const miss = must.filter((f) => !existsSync(f));
   return { ok: miss.length === 0, out: miss.length ? `缺失: ${miss.join(', ')}` : `OK（${must.length} 个）` };
+});
+
+// 2b) 存档字段完整（saveUtils 的 world 对象不能漏字段，否则读档归零）
+check('存档字段完整', () => {
+  const fields = ['currentRegionId', 'visits', 'consequences', 'factionRep', 'marketStock', 'marketIntel', 'chronicle', 'places', 'letters'];
+  const miss = fields.filter((f) => !has('src/store/saveUtils.ts', `${f}:`));
+  return { ok: miss.length === 0, out: miss.length ? `saveUtils 缺: ${miss.join(', ')}` : `OK（${fields.length}/${fields.length}）` };
 });
 
 // 3) 词条挂点接线（含离线结算）

@@ -53,12 +53,13 @@ export function claimBounty(b: Bounty): string {
   const world = useWorldStore.getState();
   if (world.bountyClaimed.includes(b.id)) return '这条悬赏已经领过了。';
   const has = bountyProgress(b.monsterId);
-  if (has < b.need) return `还差 ${b.need - has} 只${b.monsterId}。`;
+  const monsterName = MONSTERS[b.monsterId]?.name ?? b.monsterId;
+  if (has < b.need) return `还差 ${b.need - has} 只${monsterName}。`;
   const game = useGameStore.getState();
   game.addGold(b.gold);
   if (b.resource) game.addResource(b.resource.key, b.resource.amount);
   world.claimBounty(b.id);
-  game.addGameLog(`领悬赏：讨伐${b.monsterId}×${b.need}，得 ${b.gold} 金`);
+  game.addGameLog(`领悬赏：讨伐${monsterName}×${b.need}，得 ${b.gold} 金`);
 
   // 名物产出：drop 来源的名物有小概率作为悬赏奖励掉落
   const dropItems = getItemsBySource('drop');
