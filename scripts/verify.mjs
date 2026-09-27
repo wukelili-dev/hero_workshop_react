@@ -47,6 +47,7 @@ check('关键文件存在', () => {
     'src/engine/Chronicle.ts', 'src/data/sense.ts', 'src/data/placeLore.ts', 'src/engine/PlaceSystem.ts',
     'src/data/titles.ts', 'src/engine/TitleSystem.ts',
     'src/data/letters.ts', 'src/engine/LetterSystem.ts', 'src/components/shared/Mailbox.tsx',
+    'src/data/biographies.ts',
   ];
   const miss = must.filter((f) => !existsSync(f));
   return { ok: miss.length === 0, out: miss.length ? `缺失: ${miss.join(', ')}` : `OK（${must.length} 个）` };
@@ -57,6 +58,16 @@ check('存档字段完整', () => {
   const fields = ['currentRegionId', 'visits', 'consequences', 'factionRep', 'marketStock', 'marketIntel', 'chronicle', 'places', 'letters'];
   const miss = fields.filter((f) => !has('src/store/saveUtils.ts', `${f}:`));
   return { ok: miss.length === 0, out: miss.length ? `saveUtils 缺: ${miss.join(', ')}` : `OK（${fields.length}/${fields.length}）` };
+});
+
+// 2c) 内容量达标（沉浸感 I5）
+check('内容量产达标', () => {
+  const count = (f, needle) => (read(f).match(new RegExp(needle, 'g')) || []).length;
+  const bios = count('src/data/biographies.ts', "subjectId:");
+  const letters = count('src/data/letters.ts', "fromNpcId:");
+  const titles = count('src/data/titles.ts', "name:");
+  const ok = bios >= 20 && letters >= 9 && titles >= 15;
+  return { ok, out: ok ? `列传${bios}/书信${letters}/称号${titles}` : `不足：列传${bios}（需≥20）书信${letters}（需≥9）称号${titles}（需≥15）` };
 });
 
 // 3) 词条挂点接线（含离线结算）

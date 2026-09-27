@@ -12,6 +12,7 @@ import { PLANTS_CATALOG, PLANT_RARITY_COLORS, PLANT_RARITY_NAMES } from '../../d
 import { RANCH_CATALOG } from '../../data/ranch';
 import { NPCS } from '../../data/npcs';
 import { getAllEncounterMonsters } from '../../data/cellEncounters';
+import { biographyOf } from '../../data/biographies';
 
 const MAP_MONSTERS: Monster[] = MAPS.flatMap((m) => [...(m.monsters ?? []), ...(m.boss ? [m.boss] : [])]);
 
@@ -189,6 +190,16 @@ export const BestiaryTab: React.FC = () => {
                                 ))}
                               </div>
                             )}
+                            {(() => {
+                              const bio = biographyOf(monster.id);
+                              if (!bio) return null;
+                              return (
+                                <div className="mt-1.5 border-t border-gray-700 pt-1.5 text-[11px] leading-relaxed text-gray-200">
+                                  <div className="font-bold text-amber-300">{bio.title}</div>
+                                  {bio.body.slice(0, 3).map((para, i) => <div key={i}>{para}</div>)}
+                                </div>
+                              );
+                            })()}
                           </div>
                           <Tooltip.Arrow className="fill-gray-800" />
                         </Tooltip.Content>

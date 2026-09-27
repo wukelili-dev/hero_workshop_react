@@ -19,6 +19,7 @@ import { factionName } from '../../data/factions';
 import { allFactionRep } from '../../engine/FactionSystem';
 import { query as queryChronicle } from '../../engine/Chronicle';
 import { buildPlayerChronicle } from '../../engine/TitleSystem';
+import { biographyOf } from '../../data/biographies';
 
 const GOAL_ZH: Record<string, string> = {
   wealth: '敛财', power: '精进', revenge: '寻仇', love: '求偶', fame: '扬名', wander: '云游',
@@ -195,6 +196,8 @@ export const NpcEcology: React.FC = () => {
               <div className="mt-2 text-[11px] text-[#9c917b]">
                 关系：{relationsOf(sel.id).length ? relationsOf(sel.id).map((r) => `${NPCS.find((n) => n.id === r.target)?.name ?? r.target}（${REL_COLOR[r.type]?.label ?? r.type}·${Math.round(strengthOf(sel.id, r.target))}）`).join('，') : '暂无关联人物'}
               </div>
+              {/* 列传 */}
+              <BiographySection subjectId={sel.id} bond={eco.bond} />
             </div>
 
             <div className="flex flex-wrap gap-1.5 border-t border-[#8a7a63]/40 px-3 py-2">
@@ -311,6 +314,29 @@ const PlayerBiography: React.FC = () => {
       {pc.timeline.length === 0 && !pc.title && (
         <div className="text-[10px] text-[#9c917b]">尚未在这世上留下什么痕迹。</div>
       )}
+    </div>
+  );
+};
+
+/** NPC 列传段：unlock 未满足显示"尚未知悉此人底细"，满足则显示 body */
+const BiographySection: React.FC<{ subjectId: string; bond: string }> = ({ subjectId, bond }) => {
+  const bio = biographyOf(subjectId);
+  if (!bio) return null;
+  const unlocked = (() => {
+    const u = bio.unlock;
+    if (u.bond && !u.bond.includes(bond as never)) return false;
+    if (u.worldFlag && !useWorldStore.getState().hasWorldFlag(u.worldFlag)) return false;
+    return true;
+  })();
+  if (!unlocked) {
+    return <div className="mt-2 border-t border-[#8a7a63]/40 pt-1.5 text-[11px] italic text-[#9c917b]">尚未知悉此人底细。</div>;
+  }
+  return (
+    <div className="mt-2 border-t border-[#8a7a63]/40 pt-1.5">
+      <div className="ink-title text-[12px]">{bio.title}</div>
+      <div className="mt-1 space-y-1 text-[11px] leading-relaxed text-[#6b6252]">
+        {bio.body.map((para, i) => <div key={i}>{para}</div>)}
+      </div>
     </div>
   );
 };
