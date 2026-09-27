@@ -12,6 +12,8 @@ import { BUILDING_CONFIGS, BUILDING_OUTPUTS } from '../data/buildings';
 import { getCellEncounter } from '../data/cellEncounters';
 import { sum as sumEffect, sumList } from '../engine/ItemEffects';
 import { getItemDef } from '../data/items/items';
+import { getWeaponFormByName, getArmorFormByName } from '../data/equipment';
+import { formSetId } from '../data/equipmentForms';
 
 // 掉落物品 itemId → 资源 key 映射（怪物掉落用中文，资源状态用英文）
 const DROP_TO_RESOURCE: Record<string, string> = {
@@ -545,6 +547,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const newAtk = w.stats?.atk ?? 0;
     const oldCrit = hero.weapon?.stats?.crit ?? 0;
     const newCrit = w.stats?.crit ?? 0;
+    // C4：形态 + 套装（按名字映射）
+    const form = w.form ?? getWeaponFormByName(w.name);
+    const setId = w.setId ?? formSetId(form);
+    const wEquip: Equipment = { ...w, form, setId };
     // equip 词条基础数值加成（M3：atk/crit 等，与 stats 叠加）
     const atkBonus = sumList(w.effects ?? [], 'atk');
     const critBonus = sumList(w.effects ?? [], 'crit');
@@ -552,7 +558,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       hero: {
         ...s.hero,
         gold: s.hero.gold - goldCost,
-        weapon: w,
+        weapon: wEquip,
         atk: BASE_ATK(s.hero.level) + newAtk + atkBonus,
         critRate: Math.max(0, Math.min(1, s.hero.critRate - oldCrit + newCrit + critBonus)),
       },
@@ -585,6 +591,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       newRes[rKey] = Math.max(0, (newRes as any)[rKey] - Number(amt));
     }
     const newHp = (a.stats?.hp ?? 0);
+    // C4：形态 + 套装（按名字映射）
+    const form = a.form ?? getArmorFormByName(a.name);
+    const setId = a.setId ?? formSetId(form);
+    const aEquip: Equipment = { ...a, form, setId };
     // equip 词条基础数值加成（M3：def/hpMax 等，与 stats 叠加）
     const defBonus = sumList(a.effects ?? [], 'def');
     const hpBonus = sumList(a.effects ?? [], 'hpMax');
@@ -593,7 +603,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       hero: {
         ...s.hero,
         gold: s.hero.gold - goldCost,
-        armor: a,
+        armor: aEquip,
         def: BASE_DEF(s.hero.level) + (a.stats?.def ?? 0) + defBonus,
         maxHp: mhp,
         hp: Math.min(s.hero.hp, mhp),

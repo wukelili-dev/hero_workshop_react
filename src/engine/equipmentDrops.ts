@@ -3,9 +3,10 @@
  * 翻译自 Python 版本的 equipment_drops.py
  */
 
-import type { Equipment, Rarity, ItemEffect } from '../types';
+import type { Equipment, Rarity, ItemEffect, EquipmentFormId } from '../types';
 import { RARITY_NAME } from '../types';
 import { EFFECT_LABEL } from './ItemEffects';
+import { WEAPON_FORMS, ARMOR_FORMS } from '../data/equipmentForms';
 
 // ─── 特殊属性 → 词条映射（M3：special 死字段迁移到 effects 的 equip 词条） ───
 // scale：value 与词条数值的换算比例（百分比类 ×0.01，固定点数类 ×1）
@@ -155,7 +156,7 @@ function getScalePerLevel(rarity: string): number {
 }
 
 /**
- * 生成武器
+ * 生成武器（C4：随机形态，按 bias 倾斜 + signature 招牌词条）
  */
 function generateWeapon(
   level: number,
@@ -194,6 +195,13 @@ function generateWeapon(
     "普通": 0, "稀有": 1, "珍稀": 2, "史诗": 3, "传说": 4
   };
 
+  // C4：随机形态 + 招牌词条（普通/稀有 1 条，史诗/传说 2 条）
+  const formIds = Object.keys(WEAPON_FORMS) as EquipmentFormId[];
+  const form = formIds[Math.floor(Math.random() * formIds.length)];
+  const formDef = WEAPON_FORMS[form];
+  const sigCount = ['史诗', '传说'].includes(rarity) ? 2 : 1;
+  const signature = formDef.signature.slice(0, sigCount);
+
   const equip: Equipment = {
     id: `weapon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: 'weapon',
@@ -213,6 +221,8 @@ function generateWeapon(
     isPerfect,
     enhanceLevel: 0,
     fortifyLevel: 0,
+    form,
+    effects: signature.map((kind): ItemEffect => ({ kind, trigger: 'equip', value: sigValue(kind, rarity) })),
   };
 
   // 极品装备：在传说基础上×1.4，无等级限制，必带特殊属性
@@ -229,21 +239,26 @@ function generateWeapon(
       { name: "破甲", value: Math.floor(Math.random() * 11) + 15 },
       { name: "连击", value: Math.floor(Math.random() * 9) + 10 },
     ][Math.floor(Math.random() * 3)];
-    equip.effects = [specialToEffect(special)];
-  }
-
-  // 史诗/传说的带特殊属性
-  if (!isPerfect && ["史诗", "传说"].includes(rarity) && Math.random() < RARITY_CONFIG[rarity].special_chance) {
-    const specialOptions = [
-      { name: "吸血", value: Math.floor(Math.random() * 6) + 3 },
-      { name: "破甲", value: Math.floor(Math.random() * 11) + 5 },
-      { name: "连击", value: Math.floor(Math.random() * 6) + 5 },
-    ];
-    const special = specialOptions[Math.floor(Math.random() * specialOptions.length)];
-    equip.effects = [specialToEffect(special)];
+    equip.effects = [...(equip.effects ?? []), specialToEffect(special)];
   }
 
   return equip;
+}
+
+/** 招牌词条数值（按稀有度给不同强度） */
+function sigValue(kind: ItemEffect['kind'], rarity: string): number {
+  const pct = ['史诗', '传说'].includes(rarity) ? 1.5 : 1.0;
+  switch (kind) {
+    case 'combo': return Math.round(0.06 * pct * 100) / 100;
+    case 'hit': return Math.round(0.04 * pct * 100) / 100;
+    case 'armorPen': return Math.round(6 * pct);
+    case 'critDmg': return Math.round(0.15 * pct * 100) / 100;
+    case 'reflect': return Math.round(8 * pct);
+    case 'damageCut': return Math.round(0.03 * pct * 100) / 100;
+    case 'resist': return Math.round(0.04 * pct * 100) / 100;
+    case 'rage': return Math.round(5 * pct);
+    default: return 1;
+  }
 }
 
 /**
@@ -285,6 +300,13 @@ function generateArmor(
     "普通": 0, "稀有": 1, "珍稀": 2, "史诗": 3, "传说": 4
   };
 
+  // C4：随机形态 + 招牌词条
+  const formIds = Object.keys(ARMOR_FORMS) as EquipmentFormId[];
+  const form = formIds[Math.floor(Math.random() * formIds.length)];
+  const formDef = ARMOR_FORMS[form];
+  const sigCount = ['史诗', '传说'].includes(rarity) ? 2 : 1;
+  const signature = formDef.signature.slice(0, sigCount);
+
   const equip: Equipment = {
     id: `armor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: 'armor',
@@ -302,6 +324,8 @@ function generateArmor(
     isPerfect,
     enhanceLevel: 0,
     fortifyLevel: 0,
+    form,
+    effects: signature.map((kind): ItemEffect => ({ kind, trigger: 'equip', value: sigValue(kind, rarity) })),
   };
 
   // 极品装备
@@ -316,18 +340,7 @@ function generateArmor(
       { name: "反伤", value: Math.floor(Math.random() * 11) + 15 },
       { name: "护盾", value: Math.floor(Math.random() * 16) + 15 },
     ][Math.floor(Math.random() * 3)];
-    equip.effects = [specialToEffect(special)];
-  }
-
-  // 史诗/传说带特殊属性
-  if (!isPerfect && ["史诗", "传说"].includes(rarity) && Math.random() < RARITY_CONFIG[rarity].special_chance) {
-    const specialOptions = [
-      { name: "吸血", value: Math.floor(Math.random() * 4) + 2 },
-      { name: "反伤", value: Math.floor(Math.random() * 6) + 5 },
-      { name: "护盾", value: Math.floor(Math.random() * 11) + 10 },
-    ];
-    const special = specialOptions[Math.floor(Math.random() * specialOptions.length)];
-    equip.effects = [specialToEffect(special)];
+    equip.effects = [...(equip.effects ?? []), specialToEffect(special)];
   }
 
   return equip;

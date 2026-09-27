@@ -1,4 +1,4 @@
-import type { Equipment } from '../types';
+import type { Equipment, EquipmentFormId } from '../types';
 
 // 武器数据（20把，Tier1-5）
 export const WEAPONS: Record<string, Equipment> = {
@@ -84,4 +84,37 @@ export function getWeaponsByTier(tier: number): Equipment[] {
 // 获取指定 tier 的护甲
 export function getArmorsByTier(tier: number): Equipment[] {
   return Object.values(ARMORS).filter(a => a.tier === tier);
+}
+
+// ── C4：商店目录按形态重排（名字 → 形态映射，数据驱动，不改 40 件基础数值） ──
+const WEAPON_FORM_MAP: Record<string, EquipmentFormId> = {
+  // 快剑（swift_blade）：命中/连击，轻灵刀剑
+  '木棍': 'swift_blade', '短剑': 'swift_blade', '铁剑': 'swift_blade', '长剑': 'swift_blade',
+  '骨刀': 'swift_blade', '弯刀': 'swift_blade', '暗影刃': 'swift_blade', '铁匕首': 'swift_blade',
+  // 重刀（heavy_blade）：破甲/暴伤，重型打击
+  '石斧': 'heavy_blade', '战斧': 'heavy_blade', '巨剑': 'heavy_blade', '钢剑': 'heavy_blade',
+  '圣剑': 'heavy_blade', '龙鳞剑': 'heavy_blade', '龙魂剑': 'heavy_blade',
+  // 长兵（long_arm）：反击/减伤，以守代攻
+  '魔法铁剑': 'long_arm', '雷鸣剑': 'long_arm', '魔法龙剑': 'long_arm',
+  // 法器（talisman）：法伤/抗性
+  '火焰剑': 'talisman', '寒冰剑': 'talisman',
+};
+
+const ARMOR_FORM_MAP: Record<string, EquipmentFormId> = {
+  // 轻甲（light_armor）：闪避/速度
+  '布衣': 'light_armor', '皮甲': 'light_armor', '骨甲': 'light_armor', '锁子甲': 'light_armor',
+  '暗影甲': 'light_armor',
+  // 重甲（heavy_armor）：格挡/减伤
+  '铁甲': 'heavy_armor', '铁胸甲': 'heavy_armor', '钢甲': 'heavy_armor', '骑士甲': 'heavy_armor',
+  '银甲': 'heavy_armor', '闪电甲': 'heavy_armor', '火焰甲': 'heavy_armor', '寒冰甲': 'heavy_armor',
+  '圣甲': 'heavy_armor', '龙鳞甲': 'heavy_armor', '魔法龙甲': 'heavy_armor', '龙魂甲': 'heavy_armor',
+  // 法衣（robe）：抗性/护盾
+  '魔法铁甲': 'robe', '符文甲': 'robe', '圣光护铠': 'robe',
+};
+
+export function getWeaponFormByName(name: string): EquipmentFormId {
+  return WEAPON_FORM_MAP[name] ?? 'swift_blade';
+}
+export function getArmorFormByName(name: string): EquipmentFormId {
+  return ARMOR_FORM_MAP[name] ?? 'light_armor';
 }

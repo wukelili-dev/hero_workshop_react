@@ -59,6 +59,10 @@ export interface Equipment {
   hpBonus?: number;
   /** 词条（M1 起装备可携带效果，equip 触发时由 Combat 传入） */
   effects?: ItemEffect[];
+  /** 装备形态（C4：武器 4 形态 / 护甲 3 形态） */
+  form?: EquipmentFormId;
+  /** 套装 id（C4：同 setId 2/4 件触发套装词条） */
+  setId?: string;
   forge_level?: number;
   is_perfect?: boolean;
   crit_rate?: number;
@@ -781,6 +785,7 @@ export interface ItemEffect {
   kind:
     | 'atk' | 'def' | 'crit' | 'critDmg' | 'hpMax'
     | 'armorPen' | 'lifesteal' | 'combo' | 'reflect' | 'damageCut'
+    | 'hit' | 'dodge' | 'speed' | 'guard' | 'resist' | 'rage' | 'thorns'
     | 'travelDays' | 'revealExtra' | 'gatherBonus'
     | 'shopPrice' | 'sellPrice'
     | 'carry'
@@ -890,12 +895,14 @@ export interface SkillDef {
 }
 
 /** 装备形态与词条（C4） */
+export type EquipmentFormId =
+  | 'swift_blade' | 'heavy_blade' | 'long_arm' | 'talisman'   // 武器形态
+  | 'light_armor' | 'heavy_armor' | 'robe';                   // 护甲形态
+
 export interface EquipmentForm {
-  id: string;
+  id: EquipmentFormId;
   kind: 'weapon' | 'armor';
-  form:
-    | 'swift_blade' | 'heavy_blade' | 'long_arm' | 'talisman'   // 武器形态
-    | 'light_armor' | 'heavy_armor' | 'robe';                   // 护甲形态
+  form: EquipmentFormId;
   bias: Partial<Record<keyof DerivedStats, number>>;
   signature: ItemEffect['kind'][];
   desc: string;

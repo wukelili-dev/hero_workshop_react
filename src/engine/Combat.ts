@@ -5,13 +5,14 @@
 //
 // C2 阶段：保持 executeBattle 对外签名兼容（旧 HeroStats + Monster），
 // 内部改由 Combatant（主属性→派生属性）驱动，结算规则切换为多轴。
-// 怪物/NPC 目前仍是旧 hp/atk/def，由 migrateLegacyStats 反解为派生属性；
-// C3 起怪物改为「等级+主属性」直接 buildDerived，无需再迁移。
+// 过渡期策略：核心 hp/atk/def 保持原始手调值（等价），新轴给中性默认；
+// 怪物带 primary 字段时改由 buildDerived 正向派生（C3），否则用原始值。
 import type { Monster, Equipment, ItemEffect, Lineage, Combatant, StatusEffectId, PrimaryStats, DerivedStats } from '../types';
 import { generateDrop } from './equipmentDrops';
 import { useGameStore } from '../store/useGameStore';
 import { sum as sumEffect, sumList, equipEffectsOf } from './ItemEffects';
 import { buildDerived, STAT_CAPS } from './Stats';
+import { setBonusEffects } from '../data/equipmentForms';
 
 export interface HeroStats {
   hp: number;
@@ -93,11 +94,21 @@ const NEUTRAL_AXES = { hit: 0.85, dodge: 0, speed: 14, pen: 0, tenacity: 0, resi
 
 function heroCombatant(heroStats: HeroStats, equipEffects: ItemEffect[]): Combatant {
   const hero = useGameStore.getState().hero;
+  // C4：装备词条叠加到派生轴（命中/闪避/速度/抗性）
+  const hitBonus = sumList(equipEffects, 'hit');
+  const dodgeBonus = sumList(equipEffects, 'dodge');
+  const speedBonus = sumList(equipEffects, 'speed');
+  const resistBonus = sumList(equipEffects, 'resist');
   const derived: DerivedStats = {
     hpMax: hero.maxHp,
     atk: heroStats.atk,
     def: heroStats.def,
-    ...NEUTRAL_AXES,
+    hit: clamp(0.85 + hitBonus, 0, STAT_CAPS.hit),
+    dodge: clamp(dodgeBonus, 0, STAT_CAPS.dodge),
+    speed: 14 + speedBonus,
+    pen: 0,
+    tenacity: 0,
+    resist: clamp(resistBonus, 0, STAT_CAPS.resist),
     crit: heroStats.crit,
     critDmg: hero.critDmg ?? 1.5,
   };
@@ -177,9 +188,15 @@ export function executeBattle(
   const logs: BattleLog[] = [];
 
   const hero = useGameStore.getState().hero;
+  // C4：装备词条 + 套装词条（同 setId 2/4 件）
+  const weaponSet = hero.weapon?.setId;
+  const armorSet = hero.armor?.setId;
+  const setCount = (weaponSet && weaponSet === armorSet) ? 2 : 0;
+  const setEffects = setBonusEffects(weaponSet, setCount);
   const equipEffects: ItemEffect[] = [
     ...equipEffectsOf(hero.weapon?.effects),
     ...equipEffectsOf(hero.armor?.effects),
+    ...equipEffectsOf(setEffects),
   ];
   const equipSum = (kind: ItemEffect['kind']) => sumList(equipEffects, kind);
   const battleSum = (kind: ItemEffect['kind']) => equipSum(kind) + sumEffect(kind);
@@ -188,6 +205,10 @@ export function executeBattle(
   const comboChance = Math.min(0.5, battleSum('combo'));
   // 反伤：怪物攻击时反弹固定伤害
   const reflect = battleSum('reflect');
+  // 反震：按受到的伤害比例反弹
+  const thorns = Math.min(0.6, battleSum('thorns'));
+  // 格挡：受击时概率减免 30% 伤害
+  const guardChance = Math.min(0.3, battleSum('guard'));
   // 减伤：受伤减免
   const damageCut = Math.min(0.9, battleSum('damageCut'));
   // 吸血：按造成伤害比例回血
@@ -270,7 +291,12 @@ export function executeBattle(
             description: `${monster.name} 攻击勇者，未命中。`,
           });
         } else {
-          const afterCut = Math.max(1, Math.floor(hpDmg * (1 - damageCut)));
+          let afterCut = hpDmg;
+          // C4：格挡（概率减伤 30%）+ 减伤（固定减免）
+          if (guardChance > 0 && Math.random() < guardChance) {
+            afterCut = Math.floor(afterCut * 0.7);
+          }
+          afterCut = Math.max(1, Math.floor(afterCut * (1 - damageCut)));
           heroHP = Math.max(0, heroHP - afterCut);
           logs.push({
             round, attacker: monster.name, defender: '勇者',
@@ -279,15 +305,19 @@ export function executeBattle(
           });
         }
 
-        // 反伤
-        if (reflect > 0 && monsterHP > 0 && hpDmg >= 0) {
-          const reflectDmg = Math.max(1, Math.floor(reflect));
-          monsterHP = Math.max(0, monsterHP - reflectDmg);
-          logs.push({
-            round, attacker: '勇者', defender: monster.name,
-            damage: reflectDmg, isCrit: false,
-            description: `${monster.name} 攻击勇者，被反伤 ${reflectDmg} 点伤害。${monster.name} 剩余 HP: ${monsterHP}`,
-          });
+        // 反伤（固定） + 反震（按伤害比例）
+        if (monsterHP > 0 && hpDmg >= 0) {
+          let recoil = 0;
+          if (reflect > 0) recoil += Math.max(1, Math.floor(reflect));
+          if (thorns > 0) recoil += Math.max(1, Math.floor(hpDmg * thorns));
+          if (recoil > 0) {
+            monsterHP = Math.max(0, monsterHP - recoil);
+            logs.push({
+              round, attacker: '勇者', defender: monster.name,
+              damage: recoil, isCrit: false,
+              description: `${monster.name} 攻击勇者，被反震 ${recoil} 点伤害。${monster.name} 剩余 HP: ${monsterHP}`,
+            });
+          }
         }
       }
     }
