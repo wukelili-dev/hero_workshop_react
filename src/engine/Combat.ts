@@ -7,12 +7,13 @@
 // 内部改由 Combatant（主属性→派生属性）驱动，结算规则切换为多轴。
 // 过渡期策略：核心 hp/atk/def 保持原始手调值（等价），新轴给中性默认；
 // 怪物带 primary 字段时改由 buildDerived 正向派生（C3），否则用原始值。
-import type { Monster, Equipment, ItemEffect, Lineage, Combatant, StatusEffectId, PrimaryStats, DerivedStats } from '../types';
+import type { Monster, Equipment, ItemEffect, Lineage, Combatant, StatusEffectId, PrimaryStats, DerivedStats, SkillDef } from '../types';
 import { generateDrop } from './equipmentDrops';
 import { useGameStore } from '../store/useGameStore';
 import { sum as sumEffect, sumList, equipEffectsOf } from './ItemEffects';
 import { buildDerived, STAT_CAPS } from './Stats';
 import { setBonusEffects } from '../data/equipmentForms';
+import { getSkill, DEFAULT_HERO_SKILLS } from '../data/skills';
 
 export interface HeroStats {
   hp: number;
@@ -41,7 +42,7 @@ export interface Rewards {
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-// ── 怒气常量（C2：技能留空壳，怒气只累积；C5 接技能释放） ──
+// ── 怒气常量（C5 接技能释放） ──
 const RAGE_MAX = 100;
 const RAGE_GAIN_ATK = 15;
 const RAGE_GAIN_HIT = 10;
@@ -71,6 +72,17 @@ function hasStatus(c: Combatant, id: StatusEffectId): boolean {
   return c.vars.statuses.some((x) => x.id === id && x.turns > 0);
 }
 
+/** 施加状态：同种刷新不叠层（刷新层数与回合），上限 5 层 */
+function addStatus(c: Combatant, id: StatusEffectId, stacks = 1, turns = 2): void {
+  const existing = c.vars.statuses.find((x) => x.id === id);
+  if (existing) {
+    existing.stacks = Math.min(5, existing.stacks + stacks);
+    existing.turns = Math.max(existing.turns, turns);
+  } else {
+    c.vars.statuses.push({ id, stacks: Math.min(5, stacks), turns });
+  }
+}
+
 /** 回合末：状态层数/回合递减，过期移除 */
 function tickStatuses(c: Combatant): void {
   c.vars.statuses = c.vars.statuses
@@ -89,7 +101,6 @@ function randomInt(min: number, max: number): number {
 // ── Combatant 构建 ──
 // 过渡期策略（C2/C3）：核心三项 hp/atk/def 保持原始手调值（等价，不破坏平衡），
 // 新轴（命中/闪避/速度/破甲/暴击）先给中性默认，由 C3 怪物主属性 / C4 装备词条逐步赋予真值。
-// 英雄 lineage 固定 human（玩家凡人；人克妖、被仙克），克制关系见 §5。
 const NEUTRAL_AXES = { hit: 0.85, dodge: 0, speed: 14, pen: 0, tenacity: 0, resist: 0 } as const;
 
 function heroCombatant(heroStats: HeroStats, equipEffects: ItemEffect[]): Combatant {
@@ -119,6 +130,7 @@ function heroCombatant(heroStats: HeroStats, equipEffects: ItemEffect[]): Combat
     vars: { rage: 0, shield: 0, statuses: [] },
     lineage: 'human',
     equipmentEffects: equipEffects,
+    skills: DEFAULT_HERO_SKILLS,
   };
 }
 
@@ -240,6 +252,54 @@ export function executeBattle(
     return Math.max(0, hpDmg);
   };
 
+  /** C5：技能释放。怒气满 100 且命中则按 kind 结算，返回 { hpDmg, skill }；无技能/未满怒气返回 null */
+  const releaseSkill = (
+    attacker: Combatant,
+    defender: Combatant,
+    skills: SkillDef[]
+  ): { hpDmg: number; skill: SkillDef } | null => {
+    if (attacker.vars.rage < RAGE_MAX || skills.length === 0) return null;
+    const skill = skills[(round + attacker.vars.rage) % skills.length];
+    attacker.vars.rage = 0;
+    if (Math.random() > hitRateOf(attacker, defender)) return { hpDmg: -1, skill };
+    let hpDmg: number;
+    switch (skill.kind) {
+      case 'burst': {
+        const dmg = rollDamage(attacker, defender, true);
+        hpDmg = Math.max(1, Math.floor(dmg * skill.power));
+        break;
+      }
+      case 'drain': {
+        const dmg = rollDamage(attacker, defender, false);
+        hpDmg = Math.max(1, Math.floor(dmg * skill.power));
+        break;
+      }
+      case 'guard': {
+        attacker.vars.shield += Math.floor(attacker.derived.hpMax * skill.power);
+        addStatus(attacker, 'guard', 1, 1);
+        hpDmg = 0;
+        break;
+      }
+      default: { // strike / support / area 统一按攻击结算
+        const dmg = rollDamage(attacker, defender, false);
+        hpDmg = Math.max(1, Math.floor(dmg * skill.power));
+        break;
+      }
+    }
+    // 护盾先扣
+    if (defender.vars.shield > 0 && hpDmg > 0) {
+      const absorbed = Math.min(defender.vars.shield, hpDmg);
+      defender.vars.shield -= absorbed;
+      hpDmg -= absorbed;
+    }
+    // 施加技能附带状态
+    if (skill.apply) {
+      for (const s of skill.apply) addStatus(defender, s as StatusEffectId, 1, 2);
+    }
+    defender.vars.rage = Math.min(RAGE_MAX, defender.vars.rage + RAGE_GAIN_HIT);
+    return { hpDmg: Math.max(0, hpDmg), skill };
+  };
+
   while (heroHP > 0 && monsterHP > 0) {
     const heroFirst = speedOf(heroC) >= speedOf(monC);
     const order: Array<'hero' | 'monster'> = heroFirst ? ['hero', 'monster'] : ['monster', 'hero'];
@@ -249,23 +309,30 @@ export function executeBattle(
 
       if (side === 'hero') {
         const heroCrit = checkCrit(heroC.derived.crit);
-        const hpDmg = strike(heroC, monC, heroCrit);
+        const skillRelease = releaseSkill(heroC, monC, heroSkillsOf(heroC));
 
-        if (hpDmg < 0) {
-          logs.push({
-            round, attacker: '勇者', defender: monster.name, damage: 0, isCrit: false,
-            description: `勇者攻击 ${monster.name}，未命中。`,
-          });
-        } else {
-          monsterHP = Math.max(0, monsterHP - hpDmg);
-          if (lifesteal > 0 && hpDmg > 0) {
-            heroHP = Math.min(heroMaxHP, heroHP + hpDmg * lifesteal);
+        if (skillRelease) {
+          const { hpDmg, skill } = skillRelease;
+          if (hpDmg < 0) {
+            logs.push({ round, attacker: '勇者', defender: monster.name, damage: 0, isCrit: false, description: `勇者释放「${skill.name}」，未命中。` });
+          } else {
+            monsterHP = Math.max(0, monsterHP - hpDmg);
+            if (skill.kind === 'drain' && hpDmg > 0) {
+              heroHP = Math.min(heroMaxHP, heroHP + hpDmg);
+            }
+            logs.push({ round, attacker: '勇者', defender: monster.name, damage: hpDmg, isCrit: skill.kind === 'burst', description: `勇者释放技能「${skill.name}」，造成 ${hpDmg} 点伤害。${monster.name} 剩余 HP: ${monsterHP}` });
           }
-          logs.push({
-            round, attacker: '勇者', defender: monster.name,
-            damage: hpDmg, isCrit: heroCrit,
-            description: `勇者攻击 ${monster.name}，造成 ${hpDmg} 点伤害${heroCrit ? '（暴击！）' : ''}。${monster.name} 剩余 HP: ${monsterHP}`,
-          });
+        } else {
+          const hpDmg = strike(heroC, monC, heroCrit);
+          if (hpDmg < 0) {
+            logs.push({ round, attacker: '勇者', defender: monster.name, damage: 0, isCrit: false, description: `勇者攻击 ${monster.name}，未命中。` });
+          } else {
+            monsterHP = Math.max(0, monsterHP - hpDmg);
+            if (lifesteal > 0 && hpDmg > 0) {
+              heroHP = Math.min(heroMaxHP, heroHP + hpDmg * lifesteal);
+            }
+            logs.push({ round, attacker: '勇者', defender: monster.name, damage: hpDmg, isCrit: heroCrit, description: `勇者攻击 ${monster.name}，造成 ${hpDmg} 点伤害${heroCrit ? '（暴击！）' : ''}。${monster.name} 剩余 HP: ${monsterHP}` });
+          }
         }
 
         if (monsterHP <= 0) break;
@@ -274,35 +341,24 @@ export function executeBattle(
         if (comboChance > 0 && Math.random() < comboChance) {
           const comboDmg = Math.max(1, rollDamage(heroC, monC, false));
           monsterHP = Math.max(0, monsterHP - comboDmg);
-          logs.push({
-            round, attacker: '勇者', defender: monster.name,
-            damage: comboDmg, isCrit: false,
-            description: `勇者连击 ${monster.name}，造成 ${comboDmg} 点伤害。${monster.name} 剩余 HP: ${monsterHP}`,
-          });
+          logs.push({ round, attacker: '勇者', defender: monster.name, damage: comboDmg, isCrit: false, description: `勇者连击 ${monster.name}，造成 ${comboDmg} 点伤害。${monster.name} 剩余 HP: ${monsterHP}` });
           if (monsterHP <= 0) break;
         }
       } else {
-        const monsterCrit = false;
-        const hpDmg = strike(monC, heroC, monsterCrit);
+        // 怪物侧：Boss 怒气满可释放技能，否则普通攻击
+        const bossSkill = monster.isBoss ? releaseSkill(monC, heroC, bossSkillsOf(monC)) : null;
+        const hpDmg = bossSkill ? bossSkill.hpDmg : strike(monC, heroC, false);
 
         if (hpDmg < 0) {
-          logs.push({
-            round, attacker: monster.name, defender: '勇者', damage: 0, isCrit: false,
-            description: `${monster.name} 攻击勇者，未命中。`,
-          });
+          logs.push({ round, attacker: monster.name, defender: '勇者', damage: 0, isCrit: false, description: `${monster.name} 攻击勇者，未命中。` });
         } else {
           let afterCut = hpDmg;
-          // C4：格挡（概率减伤 30%）+ 减伤（固定减免）
           if (guardChance > 0 && Math.random() < guardChance) {
             afterCut = Math.floor(afterCut * 0.7);
           }
           afterCut = Math.max(1, Math.floor(afterCut * (1 - damageCut)));
           heroHP = Math.max(0, heroHP - afterCut);
-          logs.push({
-            round, attacker: monster.name, defender: '勇者',
-            damage: afterCut, isCrit: false,
-            description: `${monster.name} 攻击勇者，造成 ${afterCut} 点伤害。勇者剩余 HP: ${heroHP}`,
-          });
+          logs.push({ round, attacker: monster.name, defender: '勇者', damage: afterCut, isCrit: false, description: `${monster.name} 攻击勇者，造成 ${afterCut} 点伤害。勇者剩余 HP: ${heroHP}` });
         }
 
         // 反伤（固定） + 反震（按伤害比例）
@@ -312,11 +368,7 @@ export function executeBattle(
           if (thorns > 0) recoil += Math.max(1, Math.floor(hpDmg * thorns));
           if (recoil > 0) {
             monsterHP = Math.max(0, monsterHP - recoil);
-            logs.push({
-              round, attacker: '勇者', defender: monster.name,
-              damage: recoil, isCrit: false,
-              description: `${monster.name} 攻击勇者，被反震 ${recoil} 点伤害。${monster.name} 剩余 HP: ${monsterHP}`,
-            });
+            logs.push({ round, attacker: '勇者', defender: monster.name, damage: recoil, isCrit: false, description: `${monster.name} 攻击勇者，被反震 ${recoil} 点伤害。${monster.name} 剩余 HP: ${monsterHP}` });
           }
         }
       }
@@ -367,6 +419,16 @@ export function executeBattle(
   });
 
   return { logs, victory, rewards, heroFinalHp: heroHP };
+}
+
+/** 玩家技能列表（C5） */
+function heroSkillsOf(c: Combatant): SkillDef[] {
+  return (c.skills ?? DEFAULT_HERO_SKILLS).map(getSkill).filter((s): s is SkillDef => !!s);
+}
+
+/** Boss 技能列表（C5） */
+function bossSkillsOf(c: Combatant): SkillDef[] {
+  return c.isBoss ? ['blood_frenzy', 'poison_breath'].map(getSkill).filter((s): s is SkillDef => !!s) : [];
 }
 
 /**
