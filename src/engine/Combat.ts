@@ -1,9 +1,17 @@
-// 战斗系统核心模块
-// 参考 Python 版 game_core.py 的伤害公式和战斗逻辑
-import type { Monster, Equipment, ItemEffect } from '../types';
+// 战斗系统核心模块（C2 重写：多轴结算）
+//
+// 结算顺序（写死，顺序即规范，见 docs/战斗与属性重构_实现文档_20260927.md §5）：
+//   先手(speed) → 命中(hit−dodge) → 伤害(atk/pen/crit/克制/状态) → 护盾 → 状态 → 怒气 → 克制 → 连击
+//
+// C2 阶段：保持 executeBattle 对外签名兼容（旧 HeroStats + Monster），
+// 内部改由 Combatant（主属性→派生属性）驱动，结算规则切换为多轴。
+// 怪物/NPC 目前仍是旧 hp/atk/def，由 migrateLegacyStats 反解为派生属性；
+// C3 起怪物改为「等级+主属性」直接 buildDerived，无需再迁移。
+import type { Monster, Equipment, ItemEffect, Lineage, Combatant, StatusEffectId } from '../types';
 import { generateDrop } from './equipmentDrops';
 import { useGameStore } from '../store/useGameStore';
 import { sum as sumEffect, sumList, equipEffectsOf } from './ItemEffects';
+import { migrateLegacyStats, STAT_CAPS } from './Stats';
 
 export interface HeroStats {
   hp: number;
@@ -30,56 +38,122 @@ export interface Rewards {
   resources?: Record<string, number>;
 }
 
-/**
- * 计算伤害
- * 公式：dmg = ATK * (1 - DEF/(DEF+50)) * random(0.9, 1.1)
- * 最低 1 伤害
- */
-export function calculateDamage(attackerATK: number, defenderDEF: number, isCrit: boolean = false): number {
-  const baseDmg = attackerATK * (1 - defenderDEF / (defenderDEF + 50));
-  const randomFactor = 0.9 + Math.random() * 0.2; // random(0.9, 1.1)
-  let dmg = baseDmg * randomFactor;
-  
-  // 暴击伤害倍率 1.5x
-  if (isCrit) {
-    dmg *= 1.5;
-  }
-  
-  return Math.max(1, Math.floor(dmg));
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+// ── 怒气常量（C2：技能留空壳，怒气只累积；C5 接技能释放） ──
+const RAGE_MAX = 100;
+const RAGE_GAIN_ATK = 15;
+const RAGE_GAIN_HIT = 10;
+
+// ── 克制循环 human → demon → divine → human（克制方 +15%，被克 −10%） ──
+const LINEAGE_CYCLE: Record<Lineage, Lineage> = { human: 'demon', demon: 'divine', divine: 'human' };
+
+function lineageOf(monster: Monster): Lineage {
+  if (monster.npcType === 'human') return 'human';
+  if (monster.npcType === 'divine') return 'divine';
+  return 'demon'; // 妖怪默认（含 normal / undefined）
 }
 
-/** 根据派系亲和度计算英雄对怪物的伤害加成倍率 */
-function _factionMultiplier(monster: Monster): number {
-  const factions = useGameStore.getState().hero.factions;
-  const npcType = monster.npcType ?? 'normal';
-  if (npcType === 'human' && factions.human > 70) return 1.15;
-  if (npcType === 'human' && factions.human < 30) return 0.85;
-  if (npcType === 'demon' && factions.demon > 70) return 1.15;
-  if (npcType === 'demon' && factions.demon < 30) return 0.85;
+function lineageFactor(attacker: Lineage, defender: Lineage): number {
+  if (LINEAGE_CYCLE[attacker] === defender) return 1.15;
+  if (LINEAGE_CYCLE[defender] === attacker) return 0.9;
   return 1.0;
 }
 
-/**
- * 检查是否暴击
- */
-function checkCrit(critRate: number): boolean {
-  return Math.random() < critRate;
+// ── 状态层 ──
+function stacksOf(c: Combatant, id: StatusEffectId): number {
+  const s = c.vars.statuses.find((x) => x.id === id);
+  return s ? s.stacks : 0;
 }
 
-/**
- * 生成随机整数 [min, max]
- */
+function hasStatus(c: Combatant, id: StatusEffectId): boolean {
+  return c.vars.statuses.some((x) => x.id === id && x.turns > 0);
+}
+
+/** 回合末：状态层数/回合递减，过期移除 */
+function tickStatuses(c: Combatant): void {
+  c.vars.statuses = c.vars.statuses
+    .map((s) => ({ ...s, turns: s.turns - 1 }))
+    .filter((s) => s.turns > 0);
+}
+
+function checkCrit(rate: number): boolean {
+  return Math.random() < rate;
+}
+
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// ── Combatant 构建（C2：由旧四维反解；C3 起怪物改 buildDerived） ──
+// 英雄 lineage 固定为 human（玩家凡人；西游记里人克妖、被仙克），克制关系见 §5。
+function heroCombatant(heroStats: HeroStats, equipEffects: ItemEffect[]): Combatant {
+  const hero = useGameStore.getState().hero;
+  const { derived } = migrateLegacyStats(
+    { hp: hero.maxHp, atk: heroStats.atk, def: heroStats.def, crit: heroStats.crit, critDmg: hero.critDmg ?? 1.5 },
+    hero.level,
+  );
+  return {
+    id: 'hero', name: '勇者', side: 'ally', level: hero.level,
+    primary: { root: 1, qi: 1, agility: 1, spirit: 1, fortune: 1 },
+    derived,
+    vars: { rage: 0, shield: 0, statuses: [] },
+    lineage: 'human',
+    equipmentEffects: equipEffects,
+  };
+}
+
+function monsterCombatant(monster: Monster): Combatant {
+  const level = monster.level ?? 1;
+  const { derived } = migrateLegacyStats(
+    { hp: monster.hp, atk: monster.atk, def: monster.def, crit: 0 },
+    level,
+  );
+  return {
+    id: monster.id, name: monster.name, side: 'foe', level,
+    primary: { root: 1, qi: 1, agility: 1, spirit: 1, fortune: 1 },
+    derived,
+    vars: { rage: 0, shield: 0, statuses: [] },
+    lineage: lineageOf(monster),
+    isBoss: monster.isBoss,
+  };
+}
+
+/** 有效防御：先结算破甲（sunder 减防 → pen 扣除，pen ≤ 目标防御 60%） */
+function effectiveDef(defender: Combatant, attacker: Combatant): number {
+  let def = defender.derived.def;
+  const sunder = Math.min(stacksOf(defender, 'sunder'), 3);
+  if (sunder > 0) def *= 1 - 0.10 * sunder;
+  const equipPen = sumList(attacker.equipmentEffects ?? [], 'armorPen');
+  const pen = attacker.derived.pen + equipPen;
+  const cappedPen = Math.min(pen, def * STAT_CAPS.penRatio);
+  return Math.max(0, def - cappedPen);
+}
+
+/** 命中率：命中 − 闪避，clamp 0.35~0.99 */
+function hitRateOf(attacker: Combatant, defender: Combatant): number {
+  return clamp(attacker.derived.hit - defender.derived.dodge, 0.35, 0.99);
+}
+
+/** 单次伤害结算（破甲/暴击/克制/状态，含随机方差） */
+function rollDamage(attacker: Combatant, defender: Combatant, isCrit: boolean): number {
+  const effDef = effectiveDef(defender, attacker);
+  let atk = attacker.derived.atk;
+  const rally = Math.min(stacksOf(attacker, 'rally'), 3);
+  if (rally > 0) atk *= 1 + 0.15 * rally;
+
+  const critFactor = isCrit ? clamp(attacker.derived.critDmg, 1.5, STAT_CAPS.critDmg) : 1.0;
+  const lf = lineageFactor(attacker.lineage, defender.lineage);
+  const guard = hasStatus(defender, 'guard') ? 0.7 : 1.0;
+  const variance = 0.9 + Math.random() * 0.2;
+
+  const base = atk * (1 - effDef / (effDef + 50));
+  return Math.max(1, Math.floor(base * variance * critFactor * lf * guard));
+}
+
 /**
- * 执行战斗
- * 回合制，玩家先手
- * @param heroStats 主角属性
- * @param team 队伍成员属性数组（可选，暂时只实现单人）
- * @param monster 怪物
- * @returns 战斗日志、胜负结果、奖励
+ * 执行战斗（回合制，速度高者先手，同速攻方先手）
+ * 保留对外签名兼容：内部改 Combatant 驱动。
  */
 export function executeBattle(
   heroStats: HeroStats,
@@ -88,107 +162,131 @@ export function executeBattle(
 ): { logs: BattleLog[]; victory: boolean; rewards: Rewards; heroFinalHp: number } {
   const logs: BattleLog[] = [];
 
-  // 装备（equip）词条：从当前武器 + 护甲各取 equip 触发词条，与 hold 词条合并
   const hero = useGameStore.getState().hero;
   const equipEffects: ItemEffect[] = [
     ...equipEffectsOf(hero.weapon?.effects),
     ...equipEffectsOf(hero.armor?.effects),
   ];
   const equipSum = (kind: ItemEffect['kind']) => sumList(equipEffects, kind);
-  // 战斗内生效的总词条 = 装备 equip 词条 + 持有 hold 词条
   const battleSum = (kind: ItemEffect['kind']) => equipSum(kind) + sumEffect(kind);
 
-  // 护甲穿透：降低怪物等效防御
-  const armorPen = battleSum('armorPen');
-  const monsterEffDef = Math.max(0, monster.def - armorPen);
   // 连击：额外再打一次的概率
   const comboChance = Math.min(0.5, battleSum('combo'));
   // 反伤：怪物攻击时反弹固定伤害
   const reflect = battleSum('reflect');
-  
-  // 复制 HP 以避免修改原对象
-  let heroCurrentHP = heroStats.hp;
-  let monsterCurrentHP = monster.hp;
-  
+  // 减伤：受伤减免
+  const damageCut = Math.min(0.9, battleSum('damageCut'));
+  // 吸血：按造成伤害比例回血
+  const lifesteal = battleSum('lifesteal');
+
+  const heroC = heroCombatant(heroStats, equipEffects);
+  const monC = monsterCombatant(monster);
+
+  let heroHP = heroStats.hp;
+  let monsterHP = monster.hp;
+  const heroMaxHP = heroC.derived.hpMax;
+
   let round = 1;
-  
-  while (heroCurrentHP > 0 && monsterCurrentHP > 0) {
-    // 玩家先手
-    // 玩家攻击
-    const heroCrit = checkCrit(heroStats.crit);
-    const baseHeroDmg = calculateDamage(heroStats.atk, monsterEffDef, heroCrit);
-    const heroDmg = Math.floor(baseHeroDmg * _factionMultiplier(monster));
-    monsterCurrentHP = Math.max(0, monsterCurrentHP - heroDmg);
-    // 吸血词条：按造成伤害比例回血（不超过上限）
-    const lifesteal = battleSum('lifesteal');
-    if (lifesteal > 0 && heroDmg > 0) {
-      heroCurrentHP = Math.min(heroStats.hp, heroCurrentHP + heroDmg * lifesteal);
+
+  const speedOf = (c: Combatant) => c.derived.speed * (hasStatus(c, 'haste') ? 1.2 : 1);
+
+  /** 结算一次攻击，返回 { hpDmg }（已扣护盾与命中判定）；不写日志 */
+  const strike = (attacker: Combatant, defender: Combatant, isCrit: boolean): number => {
+    if (Math.random() > hitRateOf(attacker, defender)) return -1; // 未命中
+    const dmg = rollDamage(attacker, defender, isCrit);
+    let hpDmg = dmg;
+    if (defender.vars.shield > 0) {
+      const absorbed = Math.min(defender.vars.shield, hpDmg);
+      defender.vars.shield -= absorbed;
+      hpDmg -= absorbed;
+    }
+    attacker.vars.rage = Math.min(RAGE_MAX, attacker.vars.rage + RAGE_GAIN_ATK);
+    defender.vars.rage = Math.min(RAGE_MAX, defender.vars.rage + RAGE_GAIN_HIT);
+    return Math.max(0, hpDmg);
+  };
+
+  while (heroHP > 0 && monsterHP > 0) {
+    const heroFirst = speedOf(heroC) >= speedOf(monC);
+    const order: Array<'hero' | 'monster'> = heroFirst ? ['hero', 'monster'] : ['monster', 'hero'];
+
+    for (const side of order) {
+      if (heroHP <= 0 || monsterHP <= 0) break;
+
+      if (side === 'hero') {
+        const heroCrit = checkCrit(heroC.derived.crit);
+        const hpDmg = strike(heroC, monC, heroCrit);
+
+        if (hpDmg < 0) {
+          logs.push({
+            round, attacker: '勇者', defender: monster.name, damage: 0, isCrit: false,
+            description: `勇者攻击 ${monster.name}，未命中。`,
+          });
+        } else {
+          monsterHP = Math.max(0, monsterHP - hpDmg);
+          if (lifesteal > 0 && hpDmg > 0) {
+            heroHP = Math.min(heroMaxHP, heroHP + hpDmg * lifesteal);
+          }
+          logs.push({
+            round, attacker: '勇者', defender: monster.name,
+            damage: hpDmg, isCrit: heroCrit,
+            description: `勇者攻击 ${monster.name}，造成 ${hpDmg} 点伤害${heroCrit ? '（暴击！）' : ''}。${monster.name} 剩余 HP: ${monsterHP}`,
+          });
+        }
+
+        if (monsterHP <= 0) break;
+
+        // 连击：额外追加一次攻击（不触发连击链）
+        if (comboChance > 0 && Math.random() < comboChance) {
+          const comboDmg = Math.max(1, rollDamage(heroC, monC, false));
+          monsterHP = Math.max(0, monsterHP - comboDmg);
+          logs.push({
+            round, attacker: '勇者', defender: monster.name,
+            damage: comboDmg, isCrit: false,
+            description: `勇者连击 ${monster.name}，造成 ${comboDmg} 点伤害。${monster.name} 剩余 HP: ${monsterHP}`,
+          });
+          if (monsterHP <= 0) break;
+        }
+      } else {
+        const monsterCrit = false;
+        const hpDmg = strike(monC, heroC, monsterCrit);
+
+        if (hpDmg < 0) {
+          logs.push({
+            round, attacker: monster.name, defender: '勇者', damage: 0, isCrit: false,
+            description: `${monster.name} 攻击勇者，未命中。`,
+          });
+        } else {
+          const afterCut = Math.max(1, Math.floor(hpDmg * (1 - damageCut)));
+          heroHP = Math.max(0, heroHP - afterCut);
+          logs.push({
+            round, attacker: monster.name, defender: '勇者',
+            damage: afterCut, isCrit: false,
+            description: `${monster.name} 攻击勇者，造成 ${afterCut} 点伤害。勇者剩余 HP: ${heroHP}`,
+          });
+        }
+
+        // 反伤
+        if (reflect > 0 && monsterHP > 0 && hpDmg >= 0) {
+          const reflectDmg = Math.max(1, Math.floor(reflect));
+          monsterHP = Math.max(0, monsterHP - reflectDmg);
+          logs.push({
+            round, attacker: '勇者', defender: monster.name,
+            damage: reflectDmg, isCrit: false,
+            description: `${monster.name} 攻击勇者，被反伤 ${reflectDmg} 点伤害。${monster.name} 剩余 HP: ${monsterHP}`,
+          });
+        }
+      }
     }
 
-    logs.push({
-      round,
-      attacker: '勇者',
-      defender: monster.name,
-      damage: heroDmg,
-      isCrit: heroCrit,
-      description: `勇者攻击 ${monster.name}，造成 ${heroDmg} 点伤害${heroCrit ? '（暴击！）' : ''}。${monster.name} 剩余 HP: ${monsterCurrentHP}`,
-    });
+    // 回合末状态递减
+    tickStatuses(heroC);
+    tickStatuses(monC);
 
-    if (monsterCurrentHP <= 0) break;
-
-    // 连击：额外追加一次攻击
-    if (comboChance > 0 && Math.random() < comboChance) {
-      const comboDmg = Math.max(1, Math.floor(calculateDamage(heroStats.atk, monsterEffDef, false) * _factionMultiplier(monster)));
-      monsterCurrentHP = Math.max(0, monsterCurrentHP - comboDmg);
-      logs.push({
-        round,
-        attacker: '勇者',
-        defender: monster.name,
-        damage: comboDmg,
-        isCrit: false,
-        description: `勇者连击 ${monster.name}，造成 ${comboDmg} 点伤害。${monster.name} 剩余 HP: ${monsterCurrentHP}`,
-      });
-      if (monsterCurrentHP <= 0) break;
-    }
-
-    // 怪物攻击
-    const monsterCrit = false; // 怪物暂不支持暴击
-    const rawMonsterDmg = calculateDamage(monster.atk, heroStats.def, monsterCrit);
-    // 护主词条：受伤减免
-    const damageCut = battleSum('damageCut');
-    const monsterDmg = Math.max(1, Math.floor(rawMonsterDmg * (1 - damageCut)));
-    heroCurrentHP = Math.max(0, heroCurrentHP - monsterDmg);
-
-    logs.push({
-      round,
-      attacker: monster.name,
-      defender: '勇者',
-      damage: monsterDmg,
-      isCrit: false,
-      description: `${monster.name} 攻击勇者，造成 ${monsterDmg} 点伤害。勇者剩余 HP: ${heroCurrentHP}`,
-    });
-
-    // 反伤：怪物攻击后反弹固定伤害
-    if (reflect > 0 && monsterCurrentHP > 0) {
-      const reflectDmg = Math.max(1, Math.floor(reflect));
-      monsterCurrentHP = Math.max(0, monsterCurrentHP - reflectDmg);
-      logs.push({
-        round,
-        attacker: '勇者',
-        defender: monster.name,
-        damage: reflectDmg,
-        isCrit: false,
-        description: `${monster.name} 攻击勇者，被反伤 ${reflectDmg} 点伤害。${monster.name} 剩余 HP: ${monsterCurrentHP}`,
-      });
-    }
-    
     round++;
   }
-  
-  const victory = monsterCurrentHP <= 0;
 
-  
-  // 计算奖励
+  const victory = monsterHP <= 0;
+
   const rewards: Rewards = {
     exp: victory ? monster.expReward : 0,
     gold: victory ? monster.goldReward : 0,
@@ -197,43 +295,34 @@ export function executeBattle(
     potions: 0,
     resources: {},
   };
-  
-  // 计算掉落（材料）
+
   if (victory && monster.drops) {
     for (const drop of monster.drops) {
       if (Math.random() < drop.chance) {
         const qty = randomInt(drop.quantity[0], drop.quantity[1]);
-        rewards.drops.push({
-          itemId: drop.itemId,
-          quantity: qty,
-        });
+        rewards.drops.push({ itemId: drop.itemId, quantity: qty });
       }
     }
   }
-  
-  // 计算掉落（装备）
+
   if (victory) {
     const monsterLevel = monster.level || 1;
     const isBoss = monster.isBoss || false;
     const equip = generateDrop(monsterLevel, isBoss);
-    if (equip) {
-      rewards.equipment.push(equip);
-    }
+    if (equip) rewards.equipment.push(equip);
   }
-  
-  // 添加战斗结果日志
+
   logs.push({
     round: round + 1,
     attacker: victory ? '勇者' : monster.name,
     defender: victory ? monster.name : '勇者',
-    damage: 0,
-    isCrit: false,
-    description: victory 
+    damage: 0, isCrit: false,
+    description: victory
       ? `战斗胜利！获得 ${rewards.exp} 经验，${rewards.gold} 金币。`
       : '战斗失败...勇者倒下了。',
   });
-  
-  return { logs, victory, rewards, heroFinalHp: heroCurrentHP };
+
+  return { logs, victory, rewards, heroFinalHp: heroHP };
 }
 
 /**
@@ -247,21 +336,20 @@ export function simulateBattle(
   let wins = 0;
   let totalRounds = 0;
   let totalDamageTaken = 0;
-  
+
   for (let i = 0; i < iterations; i++) {
     const { victory, logs } = executeBattle(heroStats, [], monster);
     if (victory) wins++;
-    
-    const battleRounds = logs.filter(log => log.damage > 0).length;
+
+    const battleRounds = logs.filter((log) => log.damage > 0).length;
     totalRounds += battleRounds;
-    
-    // 计算玩家受到的总伤害
+
     const damageTaken = logs
-      .filter(log => log.defender === '勇者')
+      .filter((log) => log.defender === '勇者')
       .reduce((sum, log) => sum + log.damage, 0);
     totalDamageTaken += damageTaken;
   }
-  
+
   return {
     winRate: wins / iterations,
     avgRounds: totalRounds / iterations,
