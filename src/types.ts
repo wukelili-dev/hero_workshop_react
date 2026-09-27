@@ -810,3 +810,91 @@ export interface NameParts {
   form: string[];
   omen: string[];
 }
+
+// ============================================================
+// 战斗与属性重构（C1~C6）：三层属性 / Combatant 抽象
+// ============================================================
+
+/** 主属性（成长/加点；NPC/怪物用等级直接生成） */
+export interface PrimaryStats {
+  root: number;    // 根骨：生命 / 防御 / 韧性
+  qi: number;      // 气力：攻击 / 破甲
+  agility: number; // 身法：速度 / 闪避 / 连击
+  spirit: number;  // 神识：命中 / 暴击 / 抗性
+  fortune: number; // 机缘：暴伤 / 掉落 / 特殊触发
+}
+
+/** 派生属性（战斗唯一读取层） */
+export interface DerivedStats {
+  hpMax: number;
+  atk: number;
+  def: number;
+  hit: number;      // 命中率 0~0.99
+  dodge: number;    // 闪避率 0~0.40
+  speed: number;    // 速度：决定先手与连击窗口
+  crit: number;     // 暴击率 0~0.60
+  critDmg: number;  // 暴伤倍率 1.5~4.0
+  pen: number;      // 破甲（固定值）
+  tenacity: number; // 韧性
+  resist: number;   // 抗性 0~0.60
+}
+
+/** 状态效果 id */
+export type StatusEffectId =
+  | 'bleed' | 'poison' | 'sunder' | 'shield' | 'stun' | 'haste' | 'guard' | 'rally';
+
+/** 状态效果（战斗内临时层） */
+export interface StatusEffect {
+  id: StatusEffectId;
+  stacks: number;   // 1~5（同种状态刷新不叠层）
+  turns: number;    // 剩余回合
+  source?: string;  // 施加者 id
+}
+
+/** 战斗变量（战斗内存在） */
+export interface CombatVars {
+  rage: number;               // 怒气 0~100
+  shield: number;             // 护盾值
+  statuses: StatusEffect[];
+}
+
+/** 派系（克制用，复用现有 npcType 与 hero.factions） */
+export type Lineage = 'human' | 'demon' | 'divine';
+
+/** 统一战斗单位：玩家/队友/NPC/怪物共用 */
+export interface Combatant {
+  id: string;
+  name: string;
+  side: 'ally' | 'foe';
+  level: number;
+  primary: PrimaryStats;
+  derived: DerivedStats;
+  vars: CombatVars;
+  lineage: Lineage;
+  isBoss?: boolean;
+  equipmentEffects?: ItemEffect[];
+  skills?: string[];
+}
+
+/** 技能 */
+export interface SkillDef {
+  id: string;
+  name: string;
+  cost: number;                    // 怒气消耗
+  kind: 'strike' | 'guard' | 'drain' | 'area' | 'support' | 'burst';
+  power: number;                   // 伤害/治疗系数
+  apply?: StatusEffectId[];
+  desc: string;
+}
+
+/** 装备形态与词条（C4） */
+export interface EquipmentForm {
+  id: string;
+  kind: 'weapon' | 'armor';
+  form:
+    | 'swift_blade' | 'heavy_blade' | 'long_arm' | 'talisman'   // 武器形态
+    | 'light_armor' | 'heavy_armor' | 'robe';                   // 护甲形态
+  bias: Partial<Record<keyof DerivedStats, number>>;
+  signature: ItemEffect['kind'][];
+  desc: string;
+}
