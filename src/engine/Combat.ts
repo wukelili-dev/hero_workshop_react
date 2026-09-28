@@ -10,18 +10,14 @@
 import type { Monster, Equipment, ItemEffect, Lineage, Combatant, StatusEffectId, PrimaryStats, DerivedStats, SkillDef, TeamMember } from '../types';
 import { generateDrop } from './equipmentDrops';
 import { useGameStore } from '../store/useGameStore';
-import { sum as sumEffect, sumList, equipEffectsOf } from './ItemEffects';
-import { buildMonsterDerived, buildDerived, autoAllocatePrimary, STAT_CAPS } from './Stats';
+import { sum as sumEffect, sumList } from './ItemEffects';
+import { buildMonsterDerived, STAT_CAPS } from './Stats';
 import { deriveTeammate } from './NpcStats';
-import { setBonusEffects } from '../data/equipmentForms';
-import { getSkill, DEFAULT_HERO_SKILLS, passiveEffectsOf } from '../data/skills';
+import { getSkill, DEFAULT_HERO_SKILLS } from '../data/skills';
+import { buildHeroCombatant, heroEquipEffects, type HeroStats } from './HeroCombat';
 
-export interface HeroStats {
-  hp: number;
-  atk: number;
-  def: number;
-  crit: number; // 暴击率 0-1
-}
+// 兼容旧引用：HeroStats 的实际定义已收敛到 engine/HeroCombat.ts
+export type { HeroStats };
 
 export interface BattleLog {
   round: number;
@@ -104,43 +100,6 @@ function randomInt(min: number, max: number): number {
 // 新轴（命中/闪避/速度/破甲/暴击）先给中性默认，由 C3 怪物主属性 / C4 装备词条逐步赋予真值。
 const NEUTRAL_AXES = { hit: 0.85, dodge: 0, speed: 14, pen: 0, tenacity: 0, resist: 0 } as const;
 
-function heroCombatant(heroStats: HeroStats, equipEffects: ItemEffect[]): Combatant {
-  const hero = useGameStore.getState().hero;
-  // C6：英雄接入主属性体系。英雄主属性按等级自动分配（2:2:2:2:1），
-  // 因此身法/神识随等级成长 —— 这正是 A 方案（身法/神识参与输出）的落点。
-  const primary: PrimaryStats = hero.primary ?? autoAllocatePrimary(hero.level);
-  const ax = buildDerived(primary, hero.level);
-  // C4：装备词条叠加到派生轴（命中/闪避/速度/抗性）
-  const hitBonus = sumList(equipEffects, 'hit');
-  const dodgeBonus = sumList(equipEffects, 'dodge');
-  const speedBonus = sumList(equipEffects, 'speed');
-  const resistBonus = sumList(equipEffects, 'resist');
-  const derived: DerivedStats = {
-    hpMax: hero.maxHp,
-    // A 方案：主属性的攻击基线仍走旧的 heroStats.atk（等级+装备），
-    // 额外把身法/神识的输出贡献加回来，避免与旧公式重复计算。
-    atk: heroStats.atk + primary.agility * 0.5 + primary.spirit * 0.3,
-    def: heroStats.def,
-    hit: clamp(Math.max(0.85, ax.hit) + hitBonus, 0, STAT_CAPS.hit),
-    dodge: clamp(ax.dodge + dodgeBonus, 0, STAT_CAPS.dodge),
-    speed: Math.max(14, ax.speed) + speedBonus,
-    pen: ax.pen,
-    tenacity: ax.tenacity,
-    resist: clamp(ax.resist + resistBonus, 0, STAT_CAPS.resist),
-    crit: clamp(Math.max(heroStats.crit, ax.crit), 0, STAT_CAPS.crit),
-    critDmg: hero.critDmg ?? ax.critDmg,
-  };
-  return {
-    id: 'hero', name: '勇者', side: 'ally', level: hero.level,
-    primary,
-    derived,
-    vars: { rage: 0, shield: 0, statuses: [] },
-    lineage: 'human',
-    equipmentEffects: equipEffects,
-    skills: hero.skills ?? DEFAULT_HERO_SKILLS,
-  };
-}
-
 /** 队友（C5 队伍协同）：等级 → 主属性 → 派生，与怪物/NPC 同一套语言 */
 function teammateCombatant(member: TeamMember, idx: number): Combatant {
   const { level, primary, derived } = deriveTeammate(member.level, member.isElite);
@@ -222,20 +181,8 @@ export function executeBattle(
   const logs: BattleLog[] = [];
 
   const hero = useGameStore.getState().hero;
-  // C4：装备词条 + 套装词条（同 setId 2/4 件）
-  const weaponSet = hero.weapon?.setId;
-  const armorSet = hero.armor?.setId;
-  // 英雄当前只有「武器 + 护甲」两个槽，套装最多 2 件；
-  // 4 件档的数据保留在 data/equipmentForms.ts，等饰品槽上线后再启用（见交接文档第七节）
-  const setCount = (weaponSet && weaponSet === armorSet) ? 2 : 0;
-  const setEffects = setBonusEffects(weaponSet, setCount);
-  const equipEffects: ItemEffect[] = [
-    ...equipEffectsOf(hero.weapon?.effects),
-    ...equipEffectsOf(hero.armor?.effects),
-    ...equipEffectsOf(setEffects),
-    // C5：已学会的被动技能按「持有词条」常驻生效
-    ...passiveEffectsOf(hero.passives),
-  ];
+  // 装备 + 套装 + 被动词条：与人物面板共用同一个收集口径（engine/HeroCombat.ts）
+  const equipEffects: ItemEffect[] = heroEquipEffects(hero);
   const equipSum = (kind: ItemEffect['kind']) => sumList(equipEffects, kind);
   const battleSum = (kind: ItemEffect['kind']) => equipSum(kind) + sumEffect(kind);
 
@@ -252,7 +199,7 @@ export function executeBattle(
   // 吸血：按造成伤害比例回血
   const lifesteal = battleSum('lifesteal');
 
-  const heroC = heroCombatant(heroStats, equipEffects);
+  const heroC = buildHeroCombatant(hero, heroStats, equipEffects);
   const monC = monsterCombatant(monster);
   // C5 队伍协同：队友各自按派生属性参战（每回合额外出手，怪物仍视勇者为唯一目标）
   const mateCs = (team ?? []).map((m, i) => teammateCombatant(m, i));
