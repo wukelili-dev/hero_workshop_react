@@ -1,4 +1,8 @@
 ﻿// @ts-nocheck — legacy engine, references non-existent modules/types
+// ⚠️ 死代码（勿引用）：legacy 引擎，无任何 live 入口
+//（引用链 GameEngine → systems/{SaveSystem,ForgeSystem,EquipmentSystem} → Passives 全为死代码）
+// 现役实现：store/*（状态）、engine/Combat.ts（战斗）、store/saveUtils.ts（存档）、data/forge.ts（锻造）
+// 保留仅供参考，是否删除由项目所有者决定（见 docs/战斗与属性重构_交接文档_20260928.md 第七节）
 import { Hero, PlantState, RecruitRole, FarmSlotState } from '../types';
 import { FarmSystem } from '../systems/FarmSystem';
 import { RanchManager } from './RanchSystem';

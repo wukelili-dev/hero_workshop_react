@@ -1,4 +1,6 @@
 ﻿// @ts-nocheck — legacy system, data model incompatible with current types
+// ⚠️ 死代码（勿引用）：legacy 装备系统，数据模型与当前 types 不兼容（旧 Hero / equip.passive）
+// 现役实现：engine/Stats.ts（属性换算）+ engine/ItemEffects.ts（词条）+ data/equipmentForms.ts（形态/套装）
 import { Hero } from '../types';
 import { Equipment } from '../types';
 import * as Passives from '../engine/Passives';

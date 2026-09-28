@@ -203,6 +203,8 @@ export function executeBattle(
   // C4：装备词条 + 套装词条（同 setId 2/4 件）
   const weaponSet = hero.weapon?.setId;
   const armorSet = hero.armor?.setId;
+  // 英雄当前只有「武器 + 护甲」两个槽，套装最多 2 件；
+  // 4 件档的数据保留在 data/equipmentForms.ts，等饰品槽上线后再启用（见交接文档第七节）
   const setCount = (weaponSet && weaponSet === armorSet) ? 2 : 0;
   const setEffects = setBonusEffects(weaponSet, setCount);
   const equipEffects: ItemEffect[] = [

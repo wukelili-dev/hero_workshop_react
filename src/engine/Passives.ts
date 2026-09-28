@@ -1,4 +1,6 @@
 ﻿// @ts-nocheck — legacy engine
+// ⚠️ 死代码（勿引用）：legacy 被动系统，引用已删除的 Hero 类型与 equip.passive 死字段
+// 功能已被「锻造被动 → 物品词条」闭环取代：data/forge.ts 的 passiveToEffects + engine/ItemEffects.ts
 import { Hero } from '../types';
 
 /**

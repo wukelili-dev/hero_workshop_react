@@ -35,6 +35,17 @@
 - 存档兼容：新增字段必须给默认值，老档能直接读；版本号在 `src/store/saveUtils.ts` 里递增并写迁移。
 - 世界时间：1 游戏日 = `DAY_MS`（2 分钟真实时间），日推进时触发 NPC 自主行为与每日事件。
 
+## legacy 区（死代码，勿引用）
+
+以下文件是早期引擎的遗留，**没有任何 live 入口**，文件头已标注 ⚠️。新代码不要 import 它们；需要参考时看箭头后的现役实现。
+
+- `src/engine/GameEngine.ts` → `store/*`、`engine/Combat.ts`、`store/saveUtils.ts`
+- `src/engine/Passives.ts` → `data/forge.ts` 的 `passiveToEffects` + `engine/ItemEffects.ts`
+- `src/systems/EquipmentSystem.ts` → `engine/Stats.ts` + `engine/ItemEffects.ts` + `data/equipmentForms.ts`
+- `src/systems/SaveSystem.ts`、`src/systems/ForgeSystem.ts` → `store/saveUtils.ts`、`data/forge.ts` + `components/forge/ForgeTab.tsx`
+
+（是否删除这批文件由项目所有者决定；`src/systems/FarmSystem.ts` 仍被 `useFarmStore` 引用类型，**不要删**。）
+
 ## 文档
 
 - `docs/` 整个目录都是本地参考稿（设计稿、实现文档、交接文档），已列入 `.gitignore`，**不要提交任何文档**；需要留档就放在本地，或直接贴进对话。

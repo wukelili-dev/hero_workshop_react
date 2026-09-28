@@ -87,13 +87,16 @@ export const SET_BONUSES: Record<string, SetBonus[]> = {
 
 /** 按套装件数返回应追加的词条（2 件取第 1 档，4 件取第 2 档，不足 2 件无） */
 export function setBonusEffects(setId: string | undefined, count: number): ItemEffect[] {
+  // 当前英雄只有 2 个装备槽（武器+护甲），套装最多 2 件；
+  // 数据里的 count: 4 分支保留不删，等「饰品槽」任务上线后把这一行去掉即可启用
+  const reachable = Math.min(count, 2);
   if (!setId) return [];
   const bonuses = SET_BONUSES[setId];
   if (!bonuses) return [];
   const sorted = [...bonuses].sort((a, b) => a.count - b.count);
   const out: ItemEffect[] = [];
   for (const b of sorted) {
-    if (count >= b.count) out.push(...b.effects);
+    if (reachable >= b.count) out.push(...b.effects);
   }
   return out;
 }
