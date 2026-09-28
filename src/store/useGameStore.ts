@@ -10,6 +10,7 @@ import { NPCS } from '../data/npcs';
 import { generateTavernRoster, type TavernRecruit } from '../data/tavern';
 import { BUILDING_CONFIGS, BUILDING_OUTPUTS } from '../data/buildings';
 import { getCellEncounter } from '../data/cellEncounters';
+import { deriveTeammate } from '../engine/NpcStats';
 import { sum as sumEffect, sumList } from '../engine/ItemEffects';
 import { getItemDef } from '../data/items/items';
 import { getWeaponFormByName, getArmorFormByName } from '../data/equipment';
@@ -775,6 +776,9 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   recruitMember: (recruit) => {
     const { hero } = get();
     if (hero.gold < recruit.cost || hero.team.length >= 3) return false;
+    // P0-1：队友也走「等级 → 主属性 → 派生」，与怪物/NPC 同一套语言
+    const mate = deriveTeammate(recruit.level, recruit.isElite);
+    const mateHp = Math.round(mate.derived.hpMax);
     set((s) => ({
       hero: {
         ...s.hero,
@@ -784,10 +788,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           {
             roleName: recruit.roleName,
             level: recruit.level,
-            maxHp: 80 + recruit.level * 18,
-            hp: 80 + recruit.level * 18,
-            atk: 5 + recruit.level * 2,
-            def: 2 + recruit.level,
+            maxHp: mateHp,
+            hp: mateHp,
+            atk: Math.round(mate.derived.atk),
+            def: Math.round(mate.derived.def),
             isElite: recruit.isElite,
           },
         ],

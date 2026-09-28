@@ -64,12 +64,16 @@ export function dueVisits(day: number): PendingVisit[] {
   return useWorldStore.getState().visits.filter((v) => !v.resolved && v.arriveDay <= day);
 }
 
-/** 由 power 或 challengeStats 换算应战怪物 */
+import { deriveNpcStats } from './NpcStats';
+
+/** 由 power 或 challengeStats 换算应战怪物（P0-1：NPC 也走「等级 + 主属性」） */
 function visitMonster(npc: NpcDefinition, power: number): Monster {
   if (npc.challengeStats) {
+    const { primary, derived } = deriveNpcStats(npc.challengeStats);
     return {
       id: `visit_fight_${npc.id}`, name: npc.name,
-      hp: npc.challengeStats.hp, atk: npc.challengeStats.atk, def: npc.challengeStats.def,
+      primary,
+      hp: derived.hpMax, atk: derived.atk, def: derived.def,
       expReward: 0, goldReward: 0, drops: [],
     };
   }
