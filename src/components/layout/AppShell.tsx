@@ -15,6 +15,7 @@ import { CenterPanel } from '../city/CenterPanel';
 import { MarketPanel } from '../city/MarketPanel';
 import { GameLogPanel } from '../city/GameLogPanel';
 import { HeroInfoPanel } from '../city/HeroInfoPanel';
+import { BattleModal } from '../battle/BattleModal';
 import { WeaponTab } from '../equipment/WeaponTab';
 import { ArmorTab } from '../equipment/ArmorTab';
 import { NoveltyTab } from '../novelty/NoveltyTab';
@@ -365,6 +366,8 @@ export const AppShell: React.FC = () => {
           <FaCircleQuestion /> 帮助
         </button>
       </div>
+      {/* 手动战斗（C8）：任何地方发起的遭遇战都在这里逐回合进行 */}
+      <BattleModal />
     </div>
   );
 };

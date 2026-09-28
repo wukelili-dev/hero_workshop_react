@@ -110,6 +110,11 @@ interface GameActions {
   addExp: (amount: number) => void;
   setHp: (hp: number) => void;
   fightMonster: (monster: Monster) => { logs: BattleLog[]; victory: boolean; rewards: Rewards; heroFinalHp: number };
+  /** 结算一场已打完的战斗（自动/手动战斗共用） */
+  applyBattleOutcome: (
+    monster: Monster,
+    result: { victory: boolean; rewards: Rewards; heroFinalHp: number },
+  ) => void;
   equipWeapon: (weapon: Equipment) => boolean;
   equipArmor: (armor: Equipment) => boolean;
   buyNovelty: (itemName: string, price: number) => boolean;
@@ -385,12 +390,23 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       hero.team ?? [],
       monster
     );
+    get().applyBattleOutcome(monster, result);
+    return result;
+  },
+
+  /**
+   * 结算一场战斗的结果（奖励 / 掉落 / 图鉴 / 击杀数 / 战败复活）。
+   * 自动战斗（fightMonster）与手动战斗（useBattleStore）共用这一处，
+   * 保证两条路的收益规则完全一致。
+   */
+  applyBattleOutcome: (monster, result) => {
+    const hero = get().hero;
     const now = Date.now();
     const hhmm = new Date(now).toTimeString().slice(0, 5);
     const hhmmss = new Date(now).toTimeString().slice(0, 8);
     if (result.victory) {
       get().addBattleLog(`[${hhmm}] 战胜${monster.name}！获得${result.rewards.exp} EXP，${result.rewards.gold} 金币`);
-      
+
       // 应用奖励
       get().addGold(result.rewards?.gold ?? 0);
       get().addExp(result.rewards?.exp ?? 0);
@@ -400,7 +416,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           if (drop?.itemId) get().addResource(DROP_TO_RESOURCE[drop.itemId] ?? drop.itemId, drop.quantity ?? 1);
         }
       }
-      
+
       // 处理装备掉落
       if (result.rewards?.equipment && result.rewards.equipment.length > 0) {
         for (const equip of result.rewards.equipment) {
@@ -408,7 +424,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           get().addBattleLog(`[${hhmm}] 获得装备：${equip.name}（${equip.type === 'weapon' ? '武器' : '护甲'}）`);
         }
       }
-      
+
       // 检查新发现
       const { discoveredMonsters } = get();
       const isNewDiscovery = !discoveredMonsters.includes(monster.id);
@@ -416,10 +432,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       if (isNewDiscovery) {
         get().addGameLog(`[${hhmmss}] 已点亮新图鉴：${monster.name}`);
       }
-      
+
       // 递增击杀数
       set((s) => ({ hero: { ...s.hero, kills: s.hero.kills + 1 } }));
-      
+
       // 记录地图战斗次数
       get().incrementMapBattles(get().currentMapId);
       set((s) => ({ killCounts: { ...(s.killCounts ?? {}), [monster.id]: ((s.killCounts ?? {})[monster.id] ?? 0) + 1 } }));
@@ -434,7 +450,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       // 复活后也检查自动药水
       _autoPotionIfNeeded();
     }
-    return result;
   },
 
   incrementMapBattles: (mapId: string) => {

@@ -2,27 +2,17 @@
  * CenterPanel - 中间面板：队伍标签 + 英雄属性 + 地图选择 + 战斗
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import { useGameStore } from '../../store/useGameStore';
 import { MAPS } from '../../data/maps';
 import { RARITY_NAME, RARITY_COLOR } from '../../types';
 import type { Monster } from '../../types';
-import type { BattleLog, Rewards } from '../../engine/Combat';
 import { FaSkullCrossbones, FaBomb, FaShield, FaUsers } from 'react-icons/fa6';
 import { AnimatedNumber } from '../../hooks/useCountUp';
+import { useBattleStore } from '../../store/useBattleStore';
 
 type TeamTab = 'hero' | 'teammate' | 'all';
-type BattlePhase = 'idle' | 'fighting' | 'result';
-
-interface BattleResult {
-  victory: boolean;
-  logs: BattleLog[];
-  rewards: Rewards;
-  monsterName: string;
-}
-
-const EMPTY_LOGS: BattleLog[] = [];
 
 const cardVariants: Variants = {
   hidden: { opacity: 0, y: 18 },
@@ -34,88 +24,17 @@ export const CenterPanel: React.FC = () => {
   const currentMapId = useGameStore((s) => s.currentMapId);
   const currentEnemies = useGameStore((s) => s.currentEnemies);
   const refreshEnemies = useGameStore((s) => s.refreshEnemies);
-  const fightMonster = useGameStore((s) => s.fightMonster);
+  const startBattle = useBattleStore((s) => s.start);
 
   const autoBattle = useGameStore((s) => s.autoBattle);
   const setAutoBattle = useGameStore((s) => s.setAutoBattle);
 
   const [teamTab, setTeamTab] = useState<TeamTab>('hero');
-  const [battlePhase, setBattlePhase] = useState<BattlePhase>('idle');
-  const [battleLogs, setBattleLogs] = useState<BattleLog[]>(EMPTY_LOGS);
-  const [battleResult, setBattleResult] = useState<BattleResult | null>(null);
-  const [fightingMonster, setFightingMonster] = useState<Monster | null>(null);
-  const logsRef = useRef<HTMLDivElement>(null);
-  const animTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const clearAnimTimer = useCallback(() => {
-    if (animTimerRef.current !== null) {
-      clearInterval(animTimerRef.current);
-      animTimerRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => {
-    return () => clearAnimTimer();
-  }, [clearAnimTimer]);
-
-  useEffect(() => {
-    if (logsRef.current && battleLogs.length > 0) {
-      logsRef.current.scrollTop = logsRef.current.scrollHeight;
-    }
-  }, [battleLogs]);
-
-  const resetBattleState = useCallback(() => {
-    clearAnimTimer();
-    setBattlePhase('idle');
-    setBattleLogs(EMPTY_LOGS);
-    setBattleResult(null);
-    setFightingMonster(null);
-  }, [clearAnimTimer]);
-
-  const handleRefreshEnemies = () => {
-    refreshEnemies();
-    resetBattleState();
-  };
-
+  /** 手动战斗：把这场遭遇交给招式对决弹窗（C8 起不再"先算完再假播放"） */
   const handleFight = useCallback((monster: Monster) => {
     if (hero.hp <= 0) return;
-    clearAnimTimer();
-    setFightingMonster(monster);
-    setBattlePhase('fighting');
-    setBattleLogs(EMPTY_LOGS);
-    setBattleResult(null);
-
-    try {
-      const result = fightMonster(monster);
-      if (!result || !result.logs) throw new Error('Invalid battle result');
-
-      // 奖励和自动药水已由 fightMonster 内部处理
-
-      const logs = result.logs;
-      let lineIdx = 0;
-      animTimerRef.current = setInterval(() => {
-        if (lineIdx < logs.length) {
-          setBattleLogs((prev) => {
-            if (lineIdx >= logs.length) return prev;
-            return [...prev, logs[lineIdx]];
-          });
-          lineIdx++;
-        } else {
-          clearAnimTimer();
-          setBattleResult({
-            victory: result.victory,
-            logs: result.logs,
-            rewards: result.rewards,
-            monsterName: monster.name,
-          });
-          setBattlePhase('result');
-        }
-      }, 180);
-    } catch (err) {
-      console.error('Battle error:', err);
-      resetBattleState();
-    }
-  }, [hero.hp, fightMonster, clearAnimTimer, resetBattleState]);
+    startBattle(monster);
+  }, [hero.hp, startBattle]);
 
   const currentMap = MAPS.find(m => m.id === currentMapId);
 
@@ -134,79 +53,14 @@ export const CenterPanel: React.FC = () => {
       {/* 刷新按钮 */}
       <motion.button
         whileTap={{ scale: 0.88 }}
-        onClick={handleRefreshEnemies}
-        disabled={battlePhase === 'fighting'}
+        onClick={() => refreshEnemies()}
         className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded text-sm text-blue-700 transition-colors disabled:opacity-50"
       >
         🔄 刷新敌人
       </motion.button>
 
-      {/* 战斗日志 / 结果区 */}
-      {battlePhase === 'fighting' && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gray-50 rounded-lg p-2 text-xs space-y-1"
-        >
-          <div className="font-medium text-gray-700">⚔️ {fightingMonster?.name ?? '战斗进行中…'}</div>
-          <div className="max-h-24 overflow-y-auto" ref={logsRef}>
-            {battleLogs.map((log, i) => (
-              <div key={i} className={log.attacker === '勇者' ? 'text-blue-600' : 'text-red-600'}>
-                {log.description}
-              </div>
-            ))}
-          </div>
-          {battlePhase === 'fighting' && <span className="text-gray-400">• • •</span>}
-        </motion.div>
-      )}
-
-      {battlePhase === 'result' && battleResult && (
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className={`p-3 rounded-lg text-sm ${
-            battleResult.victory
-              ? 'bg-green-50 border border-green-200'
-              : 'bg-red-50 border border-red-200'
-          }`}
-        >
-          <div className={`flex items-center gap-1 font-bold mb-1 ${battleResult.victory ? 'text-green-700' : 'text-red-700'}`}>
-            {battleResult.victory ? '🏆 胜利！' : '💀 败北…'}
-          </div>
-          <div className="text-xs space-y-1">
-            {battleResult.victory ? (
-              <>
-                <div>获得 {battleResult.rewards.exp} 经验</div>
-                <div>获得金币 {battleResult.rewards.gold}</div>
-                {(battleResult.rewards.potions ?? 0) > 0 && <div>获得药水 {battleResult.rewards.potions} 瓶</div>}
-                {battleResult.rewards.resources && Object.entries(battleResult.rewards.resources).length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {Object.entries(battleResult.rewards.resources).map(([key, value]) => (
-                      <span key={key} className="px-1.5 py-0.5 bg-white/60 rounded border text-gray-600">{key} ×{value}</span>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="text-gray-500">在客栈休息恢复体力吧。</div>
-            )}
-          </div>
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={battleResult.victory ? handleRefreshEnemies : () => setBattlePhase('idle')}
-            className={`mt-2 px-3 py-1 rounded-full text-xs font-bold transition-all ${
-              battleResult.victory
-                ? 'bg-green-500 hover:bg-green-600 text-white'
-                : 'bg-gray-300 hover:bg-gray-400 text-gray-700'
-            }`}
-          >
-            {battleResult.victory ? '继续探索' : '返回'}
-          </motion.button>
-        </motion.div>
-      )}
-
-      {/* 敌人列表（仅在空闲时显示） */}
-      {battlePhase === 'idle' && currentEnemies.length > 0 && (
+      {/* 敌人列表 */}
+      {currentEnemies.length > 0 && (
         <div className="space-y-2">
           {currentEnemies.map((enemy, i) => {
             if (!enemy) return null;
@@ -280,7 +134,7 @@ export const CenterPanel: React.FC = () => {
       )}
 
       {/* 无敌人提示 */}
-      {battlePhase === 'idle' && currentEnemies.length === 0 && (
+      {currentEnemies.length === 0 && (
         <div className="text-center py-4 text-gray-400 text-sm">
           暂无敌人，点击「刷新敌人」探索
         </div>

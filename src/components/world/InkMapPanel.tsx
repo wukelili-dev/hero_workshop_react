@@ -16,6 +16,7 @@ import { RARITY_COLOR, RARITY_NAME } from '../../types';
 import type { Monster } from '../../types';
 import { monsterStatsOf } from '../../engine/Stats';
 import { buildInkMapSvg } from './inkMapSvg';
+import { useBattleStore } from '../../store/useBattleStore';
 import { WorldOverview } from './WorldOverview';
 import { senseOf } from '../../data/sense';
 import { loreForTerrain, cityLore } from '../../data/placeLore';
@@ -88,7 +89,7 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
 
   const hero = useGameStore((s) => s.hero);
   const unlockedMaps = useGameStore((s) => s.unlockedMaps);
-  const fightMonster = useGameStore((s) => s.fightMonster);
+  const startBattle = useBattleStore((s) => s.start);
 
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<FightResult | null>(null);
@@ -172,15 +173,9 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
   };
 
   const handleFight = (monster: Monster) => {
-    const result = fightMonster(monster);
-    setLastResult({
-      monster: monster.name,
-      victory: result.victory,
-      exp: result.rewards?.exp ?? 0,
-      gold: result.rewards?.gold ?? 0,
-    });
-    if (result.victory) toast.success(`战胜${monster.name}`, { icon: '🏆' });
-    else toast.error(`被${monster.name}击败，已复活至 50% HP`, { icon: '💀' });
+    // C8：地图上撞见妖怪进入手动招式对决，打完由战斗弹窗显示战果
+    setLastResult(null);
+    startBattle(monster);
   };
 
   const handleUnlock = () => {
