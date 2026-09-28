@@ -16,6 +16,13 @@ import type { ChronicleEntry, Consequence, PendingVisit, PlaceState } from '../t
 /** 出生点：傲来国（新手区，与 useGameStore 默认 currentMapId='aolai' 对齐） */
 export const START_CELL_ID = 'cp_2_5';
 
+/**
+ * 单次 tick 最多结算的真实时长（10 分钟 ≈ 5 游戏日）。
+ * 意义：笔记本休眠 / 浏览器后台节流后，delta 可能是几小时甚至几天，
+ * 不设上限会一次性涌入几百上千天，把「第 N 天」这个叙事时钟冲爆。
+ */
+export const MAX_TICK_MS = 10 * 60 * 1000;
+
 export interface WorldSave {
   day: number;
   currentCellId: string;
@@ -137,11 +144,12 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
   tick: (now) => {
     const t = now ?? Date.now();
     const { lastTickAt, day } = get();
-    const delta = t - lastTickAt;
-    if (delta <= 0) {
+    const raw = t - lastTickAt;
+    if (raw <= 0) {
       set({ lastTickAt: t });
       return;
     }
+    const delta = Math.min(raw, MAX_TICK_MS);
     const next = day + delta / DAY_MS;
     // 跨过整数天：推进 NPC 自主行为（每天一次，只演算活跃 NPC）
     if (Math.floor(next) > Math.floor(day)) {
@@ -250,7 +258,10 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
       currentRegionId: data.currentRegionId ?? regionOfCell(cellId)?.id ?? 'central_plain',
       revealedCells: data.revealedCells ?? [],
       visitedCells: data.visitedCells ?? [START_CELL_ID],
-      lastTickAt: data.lastTickAt ?? Date.now(),
+      // 注意：这里必须用「现在」而不是存档里的 lastTickAt。
+      // 读档（含启动时自动读档）发生在 startWorldClock 之后，若沿用旧时间戳，
+      // 下一次 tick 会把「存档至今的真实间隔」整段换算成游戏日 → 天数控式膨胀。
+      lastTickAt: Date.now(),
       gathered: data.gathered ?? {},
       bountyClaimed: data.bountyClaimed ?? [],
       worldFlags: data.worldFlags ?? {},
