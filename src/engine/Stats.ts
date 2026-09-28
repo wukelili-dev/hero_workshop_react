@@ -103,6 +103,13 @@ export function buildDerived(
 /** 每升 1 级给玩家的自由加点数（主属性 5 选 1 分配；流派的核心旋钮） */
 export const FREE_POINTS_PER_LEVEL = 2;
 
+// ── 等级基线（不含任何主属性加成） ──
+// 保留旧的成长公式语义：它代表"完全自动分配主属性"时英雄的裸成长。
+// 加点与装备的收益一律作为**相对这条基线的增量**，这样老档不会因为改口径变弱。
+export const LEVEL_BASE_ATK = (lv: number) => 5 + lv * 2;
+export const LEVEL_BASE_DEF = (lv: number) => 2 + lv;
+export const LEVEL_BASE_HP = (lv: number) => Math.floor(80 + lv * 18 + Math.floor(lv / 5) * 5);
+
 /**
  * 每级 1 点主属性，按 根骨/气力/身法/神识/机缘 = 2:2:2:2:1 循环自动分配
  * （9 级一轮：root×2 → qi×2 → agility×2 → spirit×2 → fortune×1）；另每 5 级全属性 +1。

@@ -3,10 +3,13 @@
  * 翻译自 Python 版本的 equipment_drops.py
  */
 
-import type { Equipment, Rarity, ItemEffect, EquipmentFormId } from '../types';
+import type { Equipment, Rarity, ItemEffect, EquipmentFormId, PrimaryStats } from '../types';
 import { RARITY_NAME } from '../types';
 import { EFFECT_LABEL } from './ItemEffects';
-import { WEAPON_FORMS, ARMOR_FORMS } from '../data/equipmentForms';
+import {
+  WEAPON_FORMS, ARMOR_FORMS,
+  craftEquipmentPrimary, craftEquipmentEffects, formSetId,
+} from '../data/equipmentForms';
 
 // ─── 特殊属性 → 词条映射（M3：special 死字段迁移到 effects 的 equip 词条） ───
 // scale：value 与词条数值的换算比例（百分比类 ×0.01，固定点数类 ×1）
@@ -24,6 +27,44 @@ function specialToEffect(special: { name: string; value: number }): ItemEffect {
   const scale = map?.scale ?? 1;
   const value = Math.round(special.value * scale * 100) / 100;
   return { kind, trigger: 'equip', value };
+}
+
+/** 主属性整体缩放（极品装备 ×1.4 之类） */
+function scalePrimary(p: Partial<PrimaryStats> | undefined, k: number): Partial<PrimaryStats> {
+  const out: Partial<PrimaryStats> = {};
+  for (const [key, v] of Object.entries(p ?? {})) {
+    out[key as keyof PrimaryStats] = Math.round((v as number) * k);
+  }
+  return out;
+}
+
+const PRIMARY_LABEL: Record<keyof PrimaryStats, string> = {
+  root: '根骨', qi: '气力', agility: '身法', spirit: '神识', fortune: '机缘',
+};
+
+/** 按百分比展示的词条（其余按固定点数展示） */
+const PCT_KINDS = new Set<ItemEffect['kind']>([
+  'hit', 'dodge', 'combo', 'guard', 'resist', 'damageCut', 'lifesteal',
+  'atkPct', 'defPct', 'hpPct', 'thorns', 'crit',
+]);
+
+/**
+ * 装备面板展示口径（唯一出口）：UI 各处都调它，避免漏改某个页面。
+ * 返回主属性行 + 词条行，顺序固定，数字已格式化。
+ */
+export function equipmentLines(equip: Equipment): Array<{ label: string; value: string; kind: 'primary' | 'effect' }> {
+  const out: Array<{ label: string; value: string; kind: 'primary' | 'effect' }> = [];
+  for (const [key, v] of Object.entries(equip.primary ?? {})) {
+    if (!v) continue;
+    out.push({ label: PRIMARY_LABEL[key as keyof PrimaryStats], value: `+${Math.round(v as number)}`, kind: 'primary' });
+  }
+  for (const e of equip.effects ?? []) {
+    if (e.trigger !== 'equip') continue;
+    const label = EFFECT_LABEL[e.kind] ?? e.kind;
+    const value = PCT_KINDS.has(e.kind) ? `+${Math.round(e.value * 100)}%` : `+${Math.round(e.value)}`;
+    out.push({ label, value, kind: 'effect' });
+  }
+  return out;
 }
 
 // ─── 名称前缀（按地图怪物等级分层） ───
@@ -143,20 +184,7 @@ function getPerfectDropChance(level: number, isBoss: boolean = false): number {
 }
 
 /**
- * 获取该稀有度对应的等级缩放系数（每级增加百分比）
- */
-function getScalePerLevel(rarity: string): number {
-  switch (rarity) {
-    case "普通": return 0.05;
-    case "稀有": return 0.08;
-    case "史诗": return 0.10;
-    case "传说": return 0.12;
-    default: return 0.05;
-  }
-}
-
-/**
- * 生成武器（C4：随机形态，按 bias 倾斜 + signature 招牌词条）
+ * 生成武器（C7：随机形态；数值由「等级预算 × 形态权重」生成，与商城同一条曲线）
  */
 function generateWeapon(
   level: number,
@@ -164,43 +192,18 @@ function generateWeapon(
   isPerfect: boolean = false,
   isBoss: boolean = false
 ): Equipment {
-  const baseStats: Record<string, {
-    attack: [number, number];
-    crit_rate: [number, number];
-    crit_dmg: [number, number];
-  }> = {
-    // 基础值压缩：Lv1时数值
-    "普通": { attack: [3, 8],   crit_rate: [0, 3],   crit_dmg: [150, 150] },
-    "稀有": { attack: [8, 15],  crit_rate: [3, 8],   crit_dmg: [150, 155] },
-    "史诗": { attack: [18, 30], crit_rate: [8, 15],  crit_dmg: [155, 170] },
-    "传说": { attack: [35, 55], crit_rate: [15, 25], crit_dmg: [170, 190] },
-  };
-
-  const stats = baseStats[rarity] || baseStats["普通"];
-  const scalePerLv = getScalePerLevel(rarity);
-
-  // 缩放：按等级线性提升，等级越高差异越明显
-  let scale = 1 + (level - 1) * scalePerLv;
-  if (isBoss) scale *= 1.25;
-
-  const attack = Math.floor(
-    (Math.floor(Math.random() * (stats.attack[1] - stats.attack[0] + 1)) + stats.attack[0]) * scale
-  );
-  const crit_rate = Math.min(50, Math.floor(Math.random() * (stats.crit_rate[1] - stats.crit_rate[0] + 1)) + stats.crit_rate[0]);
-  const crit_dmg = Math.floor(Math.random() * (stats.crit_dmg[1] - stats.crit_dmg[0] + 1)) + stats.crit_dmg[0];
-
   const name = generateWeaponName(level, isPerfect);
 
   const rarityMap: Record<string, Rarity> = {
     "普通": 0, "稀有": 1, "珍稀": 2, "史诗": 3, "传说": 4
   };
 
-  // C4：随机形态 + 招牌词条（普通/稀有 1 条，史诗/传说 2 条）
+  // C7：随机形态；装备价值由「等级预算 × 形态权重」决定（与商城同一条曲线）
   const formIds = Object.keys(WEAPON_FORMS) as EquipmentFormId[];
   const form = formIds[Math.floor(Math.random() * formIds.length)];
-  const formDef = WEAPON_FORMS[form];
-  const sigCount = ['史诗', '传说'].includes(rarity) ? 2 : 1;
-  const signature = formDef.signature.slice(0, sigCount);
+  const rarityIdx = isPerfect ? 4 : (rarityMap[rarity] || 0);
+  // Boss 掉落：整体数值 ×1.25
+  const budgetLevel = isBoss ? level * 1.25 : level;
 
   const equip: Equipment = {
     id: `weapon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -208,32 +211,21 @@ function generateWeapon(
     name,
     tier: level,
     levelReq: isPerfect ? 0 : Math.max(1, level - 2),
-    rarity: isPerfect ? 4 : (rarityMap[rarity] || 0),
+    rarity: rarityIdx,
     rarityColor: isPerfect ? "#FF5555" : (RARITY_CONFIG[rarity]?.color || "#AAAAAA"),
-    stats: {
-      atk: attack,
-      crit: crit_rate,
-      critDmg: crit_dmg,
-    },
-    attack,
-    critRate: crit_rate,
-    critDmg: crit_dmg,
+    primary: craftEquipmentPrimary(budgetLevel, form),
+    effects: craftEquipmentEffects(budgetLevel, form, rarityIdx),
     isPerfect,
     enhanceLevel: 0,
     fortifyLevel: 0,
     form,
-    effects: signature.map((kind): ItemEffect => ({ kind, trigger: 'equip', value: sigValue(kind, rarity) })),
+    setId: formSetId(form),
   };
 
-  // 极品装备：在传说基础上×1.4，无等级限制，必带特殊属性
+  // 极品装备：主属性×1.4，无等级限制，必带一条特殊词条
   if (isPerfect) {
-    equip.stats!.atk = Math.floor(equip.stats!.atk! * 1.4);
-    equip.attack = equip.stats!.atk;
-    equip.stats!.crit = Math.min(50, Math.floor(equip.stats!.crit! * 1.2));
-    equip.critRate = equip.stats!.crit;
+    equip.primary = scalePrimary(equip.primary, 1.4);
     equip.levelReq = 0;
-    equip.stats!.critDmg = 200;
-    equip.critDmg = 200;
     const special = [
       { name: "吸血", value: Math.floor(Math.random() * 11) + 10 },
       { name: "破甲", value: Math.floor(Math.random() * 11) + 15 },
@@ -245,22 +237,6 @@ function generateWeapon(
   return equip;
 }
 
-/** 招牌词条数值（按稀有度给不同强度） */
-function sigValue(kind: ItemEffect['kind'], rarity: string): number {
-  const pct = ['史诗', '传说'].includes(rarity) ? 1.5 : 1.0;
-  switch (kind) {
-    case 'combo': return Math.round(0.06 * pct * 100) / 100;
-    case 'hit': return Math.round(0.04 * pct * 100) / 100;
-    case 'armorPen': return Math.round(6 * pct);
-    case 'critDmg': return Math.round(0.15 * pct * 100) / 100;
-    case 'reflect': return Math.round(8 * pct);
-    case 'damageCut': return Math.round(0.03 * pct * 100) / 100;
-    case 'resist': return Math.round(0.04 * pct * 100) / 100;
-    case 'rage': return Math.round(5 * pct);
-    default: return 1;
-  }
-}
-
 /**
  * 生成护甲
  */
@@ -270,42 +246,17 @@ function generateArmor(
   isPerfect: boolean = false,
   isBoss: boolean = false
 ): Equipment {
-  const baseStats: Record<string, {
-    defense: [number, number];
-    hp_bonus: [number, number];
-  }> = {
-    // 基础值压缩
-    "普通": { defense: [2, 6],    hp_bonus: [10, 30] },
-    "稀有": { defense: [6, 12],   hp_bonus: [30, 60] },
-    "史诗": { defense: [14, 25],  hp_bonus: [60, 120] },
-    "传说": { defense: [30, 45],  hp_bonus: [130, 250] },
-  };
-
-  const stats = baseStats[rarity] || baseStats["普通"];
-  const scalePerLv = getScalePerLevel(rarity);
-
-  let scale = 1 + (level - 1) * scalePerLv;
-  if (isBoss) scale *= 1.25;
-
-  const defense = Math.floor(
-    (Math.floor(Math.random() * (stats.defense[1] - stats.defense[0] + 1)) + stats.defense[0]) * scale
-  );
-  const hp_bonus = Math.floor(
-    (Math.floor(Math.random() * (stats.hp_bonus[1] - stats.hp_bonus[0] + 1)) + stats.hp_bonus[0]) * scale
-  );
-
   const name = generateArmorName(level, isPerfect);
 
   const rarityMap: Record<string, Rarity> = {
     "普通": 0, "稀有": 1, "珍稀": 2, "史诗": 3, "传说": 4
   };
 
-  // C4：随机形态 + 招牌词条
+  // C7：随机形态 + 主属性（与商城同一条曲线）
   const formIds = Object.keys(ARMOR_FORMS) as EquipmentFormId[];
   const form = formIds[Math.floor(Math.random() * formIds.length)];
-  const formDef = ARMOR_FORMS[form];
-  const sigCount = ['史诗', '传说'].includes(rarity) ? 2 : 1;
-  const signature = formDef.signature.slice(0, sigCount);
+  const rarityIdx = isPerfect ? 4 : (rarityMap[rarity] || 0);
+  const budgetLevel = isBoss ? level * 1.25 : level;
 
   const equip: Equipment = {
     id: `armor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -313,27 +264,20 @@ function generateArmor(
     name,
     tier: level,
     levelReq: isPerfect ? 0 : Math.max(1, level - 2),
-    rarity: isPerfect ? 4 : (rarityMap[rarity] || 0),
+    rarity: rarityIdx,
     rarityColor: isPerfect ? "#FF5555" : (RARITY_CONFIG[rarity]?.color || "#AAAAAA"),
-    stats: {
-      def: defense,
-      hp: hp_bonus,
-    },
-    defense,
-    hpBonus: hp_bonus,
+    primary: craftEquipmentPrimary(budgetLevel, form),
+    effects: craftEquipmentEffects(budgetLevel, form, rarityIdx),
     isPerfect,
     enhanceLevel: 0,
     fortifyLevel: 0,
     form,
-    effects: signature.map((kind): ItemEffect => ({ kind, trigger: 'equip', value: sigValue(kind, rarity) })),
+    setId: formSetId(form),
   };
 
   // 极品装备
   if (isPerfect) {
-    equip.stats!.def = Math.floor(equip.stats!.def! * 1.4);
-    equip.defense = equip.stats!.def;
-    equip.stats!.hp = Math.floor(equip.stats!.hp! * 1.4);
-    equip.hpBonus = equip.stats!.hp;
+    equip.primary = scalePrimary(equip.primary, 1.4);
     equip.levelReq = 0;
     const special = [
       { name: "吸血", value: Math.floor(Math.random() * 11) + 10 },
@@ -455,16 +399,14 @@ export function getDropSummary(equip: Equipment): string | null {
     info = `[${RARITY_NAME[equip.rarity as Rarity] || '普通'}] ${name} (Lv.${levelReq}+)`;
   }
 
-  if (equip.type === "weapon") {
+  // C7：主属性 + 词条（旧装备仍回退到四维显示）
+  const lines = equipmentLines(equip);
+  if (lines.length > 0) {
+    info += ' ' + lines.map((l) => `${l.label}${l.value}`).join(' ');
+  } else if (equip.type === 'weapon') {
     info += ` ATK:${equip.attack || equip.stats?.atk || 0} CRIT:${equip.critRate || equip.stats?.crit || 0}%`;
   } else {
     info += ` DEF:${equip.defense || equip.stats?.def || 0} HP+:${equip.hpBonus || equip.stats?.hp || 0}`;
-  }
-
-  if (equip.effects && equip.effects.length > 0) {
-    for (const e of equip.effects) {
-      info += ` [${EFFECT_LABEL[e.kind]}+${e.value}]`;
-    }
   }
 
   return info;

@@ -6,7 +6,7 @@ import { useGameStore } from '../../store/useGameStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { RARITY_COLORS } from '../../data/constants';
 import type { InventorySlot } from '../../store/useInventoryStore';
-import { getEquipmentSellPrice } from '../../engine/equipmentDrops';
+import { getEquipmentSellPrice, equipmentLines } from '../../engine/equipmentDrops';
 
 // 杂货目录(用于获取显示名称)
 const NOVELTY_NAMES: Record<string, string> = {
@@ -101,10 +101,8 @@ export const InventoryTab: React.FC = () => {
     if (!weapon) return;
     // 将武器放回背包
     useInventoryStore.getState().addToInventory('weapon', weapon.id, 1, weapon);
-    useGameStore.getState().setHero({
-      weapon: null,
-      atk: hero.atk - (weapon.stats?.atk ?? 0)
-    });
+    useGameStore.getState().setHero({ weapon: null });
+    useGameStore.getState().syncHero();
   };
 
   // 卸下护甲
@@ -112,10 +110,8 @@ export const InventoryTab: React.FC = () => {
     if (!armor) return;
     // 将护甲放回背包
     useInventoryStore.getState().addToInventory('armor', armor.id, 1, armor);
-    useGameStore.getState().setHero({
-      armor: null,
-      def: hero.def - (armor.stats?.def ?? 0)
-    });
+    useGameStore.getState().setHero({ armor: null });
+    useGameStore.getState().syncHero();
   };
 
   // 出售武器(已装备)
@@ -124,10 +120,8 @@ export const InventoryTab: React.FC = () => {
     const sellPrice = getEquipmentSellPrice(weapon);
     addGold(sellPrice);
     useGameStore.getState().addGameLog(`出售 ${weapon.name},获得 ${sellPrice}G`);
-    useGameStore.getState().setHero({
-      weapon: null,
-      atk: hero.atk - (weapon.stats?.atk ?? 0)
-    });
+    useGameStore.getState().setHero({ weapon: null });
+    useGameStore.getState().syncHero();
   };
 
   // 出售护甲(已装备)
@@ -136,10 +130,8 @@ export const InventoryTab: React.FC = () => {
     const sellPrice = getEquipmentSellPrice(armor);
     addGold(sellPrice);
     useGameStore.getState().addGameLog(`出售 ${armor.name},获得 ${sellPrice}G`);
-    useGameStore.getState().setHero({
-      armor: null,
-      def: hero.def - (armor.stats?.def ?? 0)
-    });
+    useGameStore.getState().setHero({ armor: null });
+    useGameStore.getState().syncHero();
   };
 
   // 出售背包中的装备
@@ -266,14 +258,9 @@ export const InventoryTab: React.FC = () => {
         </div>
 
         {/* 装备属性预览 */}
-        {slot.type === 'weapon' && slot.data?.stats?.atk && (
-          <div className="absolute bottom-0.5 left-0.5 text-[10px] text-red-500">
-            ATK+{slot.data.stats.atk}
-          </div>
-        )}
-        {slot.type === 'armor' && slot.data?.stats?.def && (
-          <div className="absolute bottom-0.5 left-0.5 text-[10px] text-blue-500">
-            DEF+{slot.data.stats.def}
+        {slot.data && equipmentLines(slot.data).length > 0 && (
+          <div className="absolute bottom-0.5 left-0.5 text-[10px] text-[#2f6f8f]">
+            {equipmentLines(slot.data).slice(0, 2).map((l) => `${l.label}${l.value}`).join(' ')}
           </div>
         )}
       </div>
@@ -299,8 +286,11 @@ export const InventoryTab: React.FC = () => {
                 <span className="font-bold text-sm" style={{ color: RARITY_COLORS[weapon.rarity] ?? '#888' }}>
                   {weapon.name}
                 </span>
-                {weapon.stats?.atk && <span className="text-xs text-red-500">ATK+{weapon.stats.atk}</span>}
-                {weapon.stats?.crit && <span className="text-xs text-orange-500">CRIT {(weapon.stats.crit * 100).toFixed(0)}%</span>}
+                {equipmentLines(weapon).map((l) => (
+                  <span key={l.label} className={l.kind === 'primary' ? 'text-xs text-[#3f3527]' : 'text-xs text-[#2f6f8f]'}>
+                    {l.label}{l.value}
+                  </span>
+                ))}
               </>
             ) : (
               <span className="text-sm text-gray-400">空</span>
@@ -333,8 +323,11 @@ export const InventoryTab: React.FC = () => {
                 <span className="font-bold text-sm" style={{ color: RARITY_COLORS[armor.rarity] ?? '#888' }}>
                   {armor.name}
                 </span>
-                {armor.stats?.def && <span className="text-xs text-blue-500">DEF+{armor.stats.def}</span>}
-                {armor.stats?.hp && <span className="text-xs text-red-400">HP+{armor.stats.hp}</span>}
+                {equipmentLines(armor).map((l) => (
+                  <span key={l.label} className={l.kind === 'primary' ? 'text-xs text-[#3f3527]' : 'text-xs text-[#2f6f8f]'}>
+                    {l.label}{l.value}
+                  </span>
+                ))}
               </>
             ) : (
               <span className="text-sm text-gray-400">空</span>

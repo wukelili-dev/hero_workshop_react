@@ -3,7 +3,9 @@ import { FaGem } from 'react-icons/fa6';
 import { useGameStore } from '../../store/useGameStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { useForgeStore } from '../../store/useForgeStore';
-import { FORGE_RECIPES, FORTIFY_CONFIG, FORGE_RARITY_COLORS, SET_EFFECTS, passiveToEffects, type FortifyConfig } from '../../data/forge';
+import { FORGE_RECIPES, FORTIFY_CONFIG, FORGE_RARITY_COLORS, SET_EFFECTS, passiveToEffects, forgeRecipePrimary, forgeRecipeForm, type FortifyConfig } from '../../data/forge';
+import { formSetId } from '../../data/equipmentForms';
+import { PRIMARY_NAME as PRIMARY_LABEL } from '../../engine/Stats';
 import type { Equipment } from '../../types';
 
 // 强化配置按等级索引（1-based）
@@ -106,8 +108,11 @@ export const ForgeTab: React.FC = () => {
       tier: recipe.rarity,
       rarity: recipe.rarity as any,
       rarityColor: FORGE_RARITY_COLORS[recipe.rarity] ?? '#ccc',
-      stats: recipe.stats,
+      // C7：锻造品也走「主属性 + 词条」，配方旧四维在数据层换算成主属性
+      primary: forgeRecipePrimary(recipe),
       effects: passiveToEffects(recipe.passive),
+      form: forgeRecipeForm(recipe),
+      setId: formSetId(forgeRecipeForm(recipe)),
       fortifyLevel: 0,
       cost: { '金币': Math.floor(recipe.gold / 2) },
       sellPrice: Math.floor(recipe.gold / 2),
@@ -262,10 +267,9 @@ export const ForgeTab: React.FC = () => {
                   </div>
                   {/* 属性 */}
                   <div className="flex gap-2 text-[10px] text-gray-500 flex-wrap">
-                    {recipe.stats.atk && <span>ATK+{recipe.stats.atk}</span>}
-                    {recipe.stats.def && <span>DEF+{recipe.stats.def}</span>}
-                    {recipe.stats.hp && <span>HP+{recipe.stats.hp}</span>}
-                    {recipe.stats.crit && <span>暴击+{(recipe.stats.crit * 100).toFixed(0)}%</span>}
+                    {Object.entries(forgeRecipePrimary(recipe)).map(([k, v]) => (
+                      <span key={k}>{PRIMARY_LABEL[k as keyof typeof PRIMARY_LABEL]}+{Math.round(v as number)}</span>
+                    ))}
                   </div>
                   {/* 需求 */}
                   <div className="flex gap-2 text-[10px] text-gray-400">

@@ -5,6 +5,7 @@ import { WEAPONS } from '../../data/equipment';
 import { RARITY_COLORS } from '../../data/constants';
 import { useGameStore } from '../../store/useGameStore';
 import type { Equipment } from '../../types';
+import { equipmentLines } from '../../engine/equipmentDrops';
 import { FaBomb, FaTree, FaMagnet, FaPaw, FaMountain, FaLeaf, FaCoins } from 'react-icons/fa6';
 
 const TIERS = [
@@ -134,8 +135,11 @@ export const WeaponTab: React.FC = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-3">
-                      {w.stats?.atk && <span className="text-xs text-red-500 flex items-center gap-0.5"><FaBomb className="text-red-400" />{w.stats.atk}</span>}
-                      {w.stats?.crit && <span className="text-xs text-orange-500">CRIT {(w.stats.crit * 100).toFixed(0)}%</span>}
+                      {equipmentLines(w).map((line) => (
+                        <span key={line.label} className={line.kind === 'primary' ? 'text-xs text-[#3f3527]' : 'text-xs text-[#2f6f8f]'}>
+                          {line.label}{line.value}
+                        </span>
+                      ))}
                       <CostDisplay cost={w.cost ?? {}} />
                       <motion.button
                         whileTap={{ scale: 0.88 }}

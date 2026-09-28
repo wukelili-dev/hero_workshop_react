@@ -133,6 +133,9 @@ export function loadGame(): boolean {
     }
     useWorldStore.getState().syncEncounter();
 
+    // 读档后按主属性 + 装备重算派生缓存（加点/装备口径变了，缓存必须重算）
+    useGameStore.getState().syncHero();
+
     // NPC 状态
     if (data.npcInstances) {
       useNpcStore.setState({ instances: data.npcInstances });

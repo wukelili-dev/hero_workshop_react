@@ -1,3 +1,6 @@
+import type { EquipmentFormId, PrimaryStats } from '../types';
+import { primaryFromLegacy } from '../engine/Stats';
+
 // 强化配置（+1~+10）
 export interface FortifyConfig {
   level: number;
@@ -79,6 +82,25 @@ export const FORGE_RECIPES: ForgeRecipe[] = [
   { name: '范式圣剑', type: 'weapon', stats: { atk: 140, crit: 0.25, critDmg: 1.5 }, passive: { name: '牺牲', desc: '死亡时队友+20%攻击3回合', deathBuffAtkPct: 20, deathBuffTurns: 3 }, material: '薪火', materialCount: 20, iron: 200, gold: 5000, rarity: 4, forgeSet: '垂云套' },
   { name: '颜如玉卷', type: 'weapon', stats: { atk: 130, crit: 0.18, critDmg: 1.5 }, passive: { name: '书香', desc: '经验+25% 金币+25%', expBonusPct: 25, goldBonusPct: 25 }, material: '书香', materialCount: 20, iron: 180, gold: 5000, rarity: 4, forgeSet: '垂云套' },
 ];
+
+// ── C7：锻造装备也并入「主属性 + 词条」口径 ──
+// 配方数据仍用旧四维书写（历史数据不动），铸造时换算成主属性；
+// 形态按配方倾向做启发式判定，让锻造品也能吃到套装与流派。
+export function forgeRecipePrimary(recipe: ForgeRecipe): Partial<PrimaryStats> {
+  return primaryFromLegacy(recipe.stats);
+}
+
+export function forgeRecipeForm(recipe: ForgeRecipe): EquipmentFormId {
+  const p = recipe.passive ?? {};
+  if (recipe.type === 'armor') {
+    if (p.dodge) return 'light_armor';
+    if (p.defPct || p.hpPct || p.stunChance) return 'heavy_armor';
+    return 'robe';
+  }
+  if (p.atkPct || p.critBonusPct || p.ignoreDefPct || p.ignoreDefChance) return 'heavy_blade';
+  if ((recipe.stats.crit ?? 0) >= 0.2) return 'swift_blade';
+  return 'long_arm';
+}
 
 // 套装效果
 export interface SetEffect {

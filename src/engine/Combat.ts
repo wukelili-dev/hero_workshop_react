@@ -199,7 +199,7 @@ export function executeBattle(
   // 吸血：按造成伤害比例回血
   const lifesteal = battleSum('lifesteal');
 
-  const heroC = buildHeroCombatant(hero, heroStats, equipEffects);
+  const heroC = buildHeroCombatant(hero, equipEffects);
   const monC = monsterCombatant(monster);
   // C5 队伍协同：队友各自按派生属性参战（每回合额外出手，怪物仍视勇者为唯一目标）
   const mateCs = (team ?? []).map((m, i) => teammateCombatant(m, i));

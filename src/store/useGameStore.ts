@@ -16,7 +16,8 @@ import { getItemDef } from '../data/items/items';
 import { getWeaponFormByName, getArmorFormByName } from '../data/equipment';
 import { formSetId } from '../data/equipmentForms';
 import { SKILLS, PASSIVE_SKILLS, DEFAULT_HERO_SKILLS } from '../data/skills';
-import { FREE_POINTS_PER_LEVEL, PRIMARY_NAME } from '../engine/Stats';
+import { FREE_POINTS_PER_LEVEL, PRIMARY_NAME, LEVEL_BASE_ATK, LEVEL_BASE_DEF, LEVEL_BASE_HP } from '../engine/Stats';
+import { syncHeroDerived } from '../engine/HeroCombat';
 import type { PrimaryStats } from '../types';
 
 // 掉落物品 itemId → 资源 key 映射（怪物掉落用中文，资源状态用英文）
@@ -140,6 +141,8 @@ interface GameActions {
   getMoralTitle: () => string | null;
   /** 加点：把 1 点自由点分配到某条主属性 */
   allocatePrimary: (key: keyof PrimaryStats) => boolean;
+  /** 依据主属性 + 装备重算英雄派生缓存（换装/卸装/读档后调用） */
+  syncHero: () => void;
 }
 
 // 中文材料名store resources key 映射
@@ -147,9 +150,10 @@ const RES_KEY_MAP: Record<string, string> = {
   '木材': 'wood', '铁矿': 'iron', '皮革': 'hide', '石头': 'stone', '药草': 'herb',
 };
 
-const BASE_ATK = (lv: number) => 5 + lv * 2;
-const BASE_DEF = (lv: number) => 2 + lv;
-const BASE_HP = (lv: number) => Math.floor(80 + lv * 18 + Math.floor(lv / 5) * 5);
+// 等级基线统一由 engine/Stats 提供，避免"两套成长公式"
+const BASE_ATK = LEVEL_BASE_ATK;
+const BASE_DEF = LEVEL_BASE_DEF;
+const BASE_HP = LEVEL_BASE_HP;
 
 const initHero: HeroState = {
   name: '无名侠客', level: 1, exp: 0,
@@ -357,12 +361,8 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     // 升级发自由点（流派的来源）：每升 1 级 +FREE_POINTS_PER_LEVEL
     const gained = Math.max(0, lv - s.hero.level);
     const freePoints = (s.hero.freePoints ?? 0) + gained * FREE_POINTS_PER_LEVEL;
-    return {
-      hero: {
-        ...s.hero, exp, level: lv, maxHp: mhp, hp: Math.min(s.hero.hp, mhp),
-        atk, def, freePoints,
-      },
-    };
+    // 派生属性（含加点/装备收益）统一重算后写回缓存
+    return { hero: syncHeroDerived({ ...s.hero, exp, level: lv, atk, def, maxHp: mhp, freePoints }) };
   }),
 
   /** 加点：1 点自由点 → 1 点主属性；派生属性由 HeroCombat 统一重算 */
@@ -372,10 +372,12 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     if (free <= 0) return false;
     const allocated = { ...(hero.allocated ?? {}) };
     allocated[key] = (allocated[key] ?? 0) + 1;
-    set({ hero: { ...hero, allocated, freePoints: free - 1 } });
+    set({ hero: syncHeroDerived({ ...hero, allocated, freePoints: free - 1 }) });
     get().addGameLog(`加点：${PRIMARY_NAME[key]} +1（剩 ${free - 1} 点）`);
     return true;
   },
+
+  syncHero: () => set((s) => ({ hero: syncHeroDerived(s.hero) })),
 
   setHp: (hp) => set((s) => ({ hero: { ...s.hero, hp: Math.max(0, Math.min(hp, s.hero.maxHp)) } })),
 
@@ -585,13 +587,13 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const atkPctBonus = sumList(w.effects ?? [], 'atkPct');
     const finalAtk = Math.floor((BASE_ATK(hero.level) + newAtk) * (1 + atkPctBonus / 100)) + atkBonus;
     set((s) => ({
-      hero: {
+      hero: syncHeroDerived({
         ...s.hero,
         gold: s.hero.gold - goldCost,
         weapon: wEquip,
         atk: finalAtk,
         critRate: Math.max(0, Math.min(1, s.hero.critRate - oldCrit + newCrit + critBonus)),
-      },
+      }),
       resources: newRes,
     }));
     get().addGameLog(`购买武器 ${w.name}`);
@@ -634,14 +636,14 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const finalDef = Math.floor((BASE_DEF(hero.level) + (a.stats?.def ?? 0)) * (1 + defPctBonus / 100)) + defBonus;
     const mhp = Math.floor((BASE_HP(hero.level) + newHp) * (1 + hpPctBonus / 100)) + hpBonus;
     set((s) => ({
-      hero: {
+      hero: syncHeroDerived({
         ...s.hero,
         gold: s.hero.gold - goldCost,
         armor: aEquip,
         def: finalDef,
         maxHp: mhp,
         hp: Math.min(s.hero.hp, mhp),
-      },
+      }),
       resources: newRes,
     }));
     get().addGameLog(`购买护甲 ${a.name}`);
