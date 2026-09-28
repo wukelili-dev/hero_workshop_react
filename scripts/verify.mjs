@@ -74,7 +74,8 @@ check('内容量产达标', () => {
 check('词条挂点接线', () => {
   const files = [
     'src/store/useWorldStore.ts', 'src/engine/NpcBenefits.ts', 'src/engine/NpcSystem.ts',
-    'src/store/useGameStore.ts', 'src/engine/Combat.ts', 'src/engine/NpcAutonomy.ts',
+    // C8：战斗结算原语搬进 BattleCore，Combat 只做自动战斗的薄封装 → 挂点跟着走
+    'src/store/useGameStore.ts', 'src/engine/BattleCore.ts', 'src/engine/NpcAutonomy.ts',
     'src/engine/OfflineReport.ts',
   ];
   const miss = files.filter((f) => !has(f, 'ItemEffects'));

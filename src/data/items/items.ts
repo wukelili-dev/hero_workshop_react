@@ -7,6 +7,13 @@ import type { ItemDef } from '../../types';
 
 export const ITEM_DEFS: ItemDef[] = [
   // ── 技能书（C5）：使用后学会对应技能，占用技能槽（上限 3） ──
+  // 高级武学秘籍（C8）：品级越高，招式的倍率/段数/附加效果越强
+  { id: 'book_falling_petals', name: '落英剑法·剑谱', grade: 2, category: 'skillbook', price: 700, source: 'shop', skillId: 'falling_petals', effects: [], lore: '剑谱上画满飘落的桃花，每一片都是一剑。' },
+  { id: 'book_mountain_fist', name: '崩山拳·拳经', grade: 2, category: 'skillbook', price: 0, source: 'drop', skillId: 'mountain_fist', effects: [], lore: '拳经开篇只有四字：拳出山崩。' },
+  { id: 'book_calm_mind', name: '静心诀·残卷', grade: 2, category: 'skillbook', price: 660, source: 'shop', skillId: 'calm_mind', effects: [], lore: '残卷教你如何在一剑落下之前先安静下来。' },
+  { id: 'book_five_thunder', name: '五雷正法·雷符', grade: 3, category: 'skillbook', price: 0, source: 'drop', skillId: 'five_thunder', effects: [], lore: '符上朱砂写着五个雷字，纸面至今发烫。' },
+  { id: 'book_taiyi_sword', name: '太乙玄门剑·真解', grade: 4, category: 'skillbook', price: 0, source: 'drop', skillId: 'taiyi_sword', effects: [], lore: '真解共两页，字迹却是两个人的手笔。' },
+  { id: 'book_taishang_forget', name: '太上忘情·仙箓', grade: 5, category: 'skillbook', price: 0, source: 'drop', skillId: 'taishang_forget', effects: [], lore: '仙箓无字，读它的人在读自己。' },
   { id: 'book_burst_rage', name: '狂怒·血书', grade: 3, category: 'skillbook', price: 520, source: 'shop', skillId: 'burst_rage', effects: [], lore: '书页被反复揉皱，边上写着"再快一点"。' },
   { id: 'book_whirlwind', name: '旋风斩·刀谱', grade: 2, category: 'skillbook', price: 300, source: 'drop', skillId: 'whirlwind', effects: [], lore: '刀谱画着一个人转了三圈，圈里全是别人的血。' },
   { id: 'book_mend', name: '回春诀·残页', grade: 2, category: 'skillbook', price: 280, source: 'shop', skillId: 'mend', effects: [], lore: '残页只有半句口诀，却够救人一命。' },

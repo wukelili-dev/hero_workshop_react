@@ -893,6 +893,19 @@ export interface SkillDef {
   power: number;                   // 伤害/治疗系数
   apply?: StatusEffectId[];
   desc: string;
+  // ── 武学（C8 手动战斗 · 招式对决）附加字段，全部可选；缺省即旧招式行为 ──
+  /** 品级 0 凡品 ~ 5 仙品 */
+  grade?: number;
+  /** 门类：剑/刀/拳/掌/体/术（师门学习条件与招式相克用） */
+  school?: 'sword' | 'blade' | 'fist' | 'palm' | 'body' | 'art';
+  /** 攻击段数，缺省 1；power 是总倍率，按段数摊分 */
+  hits?: number;
+  /** 吸血：回复造成伤害的该比例 */
+  drain?: number;
+  /** 回气：回复最大生命的该比例 */
+  heal?: number;
+  /** 护体：获得最大生命该比例的护盾 */
+  shield?: number;
 }
 
 /** 装备形态与词条（C4） */
