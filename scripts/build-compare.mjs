@@ -15,7 +15,7 @@ function heroDerived(p, lv) {
   return {
     hpMax: 60 + root * 12 + lv * 10,
     def: 2 + root * 0.8 + lv * 0.5,
-    atk: 4 + qi * 1.6 + lv * 0.8,
+    atk: 4 + qi * 1.6 + agility * 0.5 + spirit * 0.3 + lv * 0.8,
     pen: qi * 0.25,
     speed: 8 + agility * 1.2,
     dodge: clamp(agility * 0.004, 0, CAPS.dodge),

@@ -47,7 +47,9 @@ export function buildDerived(
   return {
     hpMax: 60 + root * 12 + level * 10,
     def: 2 + root * 0.8 + level * 0.5,
-    atk: 4 + qi * 1.6 + level * 0.8,
+    // A 方案（C6 收尾）：气力仍是攻击主轴，但身法/神识也给少量输出贡献，
+    // 否则「快剑/法衣」这类不走气力的流派完全没有伤害出口，三 build 只剩一条路。
+    atk: 4 + qi * 1.6 + agility * 0.5 + spirit * 0.3 + level * 0.8,
     pen: qi * 0.25,
     speed: 8 + agility * 1.2,
     dodge: clamp(agility * 0.004, 0, STAT_CAPS.dodge),
@@ -102,13 +104,15 @@ export interface LegacyStats {
 export function legacyToPrimary(legacy: LegacyStats, level: number): PrimaryStats {
   const crit = legacy.crit ?? 0.05;
   const critDmg = legacy.critDmg ?? 1.5;
-  const qi = clamp((legacy.atk - 4 - level * 0.8) / 1.6, PRIMARY_MIN, PRIMARY_MAX);
+  // 注意顺序：A 方案后 atk 里含有 spirit 的贡献，必须先反解 spirit 再反解 qi。
+  const spirit = clamp((crit - 0.03) / 0.004, PRIMARY_MIN, PRIMARY_MAX);
+  const agility = 5; // 旧数据无身法维度 → 中性默认
+  const axisAtk = agility * 0.5 + spirit * 0.3; // A 方案的轴贡献，反解时扣掉
+  const qi = clamp((legacy.atk - 4 - level * 0.8 - axisAtk) / 1.6, PRIMARY_MIN, PRIMARY_MAX);
   const rootDef = clamp((legacy.def - 2 - level * 0.5) / 0.8, PRIMARY_MIN, PRIMARY_MAX);
   const rootHp = clamp((legacy.hp - 60 - level * 10) / 12, PRIMARY_MIN, PRIMARY_MAX);
   const root = Math.max(rootDef, rootHp); // 保证血量不降
-  const spirit = clamp((crit - 0.03) / 0.004, PRIMARY_MIN, PRIMARY_MAX);
   const fortune = clamp((critDmg - 1.5) / 0.01, PRIMARY_MIN, PRIMARY_MAX);
-  const agility = 5; // 旧数据无身法维度 → 中性默认
   return { root, qi, agility, spirit, fortune };
 }
 
