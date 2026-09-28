@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FaCoins, FaEnvelope } from 'react-icons/fa6';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 import { useGameStore } from '../../store/useGameStore';
-import { dayNumber, shichenOf, useWorldStore } from '../../store/useWorldStore';
+import { dayNumber, useWorldStore } from '../../store/useWorldStore';
 import { titleName } from '../../engine/TitleSystem';
 import { unreadCount } from '../../engine/LetterSystem';
 import { Mailbox } from '../shared/Mailbox';
@@ -10,7 +10,6 @@ import { Mailbox } from '../shared/Mailbox';
 export const TopBar: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
   const dayNo = useWorldStore((s) => dayNumber(s.day));
-  const shichen = useWorldStore((s) => shichenOf(s.day));
   const dailyEvent = useWorldStore((s) => s.dailyEvent);
   const title = titleName();
   const [showMailbox, setShowMailbox] = useState(false);
@@ -24,8 +23,12 @@ export const TopBar: React.FC = () => {
         </span>
         <span className="ink-title text-base md:text-lg">勇者工坊</span>
       </div>
-      <span className="ink-tag hidden px-2 py-0.5 sm:inline-block">第 {dayNo} 天 · {shichen}</span>
-      <span className="ink-tag px-2 py-0.5 sm:hidden">{dayNo} 天</span>
+      <span
+        className="ink-tag px-2 py-0.5"
+        title="时间不自动流逝：只有行军或消耗天数的行动才会推进"
+      >
+        第 {dayNo} 天
+      </span>
       {title && <span className="ink-tag gold px-2 py-0.5" title={titleName()}>{title}</span>}
       {dailyEvent && (
         <span className="ink-tag gold hidden px-2 py-0.5 lg:inline-block">{dailyEvent.text}</span>

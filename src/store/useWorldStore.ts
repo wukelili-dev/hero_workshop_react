@@ -1,8 +1,9 @@
 // ============ 世界状态：时间 + 所在格子 + 迷雾 ============
-// 时间在挂机时自己流逝（DAY_MS 毫秒 = 1 天），行军会直接消耗天数。
+// 世界时间不自动流动（设计取向 ③）：天数只由「行军 / 消耗天数的行动」推进。
+// 界面上仍以 1 天 = DAY_MS 的旧口径做离线收益换算（OfflineReport），那是独立系统。
 
 import { create } from 'zustand';
-import { DAY_MS, SHICHEN } from '../data/constants';
+import { SHICHEN } from '../data/constants';
 import { TERRAIN_CONFIG, findRoute, getCellById, getNeighbors, type CellRoute } from '../data/cellMap';
 import { getCellEncounter } from '../data/cellEncounters';
 import { useGameStore } from './useGameStore';
@@ -17,11 +18,18 @@ import type { ChronicleEntry, Consequence, PendingVisit, PlaceState } from '../t
 export const START_CELL_ID = 'cp_2_5';
 
 /**
- * 单次 tick 最多结算的真实时长（10 分钟 ≈ 5 游戏日）。
- * 意义：笔记本休眠 / 浏览器后台节流后，delta 可能是几小时甚至几天，
- * 不设上限会一次性涌入几百上千天，把「第 N 天」这个叙事时钟冲爆。
+ * 跨过整数天时的副作用，集中在这一处（原本挂在每秒 tick 上）。
+ * 取向 ③ 之后天数只由行军/行动推进，所以触发点改为「任何 day 增加的地方」：
+ * advanceDays()、moveTo() 都会调用它。
  */
-export const MAX_TICK_MS = 10 * 60 * 1000;
+function applyDayCrossing(from: number, to: number): void {
+  if (Math.floor(to) <= Math.floor(from)) return;
+  const d = Math.floor(to);
+  advanceNpcDay(d);
+  tickVisits(d);
+  useWorldStore.getState().pruneConsequences(d);
+  useWorldStore.setState({ dailyEvent: rollDailyEvent(d) });
+}
 
 export interface WorldSave {
   day: number;
@@ -60,7 +68,6 @@ export interface WorldSave {
 type WorldState = WorldSave;
 
 interface WorldActions {
-  tick: (now?: number) => void;
   advanceDays: (days: number) => void;
   moveTo: (cellId: string) => CellRoute | null;
   syncEncounter: () => void;
@@ -140,31 +147,13 @@ const DEFAULT_WORLD: WorldState = {
 export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
   ...DEFAULT_WORLD,
 
-  /** 挂机时间流逝 */
-  tick: (now) => {
-    const t = now ?? Date.now();
-    const { lastTickAt, day } = get();
-    const raw = t - lastTickAt;
-    if (raw <= 0) {
-      set({ lastTickAt: t });
-      return;
-    }
-    const delta = Math.min(raw, MAX_TICK_MS);
-    const next = day + delta / DAY_MS;
-    // 跨过整数天：推进 NPC 自主行为（每天一次，只演算活跃 NPC）
-    if (Math.floor(next) > Math.floor(day)) {
-      const d = Math.floor(next);
-      advanceNpcDay(d);
-      tickVisits(d);
-      get().pruneConsequences(d);
-      set({ dailyEvent: rollDailyEvent(d) });
-    }
-    set({ day: next, lastTickAt: t });
-  },
-
+  /** 消耗天数（行军之外的所有"过一天"行动走这里） */
   advanceDays: (days) => {
     if (days === 0) return;
-    set((s) => ({ day: s.day + days }));
+    const cur = get().day;
+    const next = cur + days;
+    set({ day: next });
+    applyDayCrossing(cur, next);
   },
 
   /** 移动到任意格子：按地形累计天数、沿途揭开迷雾；跨区域走关隘（校验门槛） */
@@ -226,6 +215,8 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
       visitedCells: Array.from(visited),
       day: state.day + days,
     });
+    // 天数推进的副作用（NPC 自主行为 / 来访 / 每日事件）在行军这里补齐
+    applyDayCrossing(state.day, state.day + days);
 
     // 同步战斗系统：此地有哪些妖怪
     const game = useGameStore.getState();
@@ -259,7 +250,7 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
       revealedCells: data.revealedCells ?? [],
       visitedCells: data.visitedCells ?? [START_CELL_ID],
       // 注意：这里必须用「现在」而不是存档里的 lastTickAt。
-      // 读档（含启动时自动读档）发生在 startWorldClock 之后，若沿用旧时间戳，
+      // 读档（含启动时自动读档）发生在 syncWorldClock 之后，若沿用旧时间戳，
       // 下一次 tick 会把「存档至今的真实间隔」整段换算成游戏日 → 天数控式膨胀。
       lastTickAt: Date.now(),
       gathered: data.gathered ?? {},
@@ -328,25 +319,25 @@ export function dayNumber(day: number): number {
   return Math.max(1, Math.floor(day));
 }
 
-/** 十二时辰 */
+/**
+ * 十二时辰。取向 ③ 之后天数只按整日推进，UI 暂不显示时辰；
+ * 作为工具函数保留（将来的"半日/几个时辰"行动可直接复用）。
+ */
 export function shichenOf(day: number): string {
   const frac = day - Math.floor(day);
   const idx = Math.min(SHICHEN.length - 1, Math.max(0, Math.floor(frac * SHICHEN.length)));
   return SHICHEN[idx];
 }
 
-/** 「第 12 天 · 午时」 */
+/** 「第 12 天」 */
 export function formatDayLabel(day: number): string {
-  return `第 ${dayNumber(day)} 天 · ${shichenOf(day)}`;
+  return `第 ${dayNumber(day)} 天`;
 }
 
-let _worldTimer: ReturnType<typeof setInterval> | null = null;
-
-/** 启动世界时钟（每秒累加一次） */
-export function startWorldClock(): void {
-  if (_worldTimer) return;
+/**
+ * 世界时钟同步（取向 ③：不自动流动）。
+ * 只刷新 lastTickAt 这个存档字段，不再起定时器 —— 天数只由行军/行动推进。
+ */
+export function syncWorldClock(): void {
   useWorldStore.setState({ lastTickAt: Date.now() });
-  _worldTimer = setInterval(() => {
-    useWorldStore.getState().tick(Date.now());
-  }, 1000);
 }

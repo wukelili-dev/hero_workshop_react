@@ -35,7 +35,7 @@ import { claimOffline, computeOffline, markSeen, type OfflineReport } from '../.
 import { bountiesFor, claimBounty } from '../../engine/Bounty';
 import { useGameStore } from '../../store/useGameStore';
 import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils';
-import { startWorldClock, useWorldStore } from '../../store/useWorldStore';
+import { syncWorldClock, useWorldStore } from '../../store/useWorldStore';
 import { regionOfCell } from '../../data/regions';
 import {
   FaFloppyDisk, FaFolderOpen, FaBookOpen, FaCircleQuestion, FaMapLocationDot, FaCity,
@@ -106,7 +106,7 @@ export const AppShell: React.FC = () => {
   useEffect(() => {
     // 有存档就自动接着玩（放置游戏不该让人每次手动读档）
     if (hasSave()) loadGame();
-    startWorldClock();
+    syncWorldClock();
     useWorldStore.getState().syncEncounter();
     // 离线结算：先告诉玩家"你不在的时候发生了什么"
     setOffline(computeOffline());
