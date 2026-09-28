@@ -94,6 +94,10 @@ export interface HeroState {
   weapon: Equipment | null;
   armor: Equipment | null;
   passives: string[];
+  /** 已装配的技能（技能槽，上限 3）；缺省用 DEFAULT_HERO_SKILLS */
+  skills?: string[];
+  /** 主属性（C6）；缺省按等级 autoAllocatePrimary(level) 推导，未来可承载加点/装备加成 */
+  primary?: PrimaryStats;
   noveltyItems: string[];
   team: TeamMember[];  // 队友列表
   discoveredMonsters: string[];  // 已发现的怪物ID列表
@@ -776,7 +780,7 @@ export const ITEM_GRADE_NAME: Record<ItemGrade, string> = {
   0: '凡品', 1: '良品', 2: '珍品', 3: '秘宝', 4: '神物', 5: '仙品',
 };
 
-export type ItemCategory = 'material' | 'consumable' | 'treasure' | 'equipment' | 'keepsake';
+export type ItemCategory = 'material' | 'consumable' | 'treasure' | 'equipment' | 'keepsake' | 'skillbook';
 
 /** 词条触发时机 */
 export type EffectTrigger = 'equip' | 'use' | 'hold';
@@ -811,6 +815,8 @@ export interface ItemDef {
   /** 旧的杂物兼容字段（种子等） */
   kind?: string;
   plantId?: string;
+  /** category === 'skillbook' 时：使用后学会的技能 id */
+  skillId?: string;
 }
 
 /** 命名词表结构 */

@@ -7,13 +7,14 @@
 // 内部改由 Combatant（主属性→派生属性）驱动，结算规则切换为多轴。
 // 过渡期策略：核心 hp/atk/def 保持原始手调值（等价），新轴给中性默认；
 // 怪物带 primary 字段时改由 buildDerived 正向派生（C3），否则用原始值。
-import type { Monster, Equipment, ItemEffect, Lineage, Combatant, StatusEffectId, PrimaryStats, DerivedStats, SkillDef } from '../types';
+import type { Monster, Equipment, ItemEffect, Lineage, Combatant, StatusEffectId, PrimaryStats, DerivedStats, SkillDef, TeamMember } from '../types';
 import { generateDrop } from './equipmentDrops';
 import { useGameStore } from '../store/useGameStore';
 import { sum as sumEffect, sumList, equipEffectsOf } from './ItemEffects';
-import { buildMonsterDerived, STAT_CAPS } from './Stats';
+import { buildMonsterDerived, buildDerived, autoAllocatePrimary, STAT_CAPS } from './Stats';
+import { deriveTeammate } from './NpcStats';
 import { setBonusEffects } from '../data/equipmentForms';
-import { getSkill, DEFAULT_HERO_SKILLS } from '../data/skills';
+import { getSkill, DEFAULT_HERO_SKILLS, passiveEffectsOf } from '../data/skills';
 
 export interface HeroStats {
   hp: number;
@@ -105,6 +106,10 @@ const NEUTRAL_AXES = { hit: 0.85, dodge: 0, speed: 14, pen: 0, tenacity: 0, resi
 
 function heroCombatant(heroStats: HeroStats, equipEffects: ItemEffect[]): Combatant {
   const hero = useGameStore.getState().hero;
+  // C6：英雄接入主属性体系。英雄主属性按等级自动分配（2:2:2:2:1），
+  // 因此身法/神识随等级成长 —— 这正是 A 方案（身法/神识参与输出）的落点。
+  const primary: PrimaryStats = hero.primary ?? autoAllocatePrimary(hero.level);
+  const ax = buildDerived(primary, hero.level);
   // C4：装备词条叠加到派生轴（命中/闪避/速度/抗性）
   const hitBonus = sumList(equipEffects, 'hit');
   const dodgeBonus = sumList(equipEffects, 'dodge');
@@ -112,25 +117,42 @@ function heroCombatant(heroStats: HeroStats, equipEffects: ItemEffect[]): Combat
   const resistBonus = sumList(equipEffects, 'resist');
   const derived: DerivedStats = {
     hpMax: hero.maxHp,
-    atk: heroStats.atk,
+    // A 方案：主属性的攻击基线仍走旧的 heroStats.atk（等级+装备），
+    // 额外把身法/神识的输出贡献加回来，避免与旧公式重复计算。
+    atk: heroStats.atk + primary.agility * 0.5 + primary.spirit * 0.3,
     def: heroStats.def,
-    hit: clamp(0.85 + hitBonus, 0, STAT_CAPS.hit),
-    dodge: clamp(dodgeBonus, 0, STAT_CAPS.dodge),
-    speed: 14 + speedBonus,
-    pen: 0,
-    tenacity: 0,
-    resist: clamp(resistBonus, 0, STAT_CAPS.resist),
-    crit: heroStats.crit,
-    critDmg: hero.critDmg ?? 1.5,
+    hit: clamp(Math.max(0.85, ax.hit) + hitBonus, 0, STAT_CAPS.hit),
+    dodge: clamp(ax.dodge + dodgeBonus, 0, STAT_CAPS.dodge),
+    speed: Math.max(14, ax.speed) + speedBonus,
+    pen: ax.pen,
+    tenacity: ax.tenacity,
+    resist: clamp(ax.resist + resistBonus, 0, STAT_CAPS.resist),
+    crit: clamp(Math.max(heroStats.crit, ax.crit), 0, STAT_CAPS.crit),
+    critDmg: hero.critDmg ?? ax.critDmg,
   };
   return {
     id: 'hero', name: '勇者', side: 'ally', level: hero.level,
-    primary: { root: 1, qi: 1, agility: 1, spirit: 1, fortune: 1 },
+    primary,
     derived,
     vars: { rage: 0, shield: 0, statuses: [] },
     lineage: 'human',
     equipmentEffects: equipEffects,
-    skills: DEFAULT_HERO_SKILLS,
+    skills: hero.skills ?? DEFAULT_HERO_SKILLS,
+  };
+}
+
+/** 队友（C5 队伍协同）：等级 → 主属性 → 派生，与怪物/NPC 同一套语言 */
+function teammateCombatant(member: TeamMember, idx: number): Combatant {
+  const { level, primary, derived } = deriveTeammate(member.level, member.isElite);
+  return {
+    id: `mate_${idx}`,
+    name: member.roleName,
+    side: 'ally',
+    level,
+    primary,
+    derived,
+    vars: { rage: 0, shield: 0, statuses: [] },
+    lineage: 'human',
   };
 }
 
@@ -194,7 +216,7 @@ function rollDamage(attacker: Combatant, defender: Combatant, isCrit: boolean): 
  */
 export function executeBattle(
   heroStats: HeroStats,
-  _team: HeroStats[],
+  team: TeamMember[],
   monster: Monster
 ): { logs: BattleLog[]; victory: boolean; rewards: Rewards; heroFinalHp: number } {
   const logs: BattleLog[] = [];
@@ -211,6 +233,8 @@ export function executeBattle(
     ...equipEffectsOf(hero.weapon?.effects),
     ...equipEffectsOf(hero.armor?.effects),
     ...equipEffectsOf(setEffects),
+    // C5：已学会的被动技能按「持有词条」常驻生效
+    ...passiveEffectsOf(hero.passives),
   ];
   const equipSum = (kind: ItemEffect['kind']) => sumList(equipEffects, kind);
   const battleSum = (kind: ItemEffect['kind']) => equipSum(kind) + sumEffect(kind);
@@ -230,6 +254,8 @@ export function executeBattle(
 
   const heroC = heroCombatant(heroStats, equipEffects);
   const monC = monsterCombatant(monster);
+  // C5 队伍协同：队友各自按派生属性参战（每回合额外出手，怪物仍视勇者为唯一目标）
+  const mateCs = (team ?? []).map((m, i) => teammateCombatant(m, i));
 
   let heroHP = heroStats.hp;
   let monsterHP = monC.derived.hpMax;
@@ -282,6 +308,12 @@ export function executeBattle(
         hpDmg = 0;
         break;
       }
+      case 'support': {
+        // 疗伤类：按最大生命百分比回复自身，非伤害技能
+        attacker.vars.shield += 0;
+        hpDmg = 0;
+        break;
+      }
       default: { // strike / support / area 统一按攻击结算
         const dmg = rollDamage(attacker, defender, false);
         hpDmg = Math.max(1, Math.floor(dmg * skill.power));
@@ -294,9 +326,10 @@ export function executeBattle(
       defender.vars.shield -= absorbed;
       hpDmg -= absorbed;
     }
-    // 施加技能附带状态
+    // 施加技能附带状态：增益类（support/guard）挂自己，其余挂目标
     if (skill.apply) {
-      for (const s of skill.apply) addStatus(defender, s as StatusEffectId, 1, 2);
+      const self = skill.kind === 'support' || skill.kind === 'guard';
+      for (const s of skill.apply) addStatus(self ? attacker : defender, s as StatusEffectId, 1, 2);
     }
     defender.vars.rage = Math.min(RAGE_MAX, defender.vars.rage + RAGE_GAIN_HIT);
     return { hpDmg: Math.max(0, hpDmg), skill };
@@ -322,7 +355,15 @@ export function executeBattle(
             if (skill.kind === 'drain' && hpDmg > 0) {
               heroHP = Math.min(heroMaxHP, heroHP + hpDmg);
             }
-            logs.push({ round, attacker: '勇者', defender: monster.name, damage: hpDmg, isCrit: skill.kind === 'burst', description: `勇者释放技能「${skill.name}」，造成 ${hpDmg} 点伤害。${monster.name} 剩余 HP: ${monsterHP}` });
+            if (skill.kind === 'support') {
+              const heal = Math.floor(heroMaxHP * skill.power);
+              heroHP = Math.min(heroMaxHP, heroHP + heal);
+              logs.push({ round, attacker: '勇者', defender: '勇者', damage: 0, isCrit: false, description: `勇者施展「${skill.name}」，回复 ${heal} 点生命。勇者剩余 HP: ${heroHP}` });
+            } else if (skill.kind === 'guard') {
+              logs.push({ round, attacker: '勇者', defender: '勇者', damage: 0, isCrit: false, description: `勇者施展「${skill.name}」，进入格挡姿态。` });
+            } else {
+              logs.push({ round, attacker: '勇者', defender: monster.name, damage: hpDmg, isCrit: skill.kind === 'burst', description: `勇者释放技能「${skill.name}」，造成 ${hpDmg} 点伤害。${monster.name} 剩余 HP: ${monsterHP}` });
+            }
           }
         } else {
           const hpDmg = strike(heroC, monC, heroCrit);
@@ -346,6 +387,19 @@ export function executeBattle(
           logs.push({ round, attacker: '勇者', defender: monster.name, damage: comboDmg, isCrit: false, description: `勇者连击 ${monster.name}，造成 ${comboDmg} 点伤害。${monster.name} 剩余 HP: ${monsterHP}` });
           if (monsterHP <= 0) break;
         }
+
+        // C5 队伍协同：队友依次出手（各自派生属性结算）
+        for (const mate of mateCs) {
+          if (monsterHP <= 0) break;
+          const mateDmg = strike(mate, monC, false);
+          if (mateDmg < 0) {
+            logs.push({ round, attacker: mate.name, defender: monster.name, damage: 0, isCrit: false, description: `${mate.name}协战 ${monster.name}，未命中。` });
+          } else {
+            monsterHP = Math.max(0, monsterHP - mateDmg);
+            logs.push({ round, attacker: mate.name, defender: monster.name, damage: mateDmg, isCrit: false, description: `${mate.name}协战 ${monster.name}，造成 ${mateDmg} 点伤害。${monster.name} 剩余 HP: ${monsterHP}` });
+          }
+        }
+        if (monsterHP <= 0) break;
       } else {
         // 怪物侧：Boss 怒气满可释放技能，否则普通攻击
         const bossSkill = monster.isBoss ? releaseSkill(monC, heroC, bossSkillsOf(monC)) : null;

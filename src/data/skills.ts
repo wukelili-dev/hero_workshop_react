@@ -3,7 +3,7 @@
  * 怒气满 100 可释放；kind 决定结算方式。
  * power 为系数：strike/burst 乘 atk，guard/support 乘 hpMax，drain 乘 atk 并回血。
  */
-import type { SkillDef } from '../types';
+import type { ItemEffect, SkillDef } from '../types';
 
 export const SKILLS: Record<string, SkillDef> = {
   // ── 通用（玩家默认，人人可学） ──
@@ -23,6 +23,14 @@ export const SKILLS: Record<string, SkillDef> = {
     id: 'burst_rage', name: '狂怒', cost: 100, kind: 'burst', power: 2.2,
     desc: '倾尽怒气，造成 220% 攻击伤害',
   },
+  'whirlwind': {
+    id: 'whirlwind', name: '旋风斩', cost: 100, kind: 'strike', power: 1.35,
+    apply: ['bleed'], desc: '横扫一周，造成 135% 攻击伤害并使目标流血',
+  },
+  'mend': {
+    id: 'mend', name: '回春诀', cost: 100, kind: 'support', power: 0.25,
+    apply: ['haste'], desc: '运气自愈，回复 25% 最大生命并加速',
+  },
   // ── 妖类（Boss/怪物技能） ──
   'poison_breath': {
     id: 'poison_breath', name: '剧毒吐息', cost: 100, kind: 'strike', power: 1.1,
@@ -36,6 +44,31 @@ export const SKILLS: Record<string, SkillDef> = {
 
 export function getSkill(id: string): SkillDef | undefined {
   return SKILLS[id];
+}
+
+// ── 被动技能（C5）：学得后作为「持有类词条」常驻生效，复用 ItemEffects 的全部挂点 ──
+export const PASSIVE_SKILLS: Record<string, { name: string; desc: string; effects: ItemEffect[] }> = {
+  iron_shirt: {
+    name: '铁布衫',
+    desc: '常年硬功，受伤减少 10%',
+    effects: [{ kind: 'damageCut', trigger: 'hold', value: 0.1 }],
+  },
+  swift_step: {
+    name: '疾风步',
+    desc: '身法轻灵，闪避 +6%',
+    effects: [{ kind: 'dodge', trigger: 'hold', value: 0.06 }],
+  },
+  tiger_fist: {
+    name: '伏虎劲',
+    desc: '拳脚刚猛，攻击 +8%',
+    effects: [{ kind: 'atkPct', trigger: 'hold', value: 0.08 }],
+  },
+};
+
+/** 把已学会的被动技能折算成词条（供战斗侧合并到装备词条里） */
+export function passiveEffectsOf(passiveIds: string[] | undefined): ItemEffect[] {
+  if (!passiveIds || passiveIds.length === 0) return [];
+  return passiveIds.flatMap((id) => PASSIVE_SKILLS[id]?.effects ?? []);
 }
 
 /** 玩家的默认技能（无装备形态指定时） */

@@ -6,6 +6,13 @@
 import type { ItemDef } from '../../types';
 
 export const ITEM_DEFS: ItemDef[] = [
+  // ── 技能书（C5）：使用后学会对应技能，占用技能槽（上限 3） ──
+  { id: 'book_burst_rage', name: '狂怒·血书', grade: 3, category: 'skillbook', price: 520, source: 'shop', skillId: 'burst_rage', effects: [], lore: '书页被反复揉皱，边上写着"再快一点"。' },
+  { id: 'book_whirlwind', name: '旋风斩·刀谱', grade: 2, category: 'skillbook', price: 300, source: 'drop', skillId: 'whirlwind', effects: [], lore: '刀谱画着一个人转了三圈，圈里全是别人的血。' },
+  { id: 'book_mend', name: '回春诀·残页', grade: 2, category: 'skillbook', price: 280, source: 'shop', skillId: 'mend', effects: [], lore: '残页只有半句口诀，却够救人一命。' },
+  { id: 'book_iron_shirt', name: '铁布衫·拳谱', grade: 2, category: 'skillbook', price: 260, source: 'shop', skillId: 'iron_shirt', effects: [], lore: '少林旧拓，纸页发黄，字口却依旧刚硬。' },
+  { id: 'book_swift_step', name: '疾风步·残卷', grade: 2, category: 'skillbook', price: 220, source: 'drop', skillId: 'swift_step', effects: [], lore: '据说是一位剑客逃命时写下的心得。' },
+  { id: 'book_tiger_fist', name: '伏虎劲·秘录', grade: 3, category: 'skillbook', price: 480, source: 'drop', skillId: 'tiger_fist', effects: [], lore: '拳法秘录，末页画着一只下山的虎。' },
   {
     id: 'travel_boots',
     name: '行脚快靴',

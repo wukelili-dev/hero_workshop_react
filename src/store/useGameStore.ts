@@ -15,6 +15,7 @@ import { sum as sumEffect, sumList } from '../engine/ItemEffects';
 import { getItemDef } from '../data/items/items';
 import { getWeaponFormByName, getArmorFormByName } from '../data/equipment';
 import { formSetId } from '../data/equipmentForms';
+import { SKILLS, PASSIVE_SKILLS, DEFAULT_HERO_SKILLS } from '../data/skills';
 
 // 掉落物品 itemId → 资源 key 映射（怪物掉落用中文，资源状态用英文）
 const DROP_TO_RESOURCE: Record<string, string> = {
@@ -357,7 +358,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const { hero } = get();
     const result = executeBattle(
       { hp: hero.hp, atk: hero.atk, def: hero.def, crit: hero.critRate },
-      [],
+      hero.team ?? [],
       monster
     );
     const now = Date.now();
@@ -656,7 +657,46 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   // 使用可消耗名物（M3：结算 use 词条，如 heal/exp）
   useItem: (itemId) => {
     const def = getItemDef(itemId);
-    if (!def || def.category !== 'consumable') return false;
+    if (!def) return false;
+
+    // C5：技能书 —— 主动技能进技能槽（上限 3，满则替换），被动技能进 passives
+    if (def.category === 'skillbook') {
+      const sid = def.skillId;
+      if (!sid) return false;
+      const { hero } = get();
+      const isActive = !!SKILLS[sid];
+      const isPassive = !!PASSIVE_SKILLS[sid];
+      if (!isActive && !isPassive) return false;
+      if (isPassive && hero.passives.includes(sid)) {
+        get().addGameLog(`已参悟「${PASSIVE_SKILLS[sid].name}」，无需再读`);
+        return false;
+      }
+      const current = hero.skills ?? [...DEFAULT_HERO_SKILLS];
+      if (isActive && current.includes(sid)) {
+        get().addGameLog(`已会「${SKILLS[sid].name}」，无需再读`);
+        return false;
+      }
+      const removed = useInventoryStore.getState().removeNovelty(itemId, 1);
+      if (!removed) return false;
+      if (isPassive) {
+        set((s) => ({ hero: { ...s.hero, passives: [...(s.hero.passives ?? []), sid] } }));
+        get().addGameLog(`参悟被动「${PASSIVE_SKILLS[sid].name}」：${PASSIVE_SKILLS[sid].desc}`);
+        return true;
+      }
+      let next = [...current];
+      let replaced: string | undefined;
+      if (next.length >= 3) replaced = next.shift();
+      next.push(sid);
+      set((s) => ({ hero: { ...s.hero, skills: next } }));
+      get().addGameLog(
+        replaced
+          ? `习得「${SKILLS[sid].name}」，技能槽已满，顶替「${SKILLS[replaced]?.name ?? replaced}」`
+          : `习得「${SKILLS[sid].name}」`,
+      );
+      return true;
+    }
+
+    if (def.category !== 'consumable') return false;
     const removed = useInventoryStore.getState().removeNovelty(itemId, 1);
     if (!removed) return false;
     for (const e of def.effects ?? []) {

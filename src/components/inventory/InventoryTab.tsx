@@ -234,6 +234,17 @@ export const InventoryTab: React.FC = () => {
                 }
                 // 可消耗名物（heal/exp use 词条）
                 const def = getItemDef(slot.id);
+                // 技能书（C5）：学习主动技能或参悟被动
+                if (def?.category === 'skillbook') {
+                  return (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); useItem(slot.id); }}
+                      className="px-1.5 py-[1px] text-[9px] bg-purple-100 hover:bg-purple-200 text-purple-700 rounded transition-colors"
+                    >
+                      学习
+                    </button>
+                  );
+                }
                 const useEff = def && def.category === 'consumable' && (def.effects ?? []).some((e) => e.trigger === 'use');
                 if (useEff) {
                   const heal = def!.effects!.find((e) => e.kind === 'heal')?.value;
