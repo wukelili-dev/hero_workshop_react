@@ -3,7 +3,7 @@ import { FaGem } from 'react-icons/fa6';
 import { useGameStore } from '../../store/useGameStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { useForgeStore } from '../../store/useForgeStore';
-import { FORGE_RECIPES, FORTIFY_CONFIG, FORGE_RARITY_COLORS, SET_EFFECTS, type FortifyConfig } from '../../data/forge';
+import { FORGE_RECIPES, FORTIFY_CONFIG, FORGE_RARITY_COLORS, SET_EFFECTS, passiveToEffects, type FortifyConfig } from '../../data/forge';
 import type { Equipment } from '../../types';
 
 // 强化配置按等级索引（1-based）
@@ -107,6 +107,7 @@ export const ForgeTab: React.FC = () => {
       rarity: recipe.rarity as any,
       rarityColor: FORGE_RARITY_COLORS[recipe.rarity] ?? '#ccc',
       stats: recipe.stats,
+      effects: passiveToEffects(recipe.passive),
       fortifyLevel: 0,
       cost: { '金币': Math.floor(recipe.gold / 2) },
       sellPrice: Math.floor(recipe.gold / 2),

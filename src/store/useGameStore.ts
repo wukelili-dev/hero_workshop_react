@@ -554,12 +554,15 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     // equip 词条基础数值加成（M3：atk/crit 等，与 stats 叠加）
     const atkBonus = sumList(w.effects ?? [], 'atk');
     const critBonus = sumList(w.effects ?? [], 'crit');
+    // Passives 接入：百分比词条作用在（基础 + 装备绝对值）上
+    const atkPctBonus = sumList(w.effects ?? [], 'atkPct');
+    const finalAtk = Math.floor((BASE_ATK(hero.level) + newAtk) * (1 + atkPctBonus / 100)) + atkBonus;
     set((s) => ({
       hero: {
         ...s.hero,
         gold: s.hero.gold - goldCost,
         weapon: wEquip,
-        atk: BASE_ATK(s.hero.level) + newAtk + atkBonus,
+        atk: finalAtk,
         critRate: Math.max(0, Math.min(1, s.hero.critRate - oldCrit + newCrit + critBonus)),
       },
       resources: newRes,
@@ -598,13 +601,17 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     // equip 词条基础数值加成（M3：def/hpMax 等，与 stats 叠加）
     const defBonus = sumList(a.effects ?? [], 'def');
     const hpBonus = sumList(a.effects ?? [], 'hpMax');
-    const mhp = BASE_HP(hero.level) + newHp + hpBonus;
+    // Passives 接入：百分比词条作用在（基础 + 装备绝对值）上
+    const defPctBonus = sumList(a.effects ?? [], 'defPct');
+    const hpPctBonus = sumList(a.effects ?? [], 'hpPct');
+    const finalDef = Math.floor((BASE_DEF(hero.level) + (a.stats?.def ?? 0)) * (1 + defPctBonus / 100)) + defBonus;
+    const mhp = Math.floor((BASE_HP(hero.level) + newHp) * (1 + hpPctBonus / 100)) + hpBonus;
     set((s) => ({
       hero: {
         ...s.hero,
         gold: s.hero.gold - goldCost,
         armor: aEquip,
-        def: BASE_DEF(s.hero.level) + (a.stats?.def ?? 0) + defBonus,
+        def: finalDef,
         maxHp: mhp,
         hp: Math.min(s.hero.hp, mhp),
       },

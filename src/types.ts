@@ -785,6 +785,7 @@ export type EffectTrigger = 'equip' | 'use' | 'hold';
 export interface ItemEffect {
   kind:
     | 'atk' | 'def' | 'crit' | 'critDmg' | 'hpMax'
+    | 'atkPct' | 'defPct' | 'hpPct'
     | 'armorPen' | 'lifesteal' | 'combo' | 'reflect' | 'damageCut'
     | 'hit' | 'dodge' | 'speed' | 'guard' | 'resist' | 'rage' | 'thorns'
     | 'travelDays' | 'revealExtra' | 'gatherBonus'

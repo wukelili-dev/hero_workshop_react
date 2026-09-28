@@ -131,3 +131,31 @@ export function getSetEffect(forgeSet: string, pieceCount: number): PassiveEffec
   }
   return result;
 }
+
+/**
+ * 被动 → 词条映射（Passives 接入）：把锻造配方的 passive 字段转为 ItemEffect[]，
+ * 使被动经 M3 已接好的 equip 词条结算链路生效。
+ * 语义约定：百分比字段（如 atkPct/defPct/hpPct/dodge 等）存百分数值（8 表示 8%），
+ * 由 useGameStore.equip* 按 BASE*×% 换算；概率字段存 0~100 的百分数。
+ */
+export function passiveToEffects(p: PassiveEffect | undefined): import('../types').ItemEffect[] {
+  if (!p) return [];
+  const fx: import('../types').ItemEffect[] = [];
+  const add = (kind: import('../types').ItemEffect['kind'], value: number) => {
+    if (value !== 0 && Number.isFinite(value)) fx.push({ kind, trigger: 'equip', value });
+  };
+  const num = (v: unknown): number => (typeof v === 'number' ? v : 0);
+  add('atkPct', num(p.atkPct));
+  add('defPct', num(p.defPct));
+  add('hpPct', num(p.hpPct));
+  const all = num(p.allStatsPct);   // 全属性：拆成三路百分比
+  if (all > 0) { add('atkPct', all); add('defPct', all); add('hpPct', all); }
+  // 战斗概率轴：forge 存百分数（8 表示 8%），Combat 消费端为小数（0.08），故 /100
+  add('dodge', num(p.dodge) / 100);
+  add('combo', num(p.ignoreDefChance) / 100);
+  add('guard', num(p.stunChance) / 100);
+  add('guard', num(p.confuseChance) / 100);
+  add('thorns', num(p.fireDmgPct) / 100);
+  add('lifesteal', num(p.killHealPct) / 100);
+  return fx;
+}
