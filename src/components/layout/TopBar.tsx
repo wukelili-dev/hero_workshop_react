@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FaCoins, FaEnvelope } from 'react-icons/fa6';
+import { toast } from 'sonner';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 import { useGameStore } from '../../store/useGameStore';
 import { dayNumber, useWorldStore } from '../../store/useWorldStore';
@@ -10,10 +11,20 @@ import { Mailbox } from '../shared/Mailbox';
 export const TopBar: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
   const dayNo = useWorldStore((s) => dayNumber(s.day));
+  const advanceDays = useWorldStore((s) => s.advanceDays);
   const dailyEvent = useWorldStore((s) => s.dailyEvent);
   const title = titleName();
   const [showMailbox, setShowMailbox] = useState(false);
   const unread = unreadCount();
+
+  /** 主动推进一天：世界时间不自动流逝，想让 NPC 过日子就得自己歇息 */
+  const handleRest = () => {
+    advanceDays(1);
+    const next = dayNumber(useWorldStore.getState().day);
+    useGameStore.getState().addGameLog(`歇息一日，入夜又天明（第 ${next} 天）`);
+    toast.info(`歇息一日 · 第 ${next} 天`, { icon: '🌙' });
+  };
+
   return (
     <div className="flex items-center gap-2 border-b border-[#8a7a63] bg-[#faf6ea]/95 px-3 py-1.5 md:gap-3 md:px-4 md:py-2">
       {/* 左：印 + 题名 */}
@@ -29,6 +40,14 @@ export const TopBar: React.FC = () => {
       >
         第 {dayNo} 天
       </span>
+      <button
+        className="ink-btn px-2 py-0.5 text-xs"
+        type="button"
+        onClick={handleRest}
+        title="歇息一天：推进到次日，NPC 会照常过日子"
+      >
+        歇息一天
+      </button>
       {title && <span className="ink-tag gold px-2 py-0.5" title={titleName()}>{title}</span>}
       {dailyEvent && (
         <span className="ink-tag gold hidden px-2 py-0.5 lg:inline-block">{dailyEvent.text}</span>
