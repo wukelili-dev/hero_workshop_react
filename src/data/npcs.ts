@@ -3,6 +3,30 @@
  * 古风对白，时代背景：西游记·大唐长安
  */
 import type { NpcDefinition } from '../types';
+import type { EquipmentFormId, ItemEffect, PrimaryStats } from '../types';
+import { craftEquipmentPrimary, craftEquipmentEffects, formSetId } from './equipmentForms';
+
+/**
+ * NPC 宝物 / 偷窃物 / 挑战奖励装备（C7 装备重做）
+ *
+ * 这些条目原来手写「攻/防/血/暴击」四维，数值与等级曲线脱节（有的攻击 1200、暴击 38）。
+ * 现在统一走装备曲线：`tier` 当档次，形态按类型推断，数值由 craftEquipmentPrimary 生成。
+ * 这样 NPC 掉落的宝物与商城、怪物掉落是同一套语言，也能吃到套装与词条。
+ */
+function npcGear(tier: number, type: string, rarity: number): {
+  primary: Partial<PrimaryStats>; effects: ItemEffect[]; form: EquipmentFormId; setId: string | undefined;
+} {
+  const form: EquipmentFormId =
+    type === 'weapon' ? 'heavy_blade'
+    : type === 'armor' ? 'heavy_armor'
+    : 'robe'; // accessory / consumable 等杂项一律按法衣（御气护体）处理
+  return {
+    primary: craftEquipmentPrimary(tier, form),
+    effects: craftEquipmentEffects(tier, form, rarity),
+    form,
+    setId: formSetId(form),
+  };
+}
 
 export const NPCS: NpcDefinition[] = [
   // ═══════════════════════════════════════
@@ -189,7 +213,7 @@ export const NPCS: NpcDefinition[] = [
         name: '通天神铁',
         tier: 13,
         rarity: 4,
-        stats: { atk: 880, def: 140, hp: 1400, crit: 38, critDmg: 145 },
+        ...npcGear(13, 'weapon', 4),
       },
     },
     bestiary: { source: '《西游记》第九回', era: '唐代·贞观年间', notes: '袁天罡族叔，长安西门卖卦为业。卦象灵验，泾河龙王曾因与其赌赛降雨时辰而触犯天条被斩。' },
@@ -239,7 +263,7 @@ export const NPCS: NpcDefinition[] = [
         name: '斩龙剑',
         tier: 9,
         rarity: 4,
-        stats: { atk: 220, def: 30, hp: 300, crit: 25, critDmg: 60 },
+        ...npcGear(9, 'weapon', 4),
       },
     },
     bestiary: { source: '《旧唐书·魏征传》及《西游记》第十回', era: '唐代·贞观年间', notes: '太宗朝名相，以敢谏闻名。西游演绎中受天命梦斩泾河龙王，又修书崔珏保唐王地府还阳。' },
@@ -407,7 +431,7 @@ export const NPCS: NpcDefinition[] = [
         name: '霓裳软剑',
         tier: 8,
         rarity: 4,
-        stats: { atk: 210, def: 20, hp: 180, crit: 30, critDmg: 70 },
+        ...npcGear(8, 'weapon', 4),
       },
     },
     bestiary: { source: '杜甫《观公孙大娘弟子舞剑器行》及《明皇杂录》', era: '唐代·开元年间', notes: '公孙大娘，开元时剑器舞名家。杜甫童年观其舞，后作诗追忆。张旭见其舞而草书大进。' },
@@ -446,7 +470,7 @@ export const NPCS: NpcDefinition[] = [
         name: '熟铜双锏',
         tier: 10,
         rarity: 4,
-        stats: { atk: 260, def: 60, hp: 400, crit: 20, critDmg: 50 },
+        ...npcGear(10, 'weapon', 4),
       },
     },
     bestiary: { source: '《旧唐书·秦琼传》', era: '唐代·贞观年间', notes: '秦琼字叔宝，凌烟阁二十四功臣之一。民间奉为门神，与尉迟恭并称。' },
@@ -487,7 +511,7 @@ export const NPCS: NpcDefinition[] = [
         name: '羊角匕首',
         tier: 12,
         rarity: 4,
-        stats: { atk: 320, def: 50, hp: 300, crit: 35, critDmg: 80 },
+        ...npcGear(12, 'weapon', 4),
       },
     },
     bestiary: { source: '裴铏《传奇·聂隐娘》', era: '唐代·元和年间', notes: '聂隐娘，唐传奇女侠。幼年被老尼拐入深山学剑，能飞剑取首。归家后嫁磨镜少年，后为陈许节度使刘昌裔效力。' },
@@ -674,7 +698,7 @@ export const NPCS: NpcDefinition[] = [
       equipment: {
         id: 'dinghai_pearl', name: '定海珠', type: 'accessory',
         tier: 10, rarity: 4,
-        stats: { atk: 50, def: 200, hp: 800, crit: 5, critDmg: 20 },
+        ...npcGear(10, 'accessory', 4),
       },
     },
     bestiary: { source: '《西游记》第三回', era: '神话时代', notes: '东海龙王，四海龙王之首。孙悟空向其借定海神针，后奏表天庭讨伐大圣。' },
@@ -715,7 +739,7 @@ export const NPCS: NpcDefinition[] = [
       equipment: {
         id: 'linghou_xuantian', name: '玄天酒', type: 'consumable',
         tier: 10, rarity: 4,
-        stats: { atk: 100, def: 50, hp: 500, crit: 15, critDmg: 40 },
+        ...npcGear(10, 'consumable', 4),
       },
     },
     tradeItems: [],
@@ -783,7 +807,7 @@ export const NPCS: NpcDefinition[] = [
       equipment: {
         id: 'panguan_bi', name: '判官笔', type: 'weapon',
         tier: 10, rarity: 4,
-        stats: { atk: 200, def: 50, hp: 300, crit: 10, critDmg: 30 },
+        ...npcGear(10, 'weapon', 4),
       },
     },
     bestiary: { source: '《西游记》第十回', era: '唐代·贞观年间', notes: '大唐人，生前同魏征、李渊同阁，死后任阴司判官。西游中因魏征一信而改生死簿帮唐王还阳。' },
@@ -849,7 +873,7 @@ export const NPCS: NpcDefinition[] = [
       equipment: {
         id: 'renshen_guohe', name: '人参果核', type: 'consumable',
         tier: 10, rarity: 4,
-        stats: { atk: 80, def: 80, hp: 1000, crit: 5, critDmg: 15 },
+        ...npcGear(10, 'consumable', 4),
       },
     },
     bestiary: { source: '《西游记》第二十四回', era: '神话时代', notes: '镇元大仙座下弟子，五庄观守道人参果树。道号为金蝉子转世所起：「清风明月」对列。' },
@@ -883,7 +907,7 @@ export const NPCS: NpcDefinition[] = [
       equipment: {
         id: 'liuer_haomao', name: '六耳毫毛', type: 'consumable',
         tier: 12, rarity: 4,
-        stats: { atk: 200, def: 100, hp: 800, crit: 25, critDmg: 50 },
+        ...npcGear(12, 'consumable', 4),
       },
     },
     bestiary: { source: '《西游记》第五十七回', era: '神话时代', notes: '混世四猴之一，善聆音能察理。化身为假孙悟空，连观音菩萨、天庭照妖镜亦难辨其真假。' },
@@ -941,7 +965,7 @@ export const NPCS: NpcDefinition[] = [
     challengeReward: { exp: 70, gold: 90, message: '白狐夫人身形一晃，化为一缕白烟消失在林间，只留下一地狐毛："你我缘分未尽，后会有期。"' },
     uniqueDrop: {
       message: '白狐夫人身形消散，一枚狐丹滚落掌心。',
-      equipment: { id: 'hudan_baifeng', name: '白凤狐丹', type: 'consumable', tier: 8, rarity: 3, stats: { atk: 80, def: 80, hp: 400, crit: 10, critDmg: 25 } },
+      equipment: { id: 'hudan_baifeng', name: '白凤狐丹', type: 'consumable', tier: 8, rarity: 3, ...npcGear(8, 'consumable', 3) },
     },
     tradeItems: [],
     personalItem: { name: '狐尾围巾', icon: '🧣', description: '白狐夫人的围巾，带有淡淡妖气', sellPrice: 200 },
@@ -1115,7 +1139,7 @@ export const NPCS: NpcDefinition[] = [
     challengeReward: { exp: 95, gold: 110, message: '华山蛇精缩回山洞深处："算你狠！这块蛇鳞你拿走，别再来烦我！"' },
     uniqueDrop: {
       message: '华山蛇精脱落的蛇鳞滚落山道，鳞片上隐隐有华山图纹。',
-      equipment: { id: 'huashan_sheyu', name: '华山蛇蜕', type: 'armor', tier: 9, rarity: 3, stats: { atk: 30, def: 150, hp: 300, crit: 5, critDmg: 10 } },
+      equipment: { id: 'huashan_sheyu', name: '华山蛇蜕', type: 'armor', tier: 9, rarity: 3, ...npcGear(9, 'armor', 3) },
     },
     tradeItems: [],
     personalItem: { name: '蛇胆', icon: '💚', description: '华山蛇精的胆，可解百毒', sellPrice: 180 },
@@ -1143,7 +1167,7 @@ export const NPCS: NpcDefinition[] = [
     challengeReward: { exp: 140, gold: 160, message: '青毛狮王被打得连连后退："你这小子有两下子！青山不改，绿水长流，咱们后会有期！"' },
     uniqueDrop: {
       message: '青毛狮王脱落的一绺青毛，坚硬如铁。',
-      equipment: { id: 'qingmao_shimao', name: '青毛狮鬃', type: 'accessory', tier: 10, rarity: 4, stats: { atk: 100, def: 100, hp: 500, crit: 15, critDmg: 30 } },
+      equipment: { id: 'qingmao_shimao', name: '青毛狮鬃', type: 'accessory', tier: 10, rarity: 4, ...npcGear(10, 'accessory', 4) },
     },
     tradeItems: [],
     personalItem: { name: '狮王牙', icon: '🦷', description: '青毛狮王的獠牙，坚硬无比', sellPrice: 300 },
@@ -1173,7 +1197,7 @@ export const NPCS: NpcDefinition[] = [
     challengeReward: { exp: 200, gold: 300, message: '牛魔王拄着混铁棍，单膝跪地："好汉！老夫服了！这根牛角你拿去，算我的敬意！"' },
     uniqueDrop: {
       message: '牛魔王断裂的一截牛角落入你手中，隐隐发烫——那是火焰山千年地火的余温。',
-      equipment: { id: 'niumo_horn', name: '牛魔王角', type: 'weapon', tier: 13, rarity: 4, stats: { atk: 950, def: 180, hp: 2000, crit: 45, critDmg: 180 } },
+      equipment: { id: 'niumo_horn', name: '牛魔王角', type: 'weapon', tier: 13, rarity: 4, ...npcGear(13, 'weapon', 4) },
     },
     tradeItems: [],
     personalItem: { name: '混铁棍碎片', icon: '🔧', description: '牛魔王混铁棍的碎片，有万钧之力', sellPrice: 400 },
@@ -1232,7 +1256,7 @@ export const NPCS: NpcDefinition[] = [
     challengeReward: { exp: 0, gold: 0, message: '观音轻轻一笑："施主勇气可嘉，只是贫僧这三界之内，还无人能伤。"她从净瓶中取出一片柳叶，"这柳叶送你，可保你一路平安。"' },
     uniqueDrop: {
       message: '观音柳叶轻拂你面，沁人心脾的清香笼罩周身。你感到一股温暖的力量在体内流转。',
-      equipment: { id: 'guanyin_liuye', name: '观音柳叶', type: 'accessory', tier: 12, rarity: 4, stats: { atk: 100, def: 200, hp: 1000, crit: 10, critDmg: 30 } },
+      equipment: { id: 'guanyin_liuye', name: '观音柳叶', type: 'accessory', tier: 12, rarity: 4, ...npcGear(12, 'accessory', 4) },
     },
     tradeItems: [],
     personalItem: { name: '观音玉净瓶柳枝', icon: '🌿', description: '观音菩萨净瓶中的杨柳枝，可净化一切邪气', sellPrice: 0 },
@@ -1260,7 +1284,7 @@ export const NPCS: NpcDefinition[] = [
     challengeReward: { exp: 180, gold: 250, message: '哪吒收起风火轮："有意思！你这小子有胆量！这枚混天绫碎片你拿走，是我当年闹海的纪念！"' },
     uniqueDrop: {
       message: '哪吒解下混天绫的一角递给你——那是一件曾缠住龙身的至宝。',
-      equipment: { id: 'huntainling_fra', name: '混天绫残片', type: 'accessory', tier: 10, rarity: 4, stats: { atk: 80, def: 120, hp: 600, crit: 15, critDmg: 35 } },
+      equipment: { id: 'huntainling_fra', name: '混天绫残片', type: 'accessory', tier: 10, rarity: 4, ...npcGear(10, 'accessory', 4) },
     },
     tradeItems: [],
     personalItem: { name: '风火轮印', icon: '🔥', description: '哪吒三太子的风火轮留下的印迹', sellPrice: 300 },
@@ -1341,7 +1365,7 @@ export const NPCS: NpcDefinition[] = [
     challengeReward: { exp: 200, gold: 0, message: '骊山老母微微点头，从袖中取出一枚玉佩："拿着这个，见到观音时，她会知道是我让你去的。"' },
     uniqueDrop: {
       message: '骊山老母将一枚温润的玉佩放入你掌心，暖意瞬间传遍全身。',
-      equipment: { id: 'lishan_yupei', name: '骊山玉佩', type: 'accessory', tier: 12, rarity: 4, stats: { atk: 50, def: 250, hp: 1200, crit: 5, critDmg: 20 } },
+      equipment: { id: 'lishan_yupei', name: '骊山玉佩', type: 'accessory', tier: 12, rarity: 4, ...npcGear(12, 'accessory', 4) },
     },
     tradeItems: [],
     personalItem: { name: '骊山老母拂尘', icon: '🪭', description: '骊山老母的拂尘，可拂去一切迷障', sellPrice: 0 },
@@ -1371,7 +1395,7 @@ export const NPCS: NpcDefinition[] = [
     challengeReward: { exp: 250, gold: 350, message: '二郎神收枪而立，眼中竟有几分欣赏："好！你的身手，值得我认真出手。这枚三尖两刃刀碎片你拿走！"' },
     uniqueDrop: {
       message: '二郎神三尖两刃刀上的一枚刀镡脱落，入手竟微微震动——那是神器的一角。',
-      equipment: { id: 'erlang_daoxin', name: '二郎刀镡', type: 'weapon', tier: 13, rarity: 4, stats: { atk: 920, def: 160, hp: 1800, crit: 50, critDmg: 170 } },
+      equipment: { id: 'erlang_daoxin', name: '二郎刀镡', type: 'weapon', tier: 13, rarity: 4, ...npcGear(13, 'weapon', 4) },
     },
     tradeItems: [],
     personalItem: { name: '啸天犬毛', icon: '🐶', description: '哮天犬脱落的狗毛，灵气逼人', sellPrice: 100 },
@@ -1401,7 +1425,7 @@ export const NPCS: NpcDefinition[] = [
     challengeReward: { exp: 0, gold: 0, message: '盘古缓缓站起身，巨人般的身影遮蔽了天空："你的勇气……我收到了。这枚盘古斧的碎片你拿去——它或许会指引你找到答案。"' },
     uniqueDrop: {
       message: '一枚巨大的斧刃碎片从天而降，没入你的身体。你感到自己继承了开天辟地的力量的一角。',
-      equipment: { id: 'pangu_axe', name: '盘古斧片', type: 'weapon', tier: 14, rarity: 4, stats: { atk: 1200, def: 250, hp: 3000, crit: 55, critDmg: 220 } },
+      equipment: { id: 'pangu_axe', name: '盘古斧片', type: 'weapon', tier: 14, rarity: 4, ...npcGear(14, 'weapon', 4) },
     },
     tradeItems: [],
     personalItem: { name: '混沌石', icon: '💎', description: '开天辟地前就存在的混沌石，天地之始', sellPrice: 0 },
@@ -1431,7 +1455,7 @@ export const NPCS: NpcDefinition[] = [
     challengeReward: { exp: 220, gold: 0, message: '太上老君轻轻一笑，骑牛而去，留下一枚九转金丹悬在半空："这金丹，你且拿去。"' },
     uniqueDrop: {
       message: '九转金丹落入你掌心，灼热之后是一股清凉。你感到五脏六腑都在震颤——这是道祖的丹药。',
-      equipment: { id: 'jiuzhuan_dan', name: '九转金丹', type: 'consumable', tier: 12, rarity: 4, stats: { atk: 150, def: 150, hp: 2000, crit: 20, critDmg: 40 } },
+      equipment: { id: 'jiuzhuan_dan', name: '九转金丹', type: 'consumable', tier: 12, rarity: 4, ...npcGear(12, 'consumable', 4) },
     },
     tradeItems: [],
     personalItem: { name: '太极图残卷', icon: '☯️', description: '太上老君随身携带的太极图，蕴含无上道法', sellPrice: 0 },

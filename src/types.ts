@@ -39,13 +39,6 @@ export interface Equipment {
   levelReq?: number;
   rarity: Rarity;
   rarityColor?: string;
-  stats?: {
-    atk?: number;
-    def?: number;
-    hp?: number;
-    crit?: number;
-    critDmg?: number;
-  };
   /** 主属性加成（装备重做后的主口径）：气力→攻击/破甲、根骨→生命/防御… */
   primary?: Partial<PrimaryStats>;
   enhanceLevel?: number;
@@ -53,12 +46,6 @@ export interface Equipment {
   sellPrice?: number;
   isPerfect?: boolean;
   fortifyLevel?: number;
-  // snake_case aliases for legacy consumers
-  attack?: number;
-  defense?: number;
-  critRate?: number;
-  critDmg?: number;
-  hpBonus?: number;
   /** 词条（M1 起装备可携带效果，equip 触发时由 Combat 传入） */
   effects?: ItemEffect[];
   /** 装备形态（C4：武器 4 形态 / 护甲 3 形态） */

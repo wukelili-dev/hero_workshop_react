@@ -11,7 +11,7 @@ import { generateTavernRoster, type TavernRecruit } from '../data/tavern';
 import { BUILDING_CONFIGS, BUILDING_OUTPUTS } from '../data/buildings';
 import { getCellEncounter } from '../data/cellEncounters';
 import { deriveTeammate } from '../engine/NpcStats';
-import { sum as sumEffect, sumList } from '../engine/ItemEffects';
+import { sum as sumEffect } from '../engine/ItemEffects';
 import { getItemDef } from '../data/items/items';
 import { getWeaponFormByName, getArmorFormByName } from '../data/equipment';
 import { formSetId } from '../data/equipmentForms';
@@ -355,14 +355,11 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     let exp = s.hero.exp + amt;
     let lv = s.hero.level;
     while (exp >= lv * 100) { exp -= lv * 100; lv++; }
-    const mhp = BASE_HP(lv);
-    const atk = BASE_ATK(lv) + (s.hero.weapon?.stats?.atk ?? 0);
-    const def = BASE_DEF(lv) + (s.hero.armor?.stats?.def ?? 0);
     // 升级发自由点（流派的来源）：每升 1 级 +FREE_POINTS_PER_LEVEL
     const gained = Math.max(0, lv - s.hero.level);
     const freePoints = (s.hero.freePoints ?? 0) + gained * FREE_POINTS_PER_LEVEL;
     // 派生属性（含加点/装备收益）统一重算后写回缓存
-    return { hero: syncHeroDerived({ ...s.hero, exp, level: lv, atk, def, maxHp: mhp, freePoints }) };
+    return { hero: syncHeroDerived({ ...s.hero, exp, level: lv, freePoints }) };
   }),
 
   /** 加点：1 点自由点 → 1 点主属性；派生属性由 HeroCombat 统一重算 */
@@ -573,26 +570,16 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       const rKey = RES_KEY_MAP[res] ?? res;
       newRes[rKey] = Math.max(0, (newRes as any)[rKey] - Number(amt));
     }
-    const newAtk = w.stats?.atk ?? 0;
-    const oldCrit = hero.weapon?.stats?.crit ?? 0;
-    const newCrit = w.stats?.crit ?? 0;
     // C4：形态 + 套装（按名字映射）
     const form = w.form ?? getWeaponFormByName(w.name);
     const setId = w.setId ?? formSetId(form);
     const wEquip: Equipment = { ...w, form, setId };
-    // equip 词条基础数值加成（M3：atk/crit 等，与 stats 叠加）
-    const atkBonus = sumList(w.effects ?? [], 'atk');
-    const critBonus = sumList(w.effects ?? [], 'crit');
-    // Passives 接入：百分比词条作用在（基础 + 装备绝对值）上
-    const atkPctBonus = sumList(w.effects ?? [], 'atkPct');
-    const finalAtk = Math.floor((BASE_ATK(hero.level) + newAtk) * (1 + atkPctBonus / 100)) + atkBonus;
+    // 装备词条（atk/crit/critDmg/…）全部由 engine/HeroCombat 的派生层统一结算
     set((s) => ({
       hero: syncHeroDerived({
         ...s.hero,
         gold: s.hero.gold - goldCost,
         weapon: wEquip,
-        atk: finalAtk,
-        critRate: Math.max(0, Math.min(1, s.hero.critRate - oldCrit + newCrit + critBonus)),
       }),
       resources: newRes,
     }));
@@ -622,27 +609,16 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       const rKey = RES_KEY_MAP[res] ?? res;
       newRes[rKey] = Math.max(0, (newRes as any)[rKey] - Number(amt));
     }
-    const newHp = (a.stats?.hp ?? 0);
     // C4：形态 + 套装（按名字映射）
     const form = a.form ?? getArmorFormByName(a.name);
     const setId = a.setId ?? formSetId(form);
     const aEquip: Equipment = { ...a, form, setId };
-    // equip 词条基础数值加成（M3：def/hpMax 等，与 stats 叠加）
-    const defBonus = sumList(a.effects ?? [], 'def');
-    const hpBonus = sumList(a.effects ?? [], 'hpMax');
-    // Passives 接入：百分比词条作用在（基础 + 装备绝对值）上
-    const defPctBonus = sumList(a.effects ?? [], 'defPct');
-    const hpPctBonus = sumList(a.effects ?? [], 'hpPct');
-    const finalDef = Math.floor((BASE_DEF(hero.level) + (a.stats?.def ?? 0)) * (1 + defPctBonus / 100)) + defBonus;
-    const mhp = Math.floor((BASE_HP(hero.level) + newHp) * (1 + hpPctBonus / 100)) + hpBonus;
+    // 护甲词条（def/hpMax/defPct/hpPct）同样由派生层统一结算
     set((s) => ({
       hero: syncHeroDerived({
         ...s.hero,
         gold: s.hero.gold - goldCost,
         armor: aEquip,
-        def: finalDef,
-        maxHp: mhp,
-        hp: Math.min(s.hero.hp, mhp),
       }),
       resources: newRes,
     }));

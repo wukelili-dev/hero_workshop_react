@@ -61,12 +61,12 @@ export function heroBasePrimaryOf(hero: HeroState): PrimaryStats {
   return addPrimary(autoAllocatePrimary(hero.level), hero.allocated, hero.primary);
 }
 
-/** 等级 + 旧式四维装备 的基线（不含主属性加成） */
+/** 等级基线（不含主属性加成）：加点与装备的收益都体现为相对它的增量 */
 export function heroLevelBaseline(hero: HeroState): { atk: number; def: number; maxHp: number } {
   return {
-    atk: LEVEL_BASE_ATK(hero.level) + (hero.weapon?.stats?.atk ?? 0),
-    def: LEVEL_BASE_DEF(hero.level) + (hero.armor?.stats?.def ?? 0),
-    maxHp: LEVEL_BASE_HP(hero.level) + (hero.armor?.stats?.hp ?? 0),
+    atk: LEVEL_BASE_ATK(hero.level),
+    def: LEVEL_BASE_DEF(hero.level),
+    maxHp: LEVEL_BASE_HP(hero.level),
   };
 }
 
@@ -87,18 +87,23 @@ export function heroDerivedOf(hero: HeroState, equipEffects: ItemEffect[]): Deri
   const speedBonus = sumList(equipEffects, 'speed');
   const resistBonus = sumList(equipEffects, 'resist');
   const pct = (kind: ItemEffect['kind']) => sumList(equipEffects, kind) / 100;
+  const flat = (kind: ItemEffect['kind']) => sumList(equipEffects, kind);
   return {
-    hpMax: Math.round(base.maxHp * (1 + pct('hpPct')) + gain('hpMax')),
-    atk: Math.floor(base.atk * (1 + pct('atkPct')) + gain('atk')),
-    def: Math.floor(base.def * (1 + pct('defPct')) + gain('def')),
+    hpMax: Math.round(base.maxHp * (1 + pct('hpPct')) + gain('hpMax') + flat('hpMax')),
+    atk: Math.floor(base.atk * (1 + pct('atkPct')) + gain('atk') + flat('atk')),
+    def: Math.floor(base.def * (1 + pct('defPct')) + gain('def') + flat('def')),
     hit: clamp(Math.max(0.85, full.hit) + hitBonus, 0, STAT_CAPS.hit),
     dodge: clamp(full.dodge + dodgeBonus, 0, STAT_CAPS.dodge),
     speed: Math.max(14, full.speed) + speedBonus,
     pen: full.pen,
     tenacity: full.tenacity,
     resist: clamp(full.resist + resistBonus, 0, STAT_CAPS.resist),
-    crit: clamp(Math.max(hero.critRate, full.crit), 0, STAT_CAPS.crit),
-    critDmg: hero.critDmg ?? full.critDmg,
+    crit: clamp(Math.max(hero.critRate, full.crit) + flat('crit'), 0, STAT_CAPS.crit),
+    critDmg: clamp(
+      Math.max(hero.critDmg ?? 1.5, full.critDmg) + flat('critDmg'),
+      1.5,
+      STAT_CAPS.critDmg,
+    ),
   };
 }
 

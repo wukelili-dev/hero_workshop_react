@@ -11,9 +11,12 @@ import { useWorldStore } from './useWorldStore';
 import { MAPS } from '../data/maps';
 import { getCellEncounter } from '../data/cellEncounters';
 import { useNpcEcoStore } from './useNpcEcoStore';
-import { FREE_POINTS_PER_LEVEL } from '../engine/Stats';
 
-const SAVE_KEY = 'hero_workshop_save_v1';
+// 存档键 + 版本：口径大改（战斗/属性/装备/加点）时不迁移旧档，直接换键开新档。
+// 旧键会在一处统一清掉，避免占用 localStorage。
+const SAVE_KEY = 'hero_workshop_save_v4';
+const SAVE_VERSION = 'v4';
+const LEGACY_SAVE_KEYS = ['hero_workshop_save_v1', 'hero_workshop_save_v2', 'hero_workshop_save_v3'];
 
 export interface SaveMeta {
   version: string;
@@ -35,7 +38,7 @@ export function saveGame(): boolean {
     const worldState = useWorldStore.getState();
 
     const saveData = {
-      version: 'v3',
+      version: SAVE_VERSION,
       timestamp: Date.now(),
       hero: gameState.hero,
       resources: gameState.resources,
@@ -104,6 +107,12 @@ export function loadGame(): boolean {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return false;
     const data = JSON.parse(raw);
+    // 版本不符 = 旧档：不迁移，直接丢弃开新档（战斗/属性/装备口径已大改）
+    if (data.version !== SAVE_VERSION) {
+      deleteSave();
+      console.warn(`[存档] 版本不符（${data.version} ≠ ${SAVE_VERSION}），已丢弃旧档并开新档`);
+      return false;
+    }
 
     const gameStore = useGameStore.getState();
     const invStore = useInventoryStore.getState();
@@ -196,20 +205,6 @@ export function loadGame(): boolean {
     } else if (Object.keys(missing).length > 0) {
       useGameStore.setState(missing);
     }
-    // 加点系统上线前的存档：按等级补发自由点，别让老玩家"看得见加不了"
-    {
-      const h = useGameStore.getState().hero;
-      if (h && h.freePoints === undefined) {
-        useGameStore.setState({
-          hero: {
-            ...h,
-            allocated: h.allocated ?? {},
-            freePoints: Math.max(0, (h.level - 1) * FREE_POINTS_PER_LEVEL),
-          },
-        });
-      }
-    }
-
     // ── 读档后启动建筑定时器 ──
     const { buildings } = useGameStore.getState();
     const hasBuildings = buildings && Object.keys(buildings).some(k => (buildings as any)[k] > 0);
@@ -246,6 +241,10 @@ export function getSaveMeta(): SaveMeta | null {
 }
 
 export function hasSave(): boolean {
+  // 顺手清掉历史版本的存档键（口径大改，不做迁移）
+  for (const key of LEGACY_SAVE_KEYS) {
+    try { localStorage.removeItem(key); } catch { /* ignore */ }
+  }
   return localStorage.getItem(SAVE_KEY) !== null;
 }
 

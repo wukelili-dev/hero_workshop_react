@@ -147,36 +147,7 @@ export interface LegacyStats {
   critDmg?: number; // 暴伤倍率（缺省 1.5）
 }
 
-/** 把旧四维反解为主属性（供 C3 数据迁移把怪物/NPC 表达为「等级+主属性」）。 */
-export function legacyToPrimary(legacy: LegacyStats, level: number): PrimaryStats {
-  const crit = legacy.crit ?? 0.05;
-  const critDmg = legacy.critDmg ?? 1.5;
-  // 注意顺序：A 方案后 atk 里含有 spirit 的贡献，必须先反解 spirit 再反解 qi。
-  const spirit = clamp((crit - 0.03) / 0.004, PRIMARY_MIN, PRIMARY_MAX);
-  const agility = 5; // 旧数据无身法维度 → 中性默认
-  const axisAtk = agility * 0.5 + spirit * 0.3; // A 方案的轴贡献，反解时扣掉
-  const qi = clamp((legacy.atk - 4 - level * 0.8 - axisAtk) / 1.6, PRIMARY_MIN, PRIMARY_MAX);
-  const rootDef = clamp((legacy.def - 2 - level * 0.5) / 0.8, PRIMARY_MIN, PRIMARY_MAX);
-  const rootHp = clamp((legacy.hp - 60 - level * 10) / 12, PRIMARY_MIN, PRIMARY_MAX);
-  const root = Math.max(rootDef, rootHp); // 保证血量不降
-  const fortune = clamp((critDmg - 1.5) / 0.01, PRIMARY_MIN, PRIMARY_MAX);
-  return { root, qi, agility, spirit, fortune };
-}
-
-/**
- * 把旧四维（+暴击）反解为主属性，并给出派生快照。
- * 反解用新换算表的逆公式，保证 buildDerived 反算出的 atk/def 精确还原；
- * hp 通过 root = max(root_def, root_hp) 保证**不低于旧值**（规格要求）。
- */
-export function migrateLegacyStats(
-  legacy: LegacyStats,
-  level: number,
-): { primary: PrimaryStats; derived: DerivedStats } {
-  const primary = legacyToPrimary(legacy, level);
-  return { primary, derived: buildDerived(primary, level) };
-}
-
-/** 派生 → 旧四维（只读映射，供旧面板/验证显示）。 */
+/** 派生 → 旧四维（只读映射，供怪物面板/验证显示）。 */
 export function derivedToLegacy(d: DerivedStats): { hp: number; atk: number; def: number; crit: number; critDmg: number } {
   return { hp: Math.floor(d.hpMax), atk: Math.floor(d.atk), def: Math.floor(d.def), crit: d.crit, critDmg: d.critDmg };
 }

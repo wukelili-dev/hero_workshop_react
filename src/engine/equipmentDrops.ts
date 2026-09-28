@@ -403,10 +403,6 @@ export function getDropSummary(equip: Equipment): string | null {
   const lines = equipmentLines(equip);
   if (lines.length > 0) {
     info += ' ' + lines.map((l) => `${l.label}${l.value}`).join(' ');
-  } else if (equip.type === 'weapon') {
-    info += ` ATK:${equip.attack || equip.stats?.atk || 0} CRIT:${equip.critRate || equip.stats?.crit || 0}%`;
-  } else {
-    info += ` DEF:${equip.defense || equip.stats?.def || 0} HP+:${equip.hpBonus || equip.stats?.hp || 0}`;
   }
 
   return info;
