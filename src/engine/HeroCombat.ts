@@ -6,7 +6,7 @@
  * 面板读它、战斗也读它，看到的数字必然一致。
  */
 import type { HeroState, ItemEffect, Combatant, PrimaryStats, DerivedStats } from '../types';
-import { buildDerived, autoAllocatePrimary, STAT_CAPS } from './Stats';
+import { buildDerived, autoAllocatePrimary, addPrimary, STAT_CAPS } from './Stats';
 import { sumList, equipEffectsOf } from './ItemEffects';
 import { setBonusEffects } from '../data/equipmentForms';
 import { passiveEffectsOf, DEFAULT_HERO_SKILLS } from '../data/skills';
@@ -36,9 +36,22 @@ export function heroEquipEffects(hero: HeroState): ItemEffect[] {
   ];
 }
 
-/** 英雄主属性：缺省按等级自动分配（2:2:2:2:1） */
+/** 装备提供的主属性（武器 + 护甲） */
+export function heroGearPrimary(hero: HeroState): PrimaryStats {
+  return addPrimary(hero.weapon?.primary, hero.armor?.primary);
+}
+
+/**
+ * 英雄主属性 = 等级自动成长（2:2:2:2:1） + 玩家自由加点 + 装备加成
+ * hero.primary 保留作外部（buff/事件）一次性加成的入口。
+ */
 export function heroPrimaryOf(hero: HeroState): PrimaryStats {
-  return hero.primary ?? autoAllocatePrimary(hero.level);
+  return addPrimary(autoAllocatePrimary(hero.level), hero.allocated, heroGearPrimary(hero), hero.primary);
+}
+
+/** 不含装备的"裸"主属性（加点面板显示用：玩家实际能改的就是这一份） */
+export function heroBasePrimaryOf(hero: HeroState): PrimaryStats {
+  return addPrimary(autoAllocatePrimary(hero.level), hero.allocated, hero.primary);
 }
 
 /**
@@ -46,24 +59,28 @@ export function heroPrimaryOf(hero: HeroState): PrimaryStats {
  * A 方案：攻击 = 旧基线(等级+装备) + 身法×0.5 + 神识×0.3，其余轴走 buildDerived。
  */
 export function heroDerivedOf(hero: HeroState, heroStats: HeroStats, equipEffects: ItemEffect[]): DerivedStats {
-  const primary = heroPrimaryOf(hero);
-  const ax = buildDerived(primary, hero.level);
+  // 参照线：等级自动成长（allocated=0 且无装备主属性时，这里与旧数值**完全一致**，
+  // 保证老档不变弱；加点/装备的收益体现为相对这条参照线的增量）
+  const auto = autoAllocatePrimary(hero.level);
+  const ax = buildDerived(auto, hero.level);
+  const full = buildDerived(heroPrimaryOf(hero), hero.level);
+  const gain = (k: keyof DerivedStats) => full[k] - ax[k];
   const hitBonus = sumList(equipEffects, 'hit');
   const dodgeBonus = sumList(equipEffects, 'dodge');
   const speedBonus = sumList(equipEffects, 'speed');
   const resistBonus = sumList(equipEffects, 'resist');
   return {
-    hpMax: hero.maxHp,
-    atk: heroStats.atk + primary.agility * 0.5 + primary.spirit * 0.3,
-    def: heroStats.def,
-    hit: clamp(Math.max(0.85, ax.hit) + hitBonus, 0, STAT_CAPS.hit),
-    dodge: clamp(ax.dodge + dodgeBonus, 0, STAT_CAPS.dodge),
-    speed: Math.max(14, ax.speed) + speedBonus,
-    pen: ax.pen,
-    tenacity: ax.tenacity,
-    resist: clamp(ax.resist + resistBonus, 0, STAT_CAPS.resist),
-    crit: clamp(Math.max(heroStats.crit, ax.crit), 0, STAT_CAPS.crit),
-    critDmg: hero.critDmg ?? ax.critDmg,
+    hpMax: Math.round(hero.maxHp + gain('hpMax')),
+    atk: heroStats.atk + gain('atk'),
+    def: heroStats.def + gain('def'),
+    hit: clamp(Math.max(0.85, full.hit) + hitBonus, 0, STAT_CAPS.hit),
+    dodge: clamp(full.dodge + dodgeBonus, 0, STAT_CAPS.dodge),
+    speed: Math.max(14, full.speed) + speedBonus,
+    pen: full.pen,
+    tenacity: full.tenacity,
+    resist: clamp(full.resist + resistBonus, 0, STAT_CAPS.resist),
+    crit: clamp(Math.max(heroStats.crit, full.crit), 0, STAT_CAPS.crit),
+    critDmg: hero.critDmg ?? full.critDmg,
   };
 }
 

@@ -12,7 +12,7 @@ import { useGameStore } from '../../store/useGameStore';
 import { formatNumber, expRequired } from '../../data/constants';
 import { AnimatedNumber } from '../../hooks/useCountUp';
 import { FaHeart, FaBolt, FaShield, FaStar } from 'react-icons/fa6';
-import { heroBattlePreview } from '../../engine/HeroCombat';
+import { heroBattlePreview, heroBasePrimaryOf, heroGearPrimary } from '../../engine/HeroCombat';
 import { sum as sumEffect, sumList } from '../../engine/ItemEffects';
 import { getSkill, DEFAULT_HERO_SKILLS } from '../../data/skills';
 import type { ItemEffect, PrimaryStats } from '../../types';
@@ -31,11 +31,16 @@ const PRIMARY_ROWS: Array<{ key: keyof PrimaryStats; label: string; feeds: strin
 export const HeroInfoPanel: React.FC = () => {
   const hero = useGameStore((s) => s.hero);
   const moralValue = useGameStore((s) => s.moralValue);
+  const allocatePrimary = useGameStore((s) => s.allocatePrimary);
 
   const maxExp = expRequired(hero.level);
   const expPercent = maxExp > 0 ? (hero.exp / maxExp) * 100 : 0;
 
-  const { primary, derived, equipEffects } = heroBattlePreview(hero);
+  const { derived, equipEffects } = heroBattlePreview(hero);
+  /** 加点面板：只有「等级成长 + 玩家加点」是玩家能改的，装备加成单独标注 */
+  const basePrimary = heroBasePrimaryOf(hero);
+  const gearPrimary = heroGearPrimary(hero);
+  const freePoints = hero.freePoints ?? 0;
   /** 战斗实际生效的词条 = 装备/套装/被动词条 + 随身名物持有词条（与 executeBattle 的 battleSum 同口径） */
   const eff = (kind: ItemEffect['kind']) => sumList(equipEffects, kind) + sumEffect(kind);
 
@@ -143,17 +148,37 @@ export const HeroInfoPanel: React.FC = () => {
       <div className="mt-2">
         <div className="mb-1 flex items-center gap-2">
           <span className="ink-title text-[11px]">主属性</span>
+          {freePoints > 0 && (
+            <span className="ink-tag gold" title="升级获得的自由点，点主属性下方的 + 分配">
+              可分配 {freePoints}
+            </span>
+          )}
           <span className="ink-rule flex-1" />
         </div>
         <div className="grid grid-cols-5 gap-1 text-center text-[10px]">
           {PRIMARY_ROWS.map((row) => (
             <div
               key={row.key}
-              className="ink-tag flex flex-col px-0.5 py-0.5"
-              title={`${row.label}：${row.feeds}`}
+              className="ink-tag relative flex flex-col px-0.5 py-0.5"
+              title={`${row.label}：${row.feeds}${gearPrimary[row.key] ? `（装备 +${Math.round(gearPrimary[row.key])}）` : ''}`}
             >
               <span className="text-[#9c917b]">{row.label}</span>
-              <span className="font-bold text-[#3f3527]">{Math.round(primary[row.key])}</span>
+              <span className="font-bold text-[#3f3527]">
+                {Math.round(basePrimary[row.key])}
+                {gearPrimary[row.key] > 0 && (
+                  <span className="text-[9px] text-[#2f6f8f]">+{Math.round(gearPrimary[row.key])}</span>
+                )}
+              </span>
+              {freePoints > 0 && (
+                <button
+                  type="button"
+                  onClick={() => allocatePrimary(row.key)}
+                  className="absolute -right-1 -top-1 h-4 w-4 rounded-full border border-[#b5382f] bg-[#b5382f] text-[10px] leading-none text-[#fdf6e8]"
+                  title={`${row.label} +1`}
+                >
+                  ＋
+                </button>
+              )}
             </div>
           ))}
         </div>

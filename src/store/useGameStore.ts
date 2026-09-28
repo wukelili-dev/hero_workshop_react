@@ -16,6 +16,8 @@ import { getItemDef } from '../data/items/items';
 import { getWeaponFormByName, getArmorFormByName } from '../data/equipment';
 import { formSetId } from '../data/equipmentForms';
 import { SKILLS, PASSIVE_SKILLS, DEFAULT_HERO_SKILLS } from '../data/skills';
+import { FREE_POINTS_PER_LEVEL, PRIMARY_NAME } from '../engine/Stats';
+import type { PrimaryStats } from '../types';
 
 // 掉落物品 itemId → 资源 key 映射（怪物掉落用中文，资源状态用英文）
 const DROP_TO_RESOURCE: Record<string, string> = {
@@ -136,6 +138,8 @@ interface GameActions {
   changeMoral: (delta: number) => void;
   getMoralLevel: () => MoralLevel;
   getMoralTitle: () => string | null;
+  /** 加点：把 1 点自由点分配到某条主属性 */
+  allocatePrimary: (key: keyof PrimaryStats) => boolean;
 }
 
 // 中文材料名store resources key 映射
@@ -153,7 +157,8 @@ const initHero: HeroState = {
   atk: BASE_ATK(1), def: BASE_DEF(1),
   critRate: 0.05, critDmg: 1.5,
   gold: 100, weapon: null, armor: null,
-  passives: [], noveltyItems: [], team: [],
+  passives: [], skills: undefined, allocated: {}, freePoints: 0,
+  noveltyItems: [], team: [],
   discoveredMonsters: [],
   potions: 0,
   kills: 0,
@@ -349,8 +354,28 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const mhp = BASE_HP(lv);
     const atk = BASE_ATK(lv) + (s.hero.weapon?.stats?.atk ?? 0);
     const def = BASE_DEF(lv) + (s.hero.armor?.stats?.def ?? 0);
-    return { hero: { ...s.hero, exp, level: lv, maxHp: mhp, hp: Math.min(s.hero.hp, mhp), atk, def } };
+    // 升级发自由点（流派的来源）：每升 1 级 +FREE_POINTS_PER_LEVEL
+    const gained = Math.max(0, lv - s.hero.level);
+    const freePoints = (s.hero.freePoints ?? 0) + gained * FREE_POINTS_PER_LEVEL;
+    return {
+      hero: {
+        ...s.hero, exp, level: lv, maxHp: mhp, hp: Math.min(s.hero.hp, mhp),
+        atk, def, freePoints,
+      },
+    };
   }),
+
+  /** 加点：1 点自由点 → 1 点主属性；派生属性由 HeroCombat 统一重算 */
+  allocatePrimary: (key) => {
+    const { hero } = get();
+    const free = hero.freePoints ?? 0;
+    if (free <= 0) return false;
+    const allocated = { ...(hero.allocated ?? {}) };
+    allocated[key] = (allocated[key] ?? 0) + 1;
+    set({ hero: { ...hero, allocated, freePoints: free - 1 } });
+    get().addGameLog(`加点：${PRIMARY_NAME[key]} +1（剩 ${free - 1} 点）`);
+    return true;
+  },
 
   setHp: (hp) => set((s) => ({ hero: { ...s.hero, hp: Math.max(0, Math.min(hp, s.hero.maxHp)) } })),
 

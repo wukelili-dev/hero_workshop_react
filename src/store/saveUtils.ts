@@ -11,6 +11,7 @@ import { useWorldStore } from './useWorldStore';
 import { MAPS } from '../data/maps';
 import { getCellEncounter } from '../data/cellEncounters';
 import { useNpcEcoStore } from './useNpcEcoStore';
+import { FREE_POINTS_PER_LEVEL } from '../engine/Stats';
 
 const SAVE_KEY = 'hero_workshop_save_v1';
 
@@ -191,6 +192,19 @@ export function loadGame(): boolean {
       useGameStore.setState({ hero: { ...g.hero, moralValue: 0, factions: { human: 50, demon: 50, divine: 50 } } });
     } else if (Object.keys(missing).length > 0) {
       useGameStore.setState(missing);
+    }
+    // 加点系统上线前的存档：按等级补发自由点，别让老玩家"看得见加不了"
+    {
+      const h = useGameStore.getState().hero;
+      if (h && h.freePoints === undefined) {
+        useGameStore.setState({
+          hero: {
+            ...h,
+            allocated: h.allocated ?? {},
+            freePoints: Math.max(0, (h.level - 1) * FREE_POINTS_PER_LEVEL),
+          },
+        });
+      }
     }
 
     // ── 读档后启动建筑定时器 ──

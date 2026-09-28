@@ -46,6 +46,8 @@ export interface Equipment {
     crit?: number;
     critDmg?: number;
   };
+  /** 主属性加成（装备重做后的主口径）：气力→攻击/破甲、根骨→生命/防御… */
+  primary?: Partial<PrimaryStats>;
   enhanceLevel?: number;
   cost?: Record<string, number>;
   sellPrice?: number;
@@ -96,7 +98,11 @@ export interface HeroState {
   passives: string[];
   /** 已装配的技能（技能槽，上限 3）；缺省用 DEFAULT_HERO_SKILLS */
   skills?: string[];
-  /** 主属性（C6）；缺省按等级 autoAllocatePrimary(level) 推导，未来可承载加点/装备加成 */
+  /** 玩家自由加点（升级获得点数）；缺省 {} */
+  allocated?: Partial<PrimaryStats>;
+  /** 未分配的自由点 */
+  freePoints?: number;
+  /** 主属性（C6）；缺省按等级 autoAllocatePrimary(level) 推导，未来可承载装备以外的加成 */
   primary?: PrimaryStats;
   noveltyItems: string[];
   team: TeamMember[];  // 队友列表

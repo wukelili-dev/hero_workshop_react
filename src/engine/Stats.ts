@@ -34,6 +34,43 @@ const PRIMARY_MAX = 999;
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
+// ═══════════════════════════ 主属性运算工具（加点 / 装备共用） ═══════════════════════════
+
+export const PRIMARY_KEYS: (keyof PrimaryStats)[] = ['root', 'qi', 'agility', 'spirit', 'fortune'];
+
+export const PRIMARY_NAME: Record<keyof PrimaryStats, string> = {
+  root: '根骨', qi: '气力', agility: '身法', spirit: '神识', fortune: '机缘',
+};
+
+export const ZERO_PRIMARY: PrimaryStats = { root: 0, qi: 0, agility: 0, spirit: 0, fortune: 0 };
+
+/** 若干份主属性相加（缺省视为 0） */
+export function addPrimary(...list: (Partial<PrimaryStats> | null | undefined)[]): PrimaryStats {
+  const out: PrimaryStats = { ...ZERO_PRIMARY };
+  for (const p of list) {
+    if (!p) continue;
+    for (const k of PRIMARY_KEYS) out[k] += p[k] ?? 0;
+  }
+  return out;
+}
+
+/**
+ * 旧四维 → 主属性（给"老数据装备"用）。
+ * 口径与反解一致：atk→气力、crit→神识、critDmg→机缘；
+ * def 与 hp 同时由根骨供给，所以根骨取两者的平均值，避免一头塌一头涨。
+ */
+export function primaryFromLegacy(stats: {
+  atk?: number; def?: number; hp?: number; crit?: number; critDmg?: number;
+}): PrimaryStats {
+  return {
+    root: ((stats.def ?? 0) / 0.8 + (stats.hp ?? 0) / 12) / 2,
+    qi: (stats.atk ?? 0) / 1.6,
+    agility: 0,
+    spirit: (stats.crit ?? 0) / 0.004,
+    fortune: ((stats.critDmg ?? 1.5) - 1.5) / 0.01,
+  };
+}
+
 // ═══════════════════════════ 主 → 派生 换算表（规格 §4） ═══════════════════════════
 
 /** 由主属性 + 等级计算派生属性（纯函数，无随机）。equip/statuses 供 C2/C4 扩展。 */
@@ -62,6 +99,9 @@ export function buildDerived(
 }
 
 // ═══════════════════════════ 升级成长 ═══════════════════════════
+
+/** 每升 1 级给玩家的自由加点数（主属性 5 选 1 分配；流派的核心旋钮） */
+export const FREE_POINTS_PER_LEVEL = 2;
 
 /**
  * 每级 1 点主属性，按 根骨/气力/身法/神识/机缘 = 2:2:2:2:1 循环自动分配
