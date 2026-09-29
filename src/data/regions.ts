@@ -69,17 +69,19 @@ export const REGIONS: WorldRegion[] = [
   {
     id: 'central_plain',
     name: '中原',
-    description: '大唐腹地，人烟稠密，四通八达，却也暗藏危机。',
+    description: '大唐腹地，人烟稠密，十三城星罗棋布，四通八达。',
     levelRange: [1, 20],
-    size: 7,
+    size: 11, // 高 9 行（11 列 × 9 行 = 99 格，见 cellMap）
     terrainBias: ['plains', 'forest', 'mountain'],
     cellPrefix: 'cp',
     cityId: 'changan',
     centerCellId: 'cp_3_0',
     gates: [
       { toRegionId: 'hexi', kind: 'pass', days: 2, require: { minLevel: 5 } },
+      { toRegionId: 'donghai', kind: 'ferry', days: 3, require: { minLevel: 20 } },
     ],
-    contentBudget: { monster: 20, gather: 9, encounter: 5, discovery: 5, npc: 3, dungeon: 2 },
+    // 99 格板：按 S5 密度下限缩放（野怪40%/采集15%/奇遇发现16%/NPC5%/副本2）
+    contentBudget: { monster: 40, gather: 15, encounter: 8, discovery: 8, npc: 5, dungeon: 2 },
   },
   {
     id: 'hexi',
@@ -160,6 +162,27 @@ export const CITIES: CityDef[] = [
     description: '东海龙宫，敖广坐镇。虾兵蟹将侍立，海货丰饶。',
   },
 ];
+
+// ── 逻辑区划（供 cities.ts 的 regionId 归属语义 + 关隘门槛，不参与格子查找） ──
+// 东都/蜀中/荆楚/江南 四块落位在中原板（cp 前缀）上，但作为"关隘与封锁"的语义分区存在。
+// 它们不进 REGIONS（避免 cellPrefix 冲突），只提供 regionId → 名称/门槛 的映射。
+export interface LogicalRegion {
+  id: string;
+  name: string;
+  /** 入该区划的门槛（等级），供进城校验用 */
+  minLevel?: number;
+}
+
+export const LOGICAL_REGIONS: LogicalRegion[] = [
+  { id: 'dongdu', name: '东都', minLevel: 5 },
+  { id: 'shuzhong', name: '蜀中', minLevel: 10 },
+  { id: 'jingchu', name: '荆楚', minLevel: 8 },
+  { id: 'jiangnan', name: '江南', minLevel: 8 },
+];
+
+export function logicalRegionOf(id: string): LogicalRegion | undefined {
+  return LOGICAL_REGIONS.find((r) => r.id === id);
+}
 
 // ── 查询工具 ──
 

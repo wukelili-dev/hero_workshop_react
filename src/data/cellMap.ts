@@ -161,10 +161,13 @@ export const TERRAIN_CONFIG: Record<TerrainType, {
   },
 };
 
-// ============ 中原地区 - 7x7 棋盘 ============
+// ============ 中原地区 - 11x9 棋盘（99 格） ============
+// 坐标：x 0→10 西→东，y 0→8 北→南。13 城分布见 cities.ts 的 cellId。
 export const CENTRAL_PLAIN_CELLS: MapCell[] = [
   // 第 0 行（北）
-  { id: 'cp_0_0', x: 0, y: 0, terrain: 'mountain', features: [], isRevealed: true, elevation: 2 },
+  { id: 'cp_0_0', x: 0, y: 0, terrain: 'mountain', features: [
+    { type: 'event', id: 'yangguan_road', eventId: 'gate_yangguan', icon: '🚪', label: '阳关道', description: '西出阳关的关隘门户' }
+  ], isRevealed: true, elevation: 2 },
   { id: 'cp_1_0', x: 1, y: 0, terrain: 'mountain', features: [
     { type: 'resource', id: 'iron_mine', resourceType: 'iron_ore', gatherCount: 5, icon: '⛏️', label: '铁矿' }
   ], isRevealed: true, elevation: 2 },
@@ -181,6 +184,10 @@ export const CENTRAL_PLAIN_CELLS: MapCell[] = [
   { id: 'cp_6_0', x: 6, y: 0, terrain: 'plains', features: [
     { type: 'npc', id: 'farmer_li', npcId: 'changan_farmer', icon: '👨‍🌾', label: '李老汉', description: '种了一辈子地的老农' }
   ], isRevealed: false, elevation: 0 },
+  { id: 'cp_7_0', x: 7, y: 0, terrain: 'mountain', features: [], isRevealed: false, elevation: 2 },
+  { id: 'cp_8_0', x: 8, y: 0, terrain: 'snow', features: [], isRevealed: false, elevation: 2 },
+  { id: 'cp_9_0', x: 9, y: 0, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_10_0', x: 10, y: 0, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
 
   // 第 1 行
   { id: 'cp_0_1', x: 0, y: 1, terrain: 'mountain', features: [
@@ -199,11 +206,15 @@ export const CENTRAL_PLAIN_CELLS: MapCell[] = [
     { type: 'monster', id: 'bandit_camp', monsterIds: ['bandit'], spawnRate: 0.6, minLevel: 4, maxLevel: 6, icon: '⚔️', label: '强盗营地' }
   ], isRevealed: false, elevation: 0 },
   { id: 'cp_5_1', x: 5, y: 1, terrain: 'plains', features: [
-    { type: 'city', id: 'yangguan', cityId: 'yangguan', icon: '🏘️', label: '阳关', description: '西域门户' }
+    { type: 'city', id: 'luoyang', cityId: 'luoyang', icon: '🏯', label: '洛阳城', description: '东都洛阳，河洛图书之府' }
   ], isRevealed: true, elevation: 0 },
   { id: 'cp_6_1', x: 6, y: 1, terrain: 'desert', features: [
     { type: 'random', id: 'desert_event', eventPool: ['sandstorm', 'oasis', 'desert_spirit'], icon: '🏜️', label: '大漠' }
   ], isRevealed: false, elevation: 0 },
+  { id: 'cp_7_1', x: 7, y: 1, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_8_1', x: 8, y: 1, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_9_1', x: 9, y: 1, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_10_1', x: 10, y: 1, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
 
   // 第 2 行
   { id: 'cp_0_2', x: 0, y: 2, terrain: 'forest', features: [
@@ -223,31 +234,47 @@ export const CENTRAL_PLAIN_CELLS: MapCell[] = [
   { id: 'cp_6_2', x: 6, y: 2, terrain: 'mountain', features: [
     { type: 'dungeon', id: 'bandit_fortress', dungeonId: 'bandit_stronghold', icon: '🏰', label: '匪寨', description: '强盗的老巢' }
   ], isRevealed: false, elevation: 2 },
+  { id: 'cp_7_2', x: 7, y: 2, terrain: 'forest', features: [], isRevealed: false, elevation: 1 },
+  { id: 'cp_8_2', x: 8, y: 2, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_9_2', x: 9, y: 2, terrain: 'plains', features: [
+    { type: 'city', id: 'aolai', cityId: 'aolai', icon: '🏘️', label: '傲来国', description: '花果山下的国度，你的出生之地' }
+  ], isRevealed: true, elevation: 0 },
+  { id: 'cp_10_2', x: 10, y: 2, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
 
-  // 第 3 行（中）
+  // 第 3 行
   { id: 'cp_0_3', x: 0, y: 3, terrain: 'water', features: [
     { type: 'monster', id: 'lake_monster', monsterIds: ['water_dragon'], spawnRate: 0.3, minLevel: 10, maxLevel: 15, icon: '🐉', label: '湖底蛟龙' }
   ], isRevealed: false, elevation: 0 },
   { id: 'cp_1_3', x: 1, y: 3, terrain: 'plains', features: [
-    { type: 'city', id: 'datang_east', cityId: 'datang_east', icon: '🏘️', label: '大唐东', description: '东方重镇' }
+    { type: 'city', id: 'wuzhishan', cityId: 'wuzhishan', icon: '⛰️', label: '五指山', description: '五行山下的小镇' }
   ], isRevealed: true, elevation: 0 },
   { id: 'cp_2_3', x: 2, y: 3, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
   { id: 'cp_3_3', x: 3, y: 3, terrain: 'celestial', features: [
     { type: 'event', id: 'immortal_encounter', eventId: 'meet_immortal', icon: '☁️', label: '仙人指路', description: '有缘者方能得见' }
   ], isRevealed: false, elevation: 1 },
-  { id: 'cp_4_3', x: 4, y: 3, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
-  { id: 'cp_5_3', x: 5, y: 3, terrain: 'plains', features: [
-    { type: 'city', id: 'datang_south', cityId: 'datang_south', icon: '🏘️', label: '大唐南', description: '南方商埠' }
+  { id: 'cp_4_3', x: 4, y: 3, terrain: 'plains', features: [
+    { type: 'city', id: 'datang_south', cityId: 'datangnan', icon: '🏘️', label: '大唐南', description: '南方商埠' }
   ], isRevealed: true, elevation: 0 },
-  { id: 'cp_6_3', x: 6, y: 3, terrain: 'forest', features: [
+  { id: 'cp_5_3', x: 5, y: 3, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_6_3', x: 6, y: 3, terrain: 'plains', features: [
+    { type: 'city', id: 'datang_east', cityId: 'datangdong', icon: '🏘️', label: '大唐东', description: '东方重镇' }
+  ], isRevealed: true, elevation: 0 },
+  { id: 'cp_7_3', x: 7, y: 3, terrain: 'forest', features: [
     { type: 'monster', id: 'poison_snake', monsterIds: ['poison_snake'], spawnRate: 0.8, minLevel: 5, maxLevel: 8, icon: '🐍', label: '毒蛇谷' }
   ], isRevealed: false, elevation: 1 },
+  { id: 'cp_8_3', x: 8, y: 3, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_9_3', x: 9, y: 3, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_10_3', x: 10, y: 3, terrain: 'mountain', features: [
+    { type: 'sect', id: 'huaguoshan', sectId: 'monkey_king_sect', cityId: 'huaguoshan', icon: '🐵', label: '花果山', description: '齐天大圣的故乡' }
+  ], isRevealed: true, elevation: 3 },
 
   // 第 4 行
   { id: 'cp_0_4', x: 0, y: 4, terrain: 'swamp', features: [
     { type: 'monster', id: 'swamp_creature', monsterIds: ['swamp_beast'], spawnRate: 0.6, minLevel: 7, maxLevel: 10, icon: '🦎', label: '沼泽怪兽' }
   ], isRevealed: false, elevation: 0 },
-  { id: 'cp_1_4', x: 1, y: 4, terrain: 'forest', features: [], isRevealed: false, elevation: 1 },
+  { id: 'cp_1_4', x: 1, y: 4, terrain: 'forest', features: [
+    { type: 'city', id: 'yizhou', cityId: 'yizhou', icon: '🏘️', label: '益州', description: '蜀中天府之国' }
+  ], isRevealed: false, elevation: 1 },
   { id: 'cp_2_4', x: 2, y: 4, terrain: 'mountain', features: [
     { type: 'resource', id: 'crystal_cave', resourceType: 'crystal', gatherCount: 3, icon: '💎', label: '水晶矿洞' }
   ], isRevealed: false, elevation: 2 },
@@ -261,6 +288,10 @@ export const CENTRAL_PLAIN_CELLS: MapCell[] = [
   { id: 'cp_6_4', x: 6, y: 4, terrain: 'mountain', features: [
     { type: 'dungeon', id: 'ancient_tomb', dungeonId: 'tomb_of_kings', icon: '⚰️', label: '古墓', description: '千年古墓，机关重重' }
   ], isRevealed: false, elevation: 2 },
+  { id: 'cp_7_4', x: 7, y: 4, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_8_4', x: 8, y: 4, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_9_4', x: 9, y: 4, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_10_4', x: 10, y: 4, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
 
   // 第 5 行
   { id: 'cp_0_5', x: 0, y: 5, terrain: 'forest', features: [
@@ -268,11 +299,9 @@ export const CENTRAL_PLAIN_CELLS: MapCell[] = [
   ], isRevealed: false, elevation: 1 },
   { id: 'cp_1_5', x: 1, y: 5, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
   { id: 'cp_2_5', x: 2, y: 5, terrain: 'plains', features: [
-    { type: 'city', id: 'aolai', cityId: 'aolai', icon: '🏘️', label: '傲来国', description: '花果山下的国度' }
-  ], isRevealed: true, elevation: 0 },
-  { id: 'cp_3_5', x: 3, y: 5, terrain: 'mountain', features: [
-    { type: 'sect', id: 'huaguoshan', sectId: 'monkey_king_sect', icon: '🐵', label: '花果山', description: '齐天大圣的故乡' }
-  ], isRevealed: true, elevation: 3 },
+    { type: 'event', id: 'south_road', eventId: 'south_road', icon: '🛤️', label: '南行驿道', description: '通往南方的官道' }
+  ], isRevealed: false, elevation: 0 },
+  { id: 'cp_3_5', x: 3, y: 5, terrain: 'mountain', features: [], isRevealed: false, elevation: 2 },
   { id: 'cp_4_5', x: 4, y: 5, terrain: 'forest', features: [
     { type: 'monster', id: 'monkey_troop', monsterIds: ['monkey_warrior'], spawnRate: 0.7, minLevel: 6, maxLevel: 10, icon: '🐒', label: '猴群' }
   ], isRevealed: false, elevation: 1 },
@@ -280,8 +309,12 @@ export const CENTRAL_PLAIN_CELLS: MapCell[] = [
     { type: 'resource', id: 'pearl_bed', resourceType: 'pearl', gatherCount: 5, icon: '🦪', label: '珍珠贝床' }
   ], isRevealed: false, elevation: 0 },
   { id: 'cp_6_5', x: 6, y: 5, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_7_5', x: 7, y: 5, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_8_5', x: 8, y: 5, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_9_5', x: 9, y: 5, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_10_5', x: 10, y: 5, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
 
-  // 第 6 行（南）
+  // 第 6 行
   { id: 'cp_0_6', x: 0, y: 6, terrain: 'volcanic', features: [
     { type: 'dungeon', id: 'fire_cave', dungeonId: 'volcano_depths', icon: '🌋', label: '火云洞', description: '火焰山深处' }
   ], isRevealed: false, elevation: 2 },
@@ -289,8 +322,8 @@ export const CENTRAL_PLAIN_CELLS: MapCell[] = [
     { type: 'monster', id: 'sand_worm', monsterIds: ['sand_worm'], spawnRate: 0.4, minLevel: 10, maxLevel: 15, icon: '🐛', label: '沙虫' }
   ], isRevealed: false, elevation: 0 },
   { id: 'cp_2_6', x: 2, y: 6, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
-  { id: 'cp_3_6', x: 3, y: 6, terrain: 'water', features: [
-    { type: 'city', id: 'donghai', cityId: 'donghai', icon: '🌊', label: '东海龙宫', description: '龙王居所' }
+  { id: 'cp_3_6', x: 3, y: 6, terrain: 'plains', features: [
+    { type: 'city', id: 'jingzhou', cityId: 'jingzhou', icon: '🏘️', label: '荆州', description: '九省通衢' }
   ], isRevealed: true, elevation: 0 },
   { id: 'cp_4_6', x: 4, y: 6, terrain: 'water', features: [
     { type: 'monster', id: 'sea_monster', monsterIds: ['sea_serpent'], spawnRate: 0.5, minLevel: 12, maxLevel: 18, icon: '🐋', label: '海怪' }
@@ -299,13 +332,49 @@ export const CENTRAL_PLAIN_CELLS: MapCell[] = [
     { type: 'event', id: 'dragon_palace', eventId: 'visit_dragon_king', icon: '🐲', label: '龙宫秘境', description: '龙王设宴' }
   ], isRevealed: false, elevation: 1 },
   { id: 'cp_6_6', x: 6, y: 6, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_7_6', x: 7, y: 6, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_8_6', x: 8, y: 6, terrain: 'plains', features: [
+    { type: 'city', id: 'jianye', cityId: 'jianye', icon: '🏘️', label: '建邺', description: '江南水乡门户' }
+  ], isRevealed: true, elevation: 0 },
+  { id: 'cp_9_6', x: 9, y: 6, terrain: 'water', features: [
+    { type: 'event', id: 'donghai_ferry', eventId: 'gate_donghai', icon: '⛴️', label: '东海渡口', description: '通往东海的渡口' }
+  ], isRevealed: false, elevation: 0 },
+  { id: 'cp_10_6', x: 10, y: 6, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
+
+  // 第 7 行
+  { id: 'cp_0_7', x: 0, y: 7, terrain: 'mountain', features: [], isRevealed: false, elevation: 2 },
+  { id: 'cp_1_7', x: 1, y: 7, terrain: 'forest', features: [], isRevealed: false, elevation: 1 },
+  { id: 'cp_2_7', x: 2, y: 7, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_3_7', x: 3, y: 7, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_4_7', x: 4, y: 7, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_5_7', x: 5, y: 7, terrain: 'forest', features: [], isRevealed: false, elevation: 1 },
+  { id: 'cp_6_7', x: 6, y: 7, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_7_7', x: 7, y: 7, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_8_7', x: 8, y: 7, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_9_7', x: 9, y: 7, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_10_7', x: 10, y: 7, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
+
+  // 第 8 行（南）
+  { id: 'cp_0_8', x: 0, y: 8, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_1_8', x: 1, y: 8, terrain: 'forest', features: [], isRevealed: false, elevation: 1 },
+  { id: 'cp_2_8', x: 2, y: 8, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_3_8', x: 3, y: 8, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_4_8', x: 4, y: 8, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_5_8', x: 5, y: 8, terrain: 'plains', features: [
+    { type: 'city', id: 'yangzhou', cityId: 'yangzhou', icon: '🏘️', label: '扬州', description: '烟花三月下扬州' }
+  ], isRevealed: true, elevation: 0 },
+  { id: 'cp_6_8', x: 6, y: 8, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_7_8', x: 7, y: 8, terrain: 'plains', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_8_8', x: 8, y: 8, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_9_8', x: 9, y: 8, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
+  { id: 'cp_10_8', x: 10, y: 8, terrain: 'water', features: [], isRevealed: false, elevation: 0 },
 ];
 
 // ============ 中原地区配置 ============
 export const CENTRAL_PLAIN_REGION: MapRegion = {
   id: 'central_plain',
   name: '中原地区',
-  description: '大唐腹地，人烟稠密，但也暗藏危机',
+  description: '大唐腹地，人烟稠密，十三城星罗棋布，商路四通八达',
   levelRange: [1, 20],
   cells: CENTRAL_PLAIN_CELLS,
   centerCellId: 'cp_3_0', // 长安城
@@ -372,14 +441,29 @@ export function calcMoveCost(fromId: string, toId: string): number {
 
 // ============ 驿道（世界地图上绘制用） ============
 export const CELL_ROADS: [string, string][] = [
+  // 长安—洛阳
   ['cp_3_0', 'cp_5_1'],
+  // 洛阳—大唐东
+  ['cp_5_1', 'cp_6_3'],
+  // 大唐东—建邺
+  ['cp_6_3', 'cp_8_6'],
+  // 建邺—东海渡口
+  ['cp_8_6', 'cp_9_6'],
+  // 大唐东—大唐南
+  ['cp_6_3', 'cp_4_3'],
+  // 大唐南—荆州
+  ['cp_4_3', 'cp_3_6'],
+  // 荆州—扬州
+  ['cp_3_6', 'cp_5_8'],
+  // 长安—阳关道
+  ['cp_3_0', 'cp_0_0'],
+  // 长安—五指山
   ['cp_3_0', 'cp_1_3'],
-  ['cp_1_3', 'cp_5_3'],
-  ['cp_5_3', 'cp_3_6'],
-  ['cp_2_5', 'cp_3_5'],
-  ['cp_5_1', 'cp_6_2'],
-  ['cp_5_3', 'cp_6_4'],
-  ['cp_3_0', 'cp_3_5'],
+  // 五指山—益州
+  ['cp_1_3', 'cp_1_4'],
+  // 傲来国—花果山
+  ['cp_9_2', 'cp_10_3'],
+  // 熊洞—火云洞
   ['cp_0_5', 'cp_0_6'],
 ];
 

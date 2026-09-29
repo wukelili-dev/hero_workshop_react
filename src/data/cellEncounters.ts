@@ -18,14 +18,21 @@ export interface CellEncounter {
 }
 
 export const CELL_ENCOUNTERS: Record<string, CellEncounter> = {
-  // ── 主城 / 据点（复用已有战斗地图的怪物表与 Boss） ──
+  // ── 主城 / 据点（13 城落位，复用已有战斗地图的怪物表与 Boss） ──
   cp_3_0: { label: '长安城', mapId: 'changan' },
-  cp_2_5: { label: '傲来国', mapId: 'aolai' },
-  cp_1_3: { label: '大唐东', mapId: 'datangdong' },
-  cp_5_1: { label: '阳关', mapId: 'yangguan' },
-  cp_5_3: { label: '大唐南', mapId: 'datangnan' },
-  cp_3_6: { label: '东海龙宫', mapId: 'donghai' },
-  cp_3_5: { label: '花果山', mapId: 'huaguoshan' },
+  cp_5_1: { label: '洛阳城', mapId: 'changan' },
+  cp_1_3: { label: '五指山', mapId: 'datangdong' },
+  cp_4_3: { label: '大唐南', mapId: 'datangnan' },
+  cp_6_3: { label: '大唐东', mapId: 'datangdong' },
+  cp_1_4: { label: '益州', mapId: 'datangnan' },
+  cp_3_6: { label: '荆州', mapId: 'datangnan' },
+  cp_8_6: { label: '建邺', mapId: 'aolai' },
+  cp_5_8: { label: '扬州', mapId: 'datangdong' },
+  cp_9_2: { label: '傲来国', mapId: 'aolai' },
+  cp_10_3: { label: '花果山', mapId: 'huaguoshan' },
+  // 关隘门户（中原板指向河西/东海的渡口）
+  cp_0_0: { label: '阳关道', mapId: 'yangguan' },
+  cp_9_6: { label: '东海渡口', mapId: 'donghai' },
 
   // ── 副本 ──
   cp_6_2: { label: '匪寨', mapId: 'datangdong' },
@@ -69,7 +76,7 @@ export const CELL_ENCOUNTERS: Record<string, CellEncounter> = {
   cp_5_0: { label: '河妖', monsters: ['河妖', '毒蛇'] },
   cp_4_1: { label: '强盗营地', monsters: ['山贼'], boss: '山贼头目' },
   cp_0_2: { label: '虎啸山林', monsters: ['山君', '沼泽巨蜥'] },
-  cp_6_3: { label: '毒蛇谷', monsters: ['毒蛇', '灰狼'] },
+  cp_7_3: { label: '毒蛇谷', monsters: ['毒蛇', '灰狼'] },
   cp_0_3: { label: '湖底蛟龙', monsters: ['河妖', '沼泽巨蜥'], boss: '蛟' },
   cp_0_4: { label: '沼泽怪兽', monsters: ['沼泽巨蜥', '毒蛇'] },
   cp_4_5: { label: '猴群', monsters: ['野猴'] },

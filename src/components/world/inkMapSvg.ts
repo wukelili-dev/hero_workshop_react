@@ -9,12 +9,28 @@ import {
   type TerrainType,
 } from '../../data/cellMap';
 
-const S = 72;      // 每格边长（未缩放）
-const OX = 108;    // 网格左上角 x
-const OY = 28;     // 网格左上角 y
+let S = 72;      // 每格边长（applyLayout 按实际列/行数重算）
+let OX = 108;    // 网格左上角 x
+let OY = 28;     // 网格左上角 y
 const VB_W = 720;
 const VB_H = 560;
 const FONT_KAI = 'KaiTi, STKaiti, Kaiti SC, SimSun, serif';
+
+/** 当前棋盘的实际列数/行数（applyLayout 填充） */
+let COLS = 7;
+let ROWS = 7;
+
+/**
+ * 按实际列数/行数自适应布局：格子边长 S = min(宽/cols, 高/rows) 缩放，
+ * 保证 11×9 等大棋盘不溢出画布。
+ */
+function applyLayout(cells: MapCell[]): void {
+  const xs = cells.map((c) => c.x);
+  const ys = cells.map((c) => c.y);
+  COLS = Math.max(0, ...xs) + 1;
+  ROWS = Math.max(0, ...ys) + 1;
+  S = Math.floor(Math.min((VB_W - OX - 16) / COLS, (VB_H - OY - 16) / ROWS));
+}
 
 /** 地形的水墨色（wash = 淡墨晕染，ink = 浓墨笔触） */
 const INK: Record<TerrainType, { wash: string; ink: string }> = {
@@ -177,6 +193,7 @@ function centerOf(cell: MapCell): [number, number] {
 
 export function buildInkMapSvg(opts: InkMapOptions): string {
   const cells = opts.cells ?? CENTRAL_PLAIN_CELLS;
+  applyLayout(cells);
   const regionName = opts.regionName ?? '中原地區';
   const revealedExtra = new Set(opts.revealedCells ?? []);
   const isExplored = (cell: MapCell) => Boolean(cell.isRevealed) || revealedExtra.has(cell.id);
@@ -224,9 +241,11 @@ export function buildInkMapSvg(opts: InkMapOptions): string {
   // 界格 + 驿道（只出现在已探索区域）
   out.push('<g clip-path="url(#ink-reveal)">');
   out.push('<g stroke="#6b6252" stroke-width="0.8" opacity="0.16">');
-  for (let i = 0; i <= 7; i++) {
-    out.push(`<line x1="${OX + i * S}" y1="${OY}" x2="${OX + i * S}" y2="${OY + 7 * S}"/>`);
-    out.push(`<line x1="${OX}" y1="${OY + i * S}" x2="${OX + 7 * S}" y2="${OY + i * S}"/>`);
+  for (let i = 0; i <= COLS; i++) {
+    out.push(`<line x1="${OX + i * S}" y1="${OY}" x2="${OX + i * S}" y2="${OY + ROWS * S}"/>`);
+  }
+  for (let i = 0; i <= ROWS; i++) {
+    out.push(`<line x1="${OX}" y1="${OY + i * S}" x2="${OX + COLS * S}" y2="${OY + i * S}"/>`);
   }
   out.push('</g>');
   CELL_ROADS.forEach(([from, to]) => {
@@ -253,9 +272,12 @@ export function buildInkMapSvg(opts: InkMapOptions): string {
     const kind = FEATURE_ICON[feature.type] ?? 'random';
     const [px, py] = centerOf(c);
     const inkColor = kind === 'city' ? '#8f2b23' : '#3f3527';
-    out.push(iconFor(kind, px, py - 6, 13, inkColor));
+    const iconScale = Math.max(9, Math.round(S * 0.18));
+    out.push(iconFor(kind, px, py - 6, iconScale, inkColor));
     if (NAMED.indexOf(kind) >= 0) {
-      out.push(`<text class="inkmap-label" x="${px}" y="${r1(py + 28)}" text-anchor="middle" font-size="14">${feature.label}</text>`);
+      const labelSize = Math.max(10, Math.round(S * 0.19));
+      const labelDy = Math.round(S * 0.4);
+      out.push(`<text class="inkmap-label" x="${px}" y="${r1(py + labelDy)}" text-anchor="middle" font-size="${labelSize}">${feature.label}</text>`);
     }
   });
   out.push('</g>');

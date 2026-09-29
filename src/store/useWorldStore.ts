@@ -14,8 +14,8 @@ import { sum as sumEffect } from '../engine/ItemEffects';
 import { regionOfCell, gateBetween, type RegionGate } from '../data/regions';
 import type { ChronicleEntry, Consequence, PendingVisit, PlaceState } from '../types';
 
-/** 出生点：傲来国（新手区，与 useGameStore 默认 currentMapId='aolai' 对齐） */
-export const START_CELL_ID = 'cp_2_5';
+/** 出生点：傲来国（新手区，东海外侧，与 useGameStore 默认 currentMapId='aolai' 对齐） */
+export const START_CELL_ID = 'cp_9_2';
 
 /**
  * 跨过整数天时的副作用，集中在这一处（原本挂在每秒 tick 上）。
