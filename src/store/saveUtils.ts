@@ -190,21 +190,7 @@ export function loadGame(): boolean {
       // autoRunning 已移除（工厂改为自动入账）
     }
 
-    // ── 迁移：补全 v2 存档中没有的新增字段 ──
-    const g = useGameStore.getState();
-    const missing: Partial<typeof g> = {};
-    if (!g.discoveredMonsters) missing.discoveredMonsters = [];
-    if (!g.discoveredNovelties) missing.discoveredNovelties = [];
-    if (!g.discoveredPlants) missing.discoveredPlants = [];
-    if (!g.discoveredCreatures) missing.discoveredCreatures = [];
-    if (!g.battleLogs) missing.battleLogs = [];
-    if (!g.gameLogs) missing.gameLogs = [];
-    if (!g.mapBattles) missing.mapBattles = {};
-    if (g.hero && g.hero.moralValue === undefined) {
-      useGameStore.setState({ hero: { ...g.hero, moralValue: 0, factions: { human: 50, demon: 50, divine: 50 } } });
-    } else if (Object.keys(missing).length > 0) {
-      useGameStore.setState(missing);
-    }
+    // 不迁移旧档：版本不符在上面已直接丢弃（不要求存档兼容），这里不再补字段。
     // ── 读档后启动建筑定时器 ──
     const { buildings } = useGameStore.getState();
     const hasBuildings = buildings && Object.keys(buildings).some(k => (buildings as any)[k] > 0);
