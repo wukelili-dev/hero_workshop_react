@@ -311,14 +311,14 @@ export const DIALOGUE_TREES: Record<string, DialogueTree[]> = {
           id: 'ask', speaker: 'npc',
           text: '${self}压低声音：「客官是想打听行情？老夫在丝路上走，各城什么价，心里门清。你想问哪样？」',
           options: [
-            { id: 'silk', text: '“长安的丝绸什么价？”', next: 'silk' },
-            { id: 'jade', text: '“阳关的玉石呢？”', next: 'jade' },
+            { id: 'silk', text: '“长安的官绸什么价？”', next: 'silk' },
+            { id: 'jade', text: '“阳关的于阗玉呢？”', next: 'jade' },
             { id: 'leave', text: '“不问了，多谢。”', reply: ['${self}拱手：「慢走，客官。」'], end: true },
           ],
         },
         silk: {
           id: 'silk', speaker: 'npc',
-          intel: { kind: 'market', target: 'silk', cityId: 'changan' },
+          intel: { kind: 'market', target: 'guanchou', cityId: 'changan' },
           text: '${self}掐指一算：「${intel}。你若要贩，现在正是时候。」',
           options: [
             { id: 'back', text: '“再问别的。”', next: 'ask' },
@@ -327,7 +327,7 @@ export const DIALOGUE_TREES: Record<string, DialogueTree[]> = {
         },
         jade: {
           id: 'jade', speaker: 'npc',
-          intel: { kind: 'market', target: 'jade', cityId: 'yangguan' },
+          intel: { kind: 'market', target: 'yutianyu', cityId: 'yangguan' },
           text: '${self}道：「${intel}。这玉，越往东越值钱。」',
           options: [
             { id: 'back', text: '“再问别的。”', next: 'ask' },

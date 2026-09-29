@@ -1,20 +1,100 @@
 /**
- * Trade — 跑商闭环（世界广度 R3）
+ * Trade — 跑商闭环（世界广度 R3 → 跑商与城市系统 M1/M3/M5）
  *
  * 三件套：
  * 1. 信息差：外地行情靠打听（intel 节点），情报 3 天过期
  * 2. 运力限制：carryCapacity = 基础20 + 车/驮兽 + 队友 + ItemEffects.sum('carry')
  * 3. 路线风险：按距离/治安掷事件——山匪（复用 VisitSystem 思路）、关税、盘查（违禁品没收）
  *
+ * 价格唯一出口：priceOf(goodId, cityId, { side }) —— 所有买卖价只走这里，禁止组件散写定价。
  * 净收益 = 卖价 − 买价 − 路费/税 − 风险损失；随距离与价差正相关；超载禁止出发。
  */
 import { goodOf } from '../data/tradeGoods';
+import { cityById, isSpecialty, isDemand } from '../data/cities';
 import { cityOf } from '../data/regions';
+import { repOf } from './FactionSystem';
 import { sum as sumEffect } from './ItemEffects';
 import { hash01, hashRange } from './hash';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useGameStore } from '../store/useGameStore';
+import { useWorldStore } from '../store/useWorldStore';
+import { useNpcStore } from '../store/useNpcStore';
 import { effectivePrice, buyGood, sellGood } from './Market';
+
+/** 当日世界事件倍率（集市/丰饶/妖气），缺省 1.0 */
+export function dailyEventMult(day: number): number {
+  const ev = useWorldStore.getState().dailyEvent;
+  if (!ev || Math.floor(ev.day) !== day) return 1.0;
+  if (ev.kind === 'industry') return 0.9;   // 集市：货多价贱
+  if (ev.kind === 'calm') return 1.0;        // 风调雨顺：无影响
+  if (ev.kind === 'battle') return 1.1;      // 妖气：路险价高
+  return 1.0;
+}
+
+/**
+ * 唯一价格出口。只对 8 座跑商城（CityDef.trade === true）有效；
+ * 非跑商据点返回 null（拒绝报价，避免顺手给大唐东也接上买卖）。
+ *
+ * 公式：
+ *   基准 = basePrice
+ *   地域 = 特产×0.70 ｜ 需求×1.35 ｜ 其他×1.00
+ *   全城 = city.goodsScale
+ *   库存 = 1 + marketStock×0.02（±50）
+ *   事件 = dailyEventMult
+ *   声望 = 1 - min(0.15, factionRep/1000 + 城内亲密度/2000)
+ *   买价 = round(基准×地域×全城×库存×事件×声望)
+ *   卖价 = round(...×0.85)
+ */
+export function priceOf(goodId: string, cityId: string, opts?: { side: 'buy' | 'sell' }): number | null {
+  const city = cityById(cityId);
+  const good = goodOf(goodId);
+  if (!city || !good) return null;
+  // 非跑商据点没有货架，拒绝报价
+  if (!city.trade) return null;
+
+  const side = opts?.side ?? 'buy';
+  const day = Math.floor(useWorldStore.getState().day);
+
+  // 地域
+  let region = 1.0;
+  if (isSpecialty(cityId, goodId)) region = 0.7;
+  else if (isDemand(cityId, goodId)) region = 1.35;
+
+  // 库存
+  const stock = useWorldStore.getState().getMarketStock(cityId, goodId);
+  const stockMult = 1 + stock * 0.02;
+
+  // 声望：势力声望 + 城内亲密度
+  let repDiscount = 0;
+  if (city.factionId) {
+    repDiscount += Math.max(0, repOf(city.factionId)) / 1000;
+  }
+  const npcIds = city.npcIds ?? [];
+  if (npcIds.length > 0) {
+    const avgAffinity = npcIds.reduce((s, id) => s + useNpcStore.getState().getNpcAffinity(id), 0) / npcIds.length;
+    repDiscount += Math.max(0, avgAffinity) / 2000;
+  }
+  const repMult = 1 - Math.min(0.15, repDiscount);
+
+  const raw = good.basePrice
+    * region
+    * city.goodsScale
+    * stockMult
+    * dailyEventMult(day)
+    * repMult
+    * (side === 'sell' ? 0.85 : 1.0);
+
+  return Math.max(1, Math.round(raw));
+}
+
+/** 卖违禁品给城市铺子：价格 ×1.6，但掉该城势力声望 */
+export function contrabandPrice(goodId: string, cityId: string): number | null {
+  const base = priceOf(goodId, cityId, { side: 'sell' });
+  const good = goodOf(goodId);
+  if (base == null || !good) return null;
+  if (good.category === 'contraband') return Math.round(base * 1.6);
+  return base;
+}
 
 /** 基础运力 + 词条加成 */
 export function carryCapacity(): number {
