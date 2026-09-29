@@ -8,7 +8,8 @@ import { toast } from 'sonner';
 import { useWorldStore } from '../../store/useWorldStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { useGameStore } from '../../store/useGameStore';
-import { priceOf, carryCapacity, cargoWeight, freeCapacity } from '../../engine/Trade';
+import { priceOf, contrabandPrice, carryCapacity, cargoWeight, freeCapacity, isIntelStale } from '../../engine/Trade';
+import { addRep } from '../../engine/FactionSystem';
 import { goodOf, TRADE_GOODS } from '../../data/tradeGoods';
 import { cityById } from '../../data/cities';
 
@@ -21,9 +22,18 @@ export const MarketPanel: React.FC<{ cityId: string }> = ({ cityId }) => {
   const cargo = useInventoryStore((s) => s.cargo);
   const gold = useGameStore((s) => s.hero.gold);
   const marketStock = useWorldStore((s) => s.marketStock);
+  const marketIntel = useWorldStore((s) => s.marketIntel);
+  const day = useWorldStore((s) => Math.floor(s.day));
 
   const [qty, setQty] = useState<Record<string, number>>({});
   const city = cityById(cityId);
+
+  // 本城行情情报（3 天过期，过期标"旧讯"）
+  const intelOf = (goodId: string) => marketIntel.find((i) => i.cityId === cityId && i.goodId === goodId);
+  const isStale = (goodId: string) => {
+    const i = intelOf(goodId);
+    return i ? isIntelStale(i, day) : false;
+  };
 
   const rows = useMemo(() => {
     if (!city || !city.trade) return [];
@@ -81,14 +91,22 @@ export const MarketPanel: React.FC<{ cityId: string }> = ({ cityId }) => {
     const have = cargo[goodId] ?? 0;
     const n = Math.min(qty[goodId] ?? 1, have);
     if (have <= 0) { toast.error('没有该货物'); return; }
-    const unit = priceOf(goodId, cityId, { side: 'sell' });
-    if (unit == null) return;
     const good = goodOf(goodId);
+    if (!good) return;
+    const isContraband = good.category === 'contraband';
+    // 违禁品：价格 ×1.6，但掉该城势力声望（可能引发封锁）
+    const unit = isContraband ? (contrabandPrice(goodId, cityId) ?? 0) : (priceOf(goodId, cityId, { side: 'sell' }) ?? 0);
+    if (unit == null || unit === 0) return;
     const total = unit * n;
     useInventoryStore.getState().removeCargo(goodId, n);
     useGameStore.getState().addGold(total);
     useWorldStore.getState().adjustMarketStock(cityId, goodId, -n);
-    toast.success(`售出 ${good?.name ?? goodId} ×${n}，得 ${total} 金（你压低了本城价）`, { icon: '💰' });
+    if (isContraband && city.factionId) {
+      addRep(city.factionId, -8);
+      toast.success(`售出违禁品 ${good.name} ×${n}，得 ${total} 金；${city.name} 势力声望下降`, { icon: '⚠️' });
+    } else {
+      toast.success(`售出 ${good.name} ×${n}，得 ${total} 金（你压低了本城价）`, { icon: '💰' });
+    }
   };
 
   return (
@@ -131,7 +149,10 @@ export const MarketPanel: React.FC<{ cityId: string }> = ({ cityId }) => {
                     {r.isDm && <span className="ml-1 rounded bg-[#8f2b23]/10 px-1 text-[10px] text-[#8f2b23]">需求</span>}
                     <div className="text-[10px] text-gray-400">{CATEGORY_LABEL[r.good.category]}</div>
                   </td>
-                  <td className="px-2 py-1.5 font-medium text-amber-700">{r.buy}</td>
+                  <td className="px-2 py-1.5 font-medium text-amber-700">
+                    {r.buy}
+                    {isStale(r.good.id) && <span className="ml-1 text-[10px] text-[#9c917b]">（旧讯）</span>}
+                  </td>
                   <td className="px-2 py-1.5 text-gray-600">{r.sell}</td>
                   <td className="px-2 py-1.5">
                     <span className={r.stock >= 20 ? 'text-[#8f2b23]' : r.stock <= -20 ? 'text-green-700' : 'text-gray-500'}>
