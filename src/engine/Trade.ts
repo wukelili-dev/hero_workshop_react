@@ -13,6 +13,7 @@ import { goodOf } from '../data/tradeGoods';
 import { cityById, isSpecialty, isDemand } from '../data/cities';
 import { cityOf } from '../data/regions';
 import { repOf } from './FactionSystem';
+import { record } from './Chronicle';
 import { sum as sumEffect } from './ItemEffects';
 import { hash01, hashRange } from './hash';
 import { useInventoryStore } from '../store/useInventoryStore';
@@ -94,6 +95,21 @@ export function contrabandPrice(goodId: string, cityId: string): number | null {
   if (base == null || !good) return null;
   if (good.category === 'contraband') return Math.round(base * 1.6);
   return base;
+}
+
+/** 跨城成交按阈值写入编年史（M6 商路编年史）：单笔套利 ≥ 500 金记录 */
+export function recordTradeProfit(cityId: string, goodId: string, qty: number, profit: number): void {
+  if (profit < 500) return;
+  const city = cityById(cityId);
+  const good = goodOf(goodId);
+  record({
+    kind: 'trade',
+    actors: [cityId, 'player'],
+    placeId: cityId,
+    text: `你在${city?.name ?? cityId}出手${good?.name ?? goodId}×${qty}，一趟净赚 ${profit} 金。`,
+    importance: 2,
+    tags: ['跑商'],
+  });
 }
 
 /** 基础运力 + 词条加成 */

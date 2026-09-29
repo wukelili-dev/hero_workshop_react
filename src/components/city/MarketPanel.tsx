@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { useWorldStore } from '../../store/useWorldStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { useGameStore } from '../../store/useGameStore';
-import { priceOf, contrabandPrice, carryCapacity, cargoWeight, freeCapacity, isIntelStale } from '../../engine/Trade';
+import { priceOf, contrabandPrice, carryCapacity, cargoWeight, freeCapacity, isIntelStale, recordTradeProfit } from '../../engine/Trade';
 import { addRep } from '../../engine/FactionSystem';
 import { goodOf, TRADE_GOODS } from '../../data/tradeGoods';
 import { cityById } from '../../data/cities';
@@ -105,6 +105,9 @@ export const MarketPanel: React.FC<{ cityId: string }> = ({ cityId }) => {
       addRep(city.factionId, -8);
       toast.success(`售出违禁品 ${good.name} ×${n}，得 ${total} 金；${city.name} 势力声望下降`, { icon: '⚠️' });
     } else {
+      // 跨城套利：卖出价相对基准成本的利润 ≥500 金 → 写编年史
+      const profit = (unit - good.basePrice) * n;
+      recordTradeProfit(cityId, goodId, n, profit);
       toast.success(`售出 ${good.name} ×${n}，得 ${total} 金（你压低了本城价）`, { icon: '💰' });
     }
   };
