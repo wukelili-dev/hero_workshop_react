@@ -108,3 +108,78 @@ if (fails.length > 0) {
 } else {
   console.log('✓ 城市完整度与货架矩阵全部通过');
 }
+
+// ── M3 价差验证：任意两城之间至少 5 条货存在 >18% 正价差 ──
+// 价差只看"地域×全城"（特产×0.7 / 需求×1.35 / 其他×1.0 × goodsScale），不含库存/事件/声望。
+console.log('');
+console.log('—— M3 价差验证（地域×全城差 >18%）——');
+{
+  // 解析货物 basePrice
+  const goods = [];
+  {
+    const re = /id:\s*'([^']+)',\s*name:\s*'([^']+)',\s*category:\s*'([^']+)',\s*basePrice:\s*(\d+)/g;
+    let m;
+    while ((m = re.exec(goodsSrc)) !== null) goods.push({ id: m[1], name: m[2], category: m[3], basePrice: +m[4] });
+  }
+  const goodById = new Map(goods.map((g) => [g.id, g]));
+
+  // 解析每城的 goodsScale
+  const scaleById = new Map();
+  {
+    const blocks = citiesSrc.split(/\n\s*\{\n\s*id:/).slice(1);
+    for (const b of blocks) {
+      const id = b.match(/^\s*'([^']+)'/)?.[1];
+      const scale = b.match(/goodsScale:\s*([\d.]+)/)?.[1];
+      if (id && scale) scaleById.set(id, +scale);
+    }
+  }
+
+  // 城 → 每货的地域因子
+  const regionFactor = (city, goodId) => {
+    if (city.specialties.includes(goodId)) return 0.7;
+    if (city.demands.includes(goodId)) return 1.35;
+    return 1.0;
+  };
+  const effectiveMult = (city, goodId) => regionFactor(city, goodId) * (scaleById.get(city.id) ?? 1.0);
+
+  // 找 >18% 价差（两城一货的 effectiveMult 相对差）
+  const pairs = [];
+  for (let i = 0; i < tradeCities.length; i++) {
+    for (let j = i + 1; j < tradeCities.length; j++) {
+      const a = tradeCities[i], b = tradeCities[j];
+      const spreadGoods = goods
+        .filter((g) => g.category !== 'contraband')
+        .map((g) => {
+          const ma = effectiveMult(a, g.id);
+          const mb = effectiveMult(b, g.id);
+          const lo = Math.min(ma, mb);
+          const hi = Math.max(ma, mb);
+          const spread = (hi - lo) / lo;
+          return { good: g, ma, mb, spread };
+        })
+        .filter((x) => x.spread > 0.18)
+        .sort((x, y) => y.spread - x.spread);
+      if (spreadGoods.length > 0) {
+        pairs.push({ a: a.name, b: b.name, count: spreadGoods.length, top: spreadGoods.slice(0, 3) });
+      }
+    }
+  }
+
+  // 任意两城之间至少 5 条 >18%
+  const bestPair = pairs.sort((x, y) => y.count - x.count)[0];
+  console.log(`存在 >18% 价差的城市对数量：${pairs.length}`);
+  console.log(`最大价差城市对：${bestPair?.a} ↔ ${bestPair?.b}（${bestPair?.count} 条 >18%）`);
+  if (bestPair) {
+    for (const t of bestPair.top) {
+      console.log(`  - ${t.good.name}：${(t.spread * 100).toFixed(0)}%（${t.ma.toFixed(2)} vs ${t.mb.toFixed(2)}）`);
+    }
+  }
+  const spreadOk = bestPair && bestPair.count >= 5;
+  console.log('');
+  if (!spreadOk) {
+    console.log('✗ 价差验证未通过：需任意两城之间 ≥5 条货 >18% 正价差');
+    process.exitCode = 1;
+  } else {
+    console.log('✓ 价差验证通过（存在 ≥5 条 >18% 正价差的城对）');
+  }
+}

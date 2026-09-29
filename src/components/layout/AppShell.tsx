@@ -37,7 +37,7 @@ import { bountiesFor, claimBounty } from '../../engine/Bounty';
 import { useGameStore } from '../../store/useGameStore';
 import { saveGame, loadGame, hasSave, getSaveMeta } from '../../store/saveUtils';
 import { syncWorldClock, useWorldStore } from '../../store/useWorldStore';
-import { regionOfCell } from '../../data/regions';
+import { cityAtCell } from '../../data/cities';
 import {
   FaFloppyDisk, FaFolderOpen, FaBookOpen, FaCircleQuestion, FaMapLocationDot, FaCity,
   FaUser, FaWheatAwn, FaSkullCrossbones, FaBagShopping, FaHammer, FaPaw,
@@ -181,8 +181,9 @@ export const AppShell: React.FC = () => {
 
   /** 据点：城中铺子（兵器/甲胄/杂货）+ 队伍与遭遇 */
   const renderCity = () => {
-    const region = regionOfCell(useWorldStore.getState().currentCellId);
-    const marketCityId = region?.cityId ?? 'changan';
+    const cellId = useWorldStore.getState().currentCellId;
+    const hereCity = cityAtCell(cellId);
+    const marketCityId = hereCity?.id ?? 'changan';
     return (
     <div className="flex h-full min-h-0 flex-col gap-2 p-3">
       <div className="ink-panel ink-frame flex-shrink-0">

@@ -1,129 +1,154 @@
 /**
- * MarketPanel — 城中市场 + 跑商（世界广度 R2/R3）
- * 展示当前主城货物报价、买卖（入 cargo）、运力、跨城跑商（掷风险）。
+ * MarketPanel — 城中铺子（跑商与城市系统 M3）
+ * 只对 8 座跑商城（trade:true）显示货架；非跑商据点显示"此城无铺子"。
+ * 价格一律走 engine/Trade.ts 的 priceOf() 唯一出口，组件不写价格算术。
  */
 import React, { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useWorldStore } from '../../store/useWorldStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { useGameStore } from '../../store/useGameStore';
-import { cityMarket, effectivePrice } from '../../engine/Market';
-import { buyAtCity, sellAtCity, carryCapacity, cargoWeight, freeCapacity, completeTrip } from '../../engine/Trade';
-import { goodOf } from '../../data/tradeGoods';
-import { cityOf, REGIONS } from '../../data/regions';
+import { priceOf, carryCapacity, cargoWeight, freeCapacity } from '../../engine/Trade';
+import { goodOf, TRADE_GOODS } from '../../data/tradeGoods';
+import { cityById } from '../../data/cities';
 
 const CATEGORY_LABEL: Record<string, string> = {
-  food: '粮食', craft: '手工艺', luxury: '奢侈品', medicine: '药材', contraband: '违禁品',
+  food: '粮食', craft: '手工艺', luxury: '奢侈品', medicine: '药材',
+  contraband: '违禁品', exotic: '异域', relic: '灵物',
 };
 
 export const MarketPanel: React.FC<{ cityId: string }> = ({ cityId }) => {
-  const day = useWorldStore((s) => s.day);
-  const d = Math.floor(day);
   const cargo = useInventoryStore((s) => s.cargo);
   const gold = useGameStore((s) => s.hero.gold);
+  const marketStock = useWorldStore((s) => s.marketStock);
 
   const [qty, setQty] = useState<Record<string, number>>({});
+  const city = cityById(cityId);
 
-  const city = cityOf(cityId);
-  const quotes = useMemo(() => cityMarket(cityId, d), [cityId, d]);
-  const otherCity = cityOf(REGIONS.find((r) => r.id !== city?.regionId)?.cityId ?? '');
+  const rows = useMemo(() => {
+    if (!city || !city.trade) return [];
+    return TRADE_GOODS.filter((g) => g.category !== 'contraband').map((g) => {
+      const buy = priceOf(g.id, cityId, { side: 'buy' }) ?? 0;
+      const sell = priceOf(g.id, cityId, { side: 'sell' }) ?? 0;
+      const base = Math.round(g.basePrice * city.goodsScale);
+      const stock = marketStock[`${cityId}:${g.id}`] ?? 0;
+      const isSp = city.specialties.includes(g.id);
+      const isDm = city.demands.includes(g.id);
+      return { good: g, buy, sell, base, stock, isSp, isDm };
+    });
+  }, [city, cityId, marketStock]);
 
   if (!city) return null;
+
+  // 非跑商据点：无货架
+  if (!city.trade) {
+    return (
+      <div className="space-y-2">
+        <div className="ink-head">
+          <h3 className="ink-title text-[15px]">{city.name} · 无铺子</h3>
+        </div>
+        <div className="rounded-xl border border-dashed border-[#8a7a63]/40 p-4 text-center text-xs text-[#9c917b]">
+          {city.name}只是途经的据点，没有货架可买卖。跑商请往长安、洛阳、建邺、扬州、益州、荆州、阳关、东海。
+        </div>
+        <div className="text-[10px] text-[#9c917b]">{city.desc}</div>
+      </div>
+    );
+  }
 
   const cap = carryCapacity();
   const weight = cargoWeight();
   const free = freeCapacity();
 
-  const setQ = (goodId: string, v: number) => setQty((q) => ({ ...q, [goodId]: Math.max(0, Math.min(99, v)) }));
+  const setQ = (goodId: string, v: number) => setQty((q) => ({ ...q, [goodId]: Math.max(1, Math.min(99, v)) }));
 
   const doBuy = (goodId: string) => {
     const n = qty[goodId] ?? 1;
-    const res = buyAtCity(cityId, goodId, n, d);
-    if (!res) { toast.error('金币不足'); return; }
-    if (res.over) { toast.error('运力不足，无法装载'); return; }
-    toast.success(`购入 ${goodOf(goodId)?.name ?? goodId} ×${n}，花 ${res.total} 金`, { icon: '🧺' });
+    const unit = priceOf(goodId, cityId, { side: 'buy' });
+    if (unit == null) return;
+    const good = goodOf(goodId);
+    if (!good) return;
+    const total = unit * n;
+    const game = useGameStore.getState();
+    if (game.hero.gold < total) { toast.error('金币不足'); return; }
+    if (good.weight * n > free) { toast.error('运力不足'); return; }
+    game.addGold(-total);
+    useInventoryStore.getState().addCargo(goodId, n);
+    useWorldStore.getState().adjustMarketStock(cityId, goodId, n);
+    toast.success(`购入 ${good.name} ×${n}，花 ${total} 金（你抬高了本城价）`, { icon: '🧺' });
   };
 
   const doSell = (goodId: string) => {
     const have = cargo[goodId] ?? 0;
     const n = Math.min(qty[goodId] ?? 1, have);
     if (have <= 0) { toast.error('没有该货物'); return; }
-    const res = sellAtCity(cityId, goodId, n, d);
-    toast.success(`售出 ${goodOf(goodId)?.name ?? goodId} ×${n}，得 ${res.total} 金`, { icon: '💰' });
-  };
-
-  const doTrip = () => {
-    if (!otherCity) return;
-    const result = completeTrip(cityId, otherCity.id, d);
-    toast.success(`抵达${otherCity.name}：${result.text}`, { icon: '🐎', duration: 6000 });
+    const unit = priceOf(goodId, cityId, { side: 'sell' });
+    if (unit == null) return;
+    const good = goodOf(goodId);
+    const total = unit * n;
+    useInventoryStore.getState().removeCargo(goodId, n);
+    useGameStore.getState().addGold(total);
+    useWorldStore.getState().adjustMarketStock(cityId, goodId, -n);
+    toast.success(`售出 ${good?.name ?? goodId} ×${n}，得 ${total} 金（你压低了本城价）`, { icon: '💰' });
   };
 
   return (
     <div className="space-y-2">
       <div className="ink-head">
-        <h3 className="ink-title text-[15px]">市场行情 · {city.name}</h3>
-        <span className="ink-tag ml-auto">物价基数 ×{city.priceIndex.toFixed(2)}</span>
+        <h3 className="ink-title text-[15px]">铺子 · {city.name}</h3>
+        <span className="ink-tag ml-auto">物价 ×{city.goodsScale.toFixed(2)}</span>
       </div>
 
       <div className="flex flex-wrap gap-3 rounded-xl border border-[#8a7a63]/30 bg-[#f3efe4] px-3 py-2 text-[11px] text-gray-600">
         <span>💰 金币 <b className="text-amber-700">{gold.toLocaleString()}</b></span>
-        <span>🧺 运力 <b className={free < 0 ? 'text-[#8f2b23]' : 'text-gray-800'}>{weight}</b>/{cap}</span>
+        <span>🧺 运力 <b className="text-gray-800">{weight}</b>/{cap}</span>
         <span className="text-gray-400">剩余 {free}</span>
-        {otherCity && (
-          <button type="button" onClick={doTrip} disabled={weight === 0} className="ink-btn-seal ml-auto text-[11px]">
-            🐎 跑商前往{otherCity.name}
-          </button>
-        )}
       </div>
 
-      {otherCity && (
-        <div className="text-[11px] text-gray-500">
-          对照城：{otherCity.name}。低价买、异地卖赚差价；违禁品获利高但路上易被盘查没收。
-        </div>
-      )}
+      <div className="text-[11px] text-gray-500">{city.desc}</div>
 
       <div className="overflow-hidden rounded-xl border border-[#8a7a63]/30">
         <table className="w-full text-left text-xs">
           <thead className="bg-[#f3efe4] text-[#6b6252]">
             <tr>
               <th className="px-2 py-1.5 font-medium">货物</th>
-              <th className="px-2 py-1.5 font-medium">品类</th>
-              <th className="px-2 py-1.5 font-medium">本城价</th>
+              <th className="px-2 py-1.5 font-medium">买价</th>
+              <th className="px-2 py-1.5 font-medium">卖价</th>
+              <th className="px-2 py-1.5 font-medium">库存</th>
               <th className="px-2 py-1.5 font-medium">持有</th>
-              <th className="px-2 py-1.5 font-medium">数量</th>
               <th className="px-2 py-1.5 font-medium">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#8a7a63]/15">
-            {quotes.map((q) => {
-              const good = goodOf(q.goodId);
-              if (!good) return null;
-              const price = effectivePrice(cityId, q.goodId, d);
-              const have = cargo[q.goodId] ?? 0;
-              const isContraband = good.category === 'contraband';
-              const n = qty[q.goodId] ?? 1;
+            {rows.map((r) => {
+              const have = cargo[r.good.id] ?? 0;
+              const n = qty[r.good.id] ?? 1;
+              const diff = r.buy - r.base;
               return (
-                <tr key={q.goodId} className="bg-white">
-                  <td className={`px-2 py-1.5 ${isContraband ? 'text-[#8f2b23]' : 'text-gray-800'}`}>
-                    {good.name}{isContraband && <span className="ml-1 text-[10px]">⚠</span>}
+                <tr key={r.good.id} className="bg-white">
+                  <td className="px-2 py-1.5 text-gray-800">
+                    {r.good.name}
+                    {r.isSp && <span className="ml-1 rounded bg-[#4f7a8c]/10 px-1 text-[10px] text-[#4f7a8c]">特产</span>}
+                    {r.isDm && <span className="ml-1 rounded bg-[#8f2b23]/10 px-1 text-[10px] text-[#8f2b23]">需求</span>}
+                    <div className="text-[10px] text-gray-400">{CATEGORY_LABEL[r.good.category]}</div>
                   </td>
-                  <td className="px-2 py-1.5 text-gray-500">{CATEGORY_LABEL[good.category]}</td>
-                  <td className="px-2 py-1.5 font-medium text-amber-700">{price} 金</td>
+                  <td className="px-2 py-1.5 font-medium text-amber-700">{r.buy}</td>
+                  <td className="px-2 py-1.5 text-gray-600">{r.sell}</td>
+                  <td className="px-2 py-1.5">
+                    <span className={r.stock >= 20 ? 'text-[#8f2b23]' : r.stock <= -20 ? 'text-green-700' : 'text-gray-500'}>
+                      {r.stock > 0 ? `+${r.stock}` : r.stock}
+                    </span>
+                    {diff !== 0 && <span className={`ml-1 text-[10px] ${diff > 0 ? 'text-[#8f2b23]' : 'text-green-700'}`}>{diff > 0 ? '↑' : '↓'}</span>}
+                  </td>
                   <td className="px-2 py-1.5 text-gray-600">{have}</td>
                   <td className="px-2 py-1.5">
-                    <input
-                      type="number"
-                      min={1}
-                      max={99}
-                      value={n}
-                      onChange={(e) => setQ(q.goodId, Number(e.target.value))}
-                      className="w-12 rounded border border-[#8a7a63]/40 px-1 py-0.5 text-xs"
-                    />
-                  </td>
-                  <td className="px-2 py-1.5">
-                    <div className="flex gap-1">
-                      <button type="button" onClick={() => doBuy(q.goodId)} className="ink-btn text-[11px] px-2 py-0.5">买</button>
-                      <button type="button" onClick={() => doSell(q.goodId)} disabled={have <= 0} className="ink-btn text-[11px] px-2 py-0.5">卖</button>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number" min={1} max={99} value={n}
+                        onChange={(e) => setQ(r.good.id, Number(e.target.value))}
+                        className="w-12 rounded border border-[#8a7a63]/40 px-1 py-0.5 text-xs"
+                      />
+                      <button type="button" onClick={() => doBuy(r.good.id)} className="ink-btn px-2 py-0.5 text-[11px]">买</button>
+                      <button type="button" onClick={() => doSell(r.good.id)} disabled={have <= 0} className="ink-btn px-2 py-0.5 text-[11px]">卖</button>
                     </div>
                   </td>
                 </tr>
@@ -134,7 +159,7 @@ export const MarketPanel: React.FC<{ cityId: string }> = ({ cityId }) => {
       </div>
 
       <div className="text-[10px] text-gray-400">
-        行情每日波动，当日稳定；买多涨价、卖多跌价。跑商途中可能遇山匪/关税/盘查，风险与货值、治安相关。
+        特产本地便宜（×0.7）、需求本地贵（×1.35）；买多涨价、卖多跌价，当日进出价格立刻变化。
       </div>
     </div>
   );
