@@ -46,6 +46,8 @@ interface InventoryActions {
   // 背包格子相关
   addToInventory: (type: 'weapon' | 'armor' | 'novelty', id: string, qty?: number, data?: Equipment) => void;
   removeFromInventory: (slotIndex: number, qty?: number) => void;
+  /** 背包是否还装得下 qty 件指定杂货（含堆叠空间） */
+  hasRoomFor: (name: string, qty?: number) => boolean;
 }
 
 export const useInventoryStore = create<InventoryState & InventoryActions>((set, get) => ({
@@ -219,6 +221,17 @@ export const useInventoryStore = create<InventoryState & InventoryActions>((set,
     return Object.entries(get().cargo).reduce((sum, [goodId, count]) => {
       return sum + (goodOf(goodId)?.weight ?? 1) * count;
     }, 0);
+  },
+
+  hasRoomFor: (name, qty = 1) => {
+    const maxStack = getMaxStack(name);
+    let room = 0;
+    for (const s of get().slots) {
+      if (!s) room += maxStack;
+      else if (s.type === 'novelty' && s.id === name) room += maxStack - s.qty;
+      if (room >= qty) return true;
+    }
+    return room >= qty;
   },
 
   // 添加物品到背包格子（10格通用背包）

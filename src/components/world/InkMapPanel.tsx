@@ -5,6 +5,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useGameStore } from '../../store/useGameStore';
+import { useInventoryStore } from '../../store/useInventoryStore';
 import { formatDayLabel, useWorldStore } from '../../store/useWorldStore';
 import { TERRAIN_CONFIG, findRoute, getCellById, cellsOfPrefix } from '../../data/cellMap';
 import { CELL_ENCOUNTERS, getCellEncounter } from '../../data/cellEncounters';
@@ -334,7 +335,11 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-gray-500">
               <span>生命 <b className="text-gray-700">{hero.hp}</b>/{hero.maxHp}</span>
               <span>金币 <b className="text-amber-600">{hero.gold.toLocaleString()}</b></span>
-              <span>药水 <b className="text-gray-700">{hero.potions ?? 0}</b></span>
+              <span>药水 <b className="text-gray-700">{(() => {
+                const bag = useInventoryStore.getState().slots.reduce(
+                  (n, s) => (s && s.type === 'novelty' && (s.id.match(/回血\+(\d+)/) || s.id.match(/恢复(\d+)HP/)) ? n + s.qty : n), 0);
+                return bag + (hero.potions ?? 0);
+              })()}</b></span>
             </div>
           </div>
 

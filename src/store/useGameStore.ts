@@ -27,16 +27,30 @@ const DROP_TO_RESOURCE: Record<string, string> = {
 };
 let _autoBattleTimer: ReturnType<typeof setInterval> | null = null;
 
-// 自动药水：先买后喝（低于阈值时触发）
+/** 商店药水（购买后进背包格子） */
+export const SHOP_POTION_ID = '金疮药 [回血+20]';
+/** 背包杂货的回血量（与 InventoryTab 的 POTION_HP_TABLE 同一口径） */
+export function potionHealOf(id: string): number {
+  const m1 = id.match(/回血\+(\d+)/);
+  if (m1) return Number(m1[1]);
+  const m2 = id.match(/恢复(\d+)HP/);
+  if (m2) return Number(m2[1]);
+  return 0;
+}
+
+// 自动药水：先买后喝（低于阈值时触发；药水在背包格子里）
 function _autoPotionIfNeeded() {
   const { autoPotionThreshold } = useGameStore.getState();
   if (autoPotionThreshold <= 0) return;
   let h = useGameStore.getState().hero;
-  if (h.potions <= 0 && h.gold >= 25) {
+  const hasBagPotion = () => useInventoryStore.getState().slots.some(
+    (s) => s && s.type === 'novelty' && potionHealOf(s.id) > 0,
+  );
+  if (!hasBagPotion() && h.potions <= 0 && h.gold >= 25) {
     useGameStore.getState().buyPotion();
     h = useGameStore.getState().hero;
   }
-  if (h.potions > 0 && h.hp < h.maxHp * (autoPotionThreshold / 100)) {
+  if ((hasBagPotion() || h.potions > 0) && h.hp < h.maxHp * (autoPotionThreshold / 100)) {
     useGameStore.getState().usePotion();
   }
 }
@@ -461,13 +475,32 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   buyPotion: () => {
     const { hero } = get();
     if (hero.gold < 25) return false;
-    set((s) => ({ hero: { ...s.hero, gold: s.hero.gold - 25, potions: s.hero.potions + 1 } }));
-    get().addGameLog(`购买药水 x1（剩：${get().hero.potions} 瓶）`);
+    const inv = useInventoryStore.getState();
+    if (!inv.hasRoomFor(SHOP_POTION_ID, 1)) {
+      get().addGameLog('背包已满，买不下药水了');
+      return false;
+    }
+    set((s) => ({ hero: { ...s.hero, gold: s.hero.gold - 25 } }));
+    inv.addToInventory('novelty', SHOP_POTION_ID, 1);
+    get().addGameLog(`购买 ${SHOP_POTION_ID} ×1（放入背包）`);
     return true;
   },
 
   usePotion: () => {
     const { hero } = get();
+    // 优先从背包格子喝药水（金疮药 / 大补丹等带回血量的杂货）
+    const inv = useInventoryStore.getState();
+    const idx = inv.slots.findIndex((s) => s && s.type === 'novelty' && potionHealOf(s.id) > 0);
+    if (idx >= 0) {
+      const slot = inv.slots[idx]!;
+      const heal = Math.min(potionHealOf(slot.id), hero.maxHp - hero.hp);
+      if (heal <= 0) return false;
+      inv.removeFromInventory(idx, 1);
+      set((s) => ({ hero: { ...s.hero, hp: s.hero.hp + heal } }));
+      get().addGameLog(`使用 ${slot.id} +${heal} HP`);
+      return true;
+    }
+    // 回退：旧档的 hero.potions 计数
     if (hero.potions <= 0) return false;
     const heal = Math.min(20, hero.maxHp - hero.hp);
     if (heal <= 0) return false;
