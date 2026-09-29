@@ -32,7 +32,7 @@
 
 - 内容做成"数据驱动 + 运行时求值"，不要把文案和规则硬编码进组件。
 - NPC 生态：静态定义放 `src/data/npcEcology.ts`（手写覆盖 `NPC_ECO` + `buildEco()` 自动生成，`ecoDef()` 三层解析并缓存）；运行时状态放 `src/store/useNpcEcoStore.ts`；对话一律走 `src/engine/NpcDialogue.ts` 的条件引擎（作者规则 > 模板矩阵 > 兜底）。
-- 存档兼容：新增字段必须给默认值，老档能直接读；版本号在 `src/store/saveUtils.ts` 里递增并写迁移。
+- **不要求存档兼容**：口径大改时直接改 `src/store/saveUtils.ts` 的存档键/版本号，读档时版本不符就丢弃旧档开新档，**不写迁移代码**（见 `e327fb1`）。新增字段仍需给默认值，避免半写坏档。
 - 世界时间：1 游戏日 = `DAY_MS`（2 分钟真实时间），日推进时触发 NPC 自主行为与每日事件。
 
 ## legacy 区（死代码，勿引用）
