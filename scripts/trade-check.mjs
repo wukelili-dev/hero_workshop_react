@@ -109,6 +109,52 @@ if (fails.length > 0) {
   console.log('✓ 城市完整度与货架矩阵全部通过');
 }
 
+// ── M4 NPC 数量断言 ──
+console.log('');
+console.log('—— M4 城内 NPC 数量断言 ——');
+{
+  const npcsSrc = read('src/data/npcs.ts');
+  const npcIds = new Set();
+  {
+    const re = /^\s*id:\s*'([^']+)',\s*name:/gm;
+    let m;
+    while ((m = re.exec(npcsSrc)) !== null) npcIds.add(m[1]);
+  }
+  // 解析每城 npcIds 数量
+  const cityNpc = cities.map((c) => {
+    const npcBlock = citiesSrc.split(`id: '${c.id}'`)[1]?.split(/\n\s*\{\n\s*id:/)[0] ?? '';
+    const ids = [...npcBlock.matchAll(/'([^']+)'/g)].map((x) => x[1]);
+    // npcIds 字段行
+    const npcIdsLine = npcBlock.match(/npcIds:\s*\[([^\]]*)\]/)?.[1] ?? '';
+    const npcList = [...npcIdsLine.matchAll(/'([^']+)'/g)].map((x) => x[1]);
+    return { ...c, npcList };
+  });
+  const minNpc = { capital: 6, prefecture: 4, gate: 3, port: 3, tribal: 2, starter: 2 };
+  const rankById = new Map();
+  {
+    const blocks = citiesSrc.split(/\n\s*\{\n\s*id:/).slice(1);
+    for (const b of blocks) {
+      const id = b.match(/^\s*'([^']+)'/)?.[1];
+      const rank = b.match(/rank:\s*'([^']+)'/)?.[1];
+      if (id && rank) rankById.set(id, rank);
+    }
+  }
+  let npcOk = true;
+  for (const c of cityNpc) {
+    const need = minNpc[rankById.get(c.id)] ?? 2;
+    if (c.npcList.length < need) { console.log(`  ✗ ${c.name} NPC ${c.npcList.length} < 需 ${need}`); npcOk = false; }
+    for (const id of c.npcList) {
+      if (!npcIds.has(id)) { console.log(`  ✗ ${c.name} 的 NPC ${id} 不在 npcs.ts`); npcOk = false; }
+    }
+  }
+  if (npcOk) {
+    console.log('✓ 每城 NPC 数量达标，且所有 npcId 都在 npcs.ts 中');
+    console.log('  ' + cityNpc.map((c) => `${c.name}(${c.npcList.length})`).join(' '));
+  } else {
+    process.exitCode = 1;
+  }
+}
+
 // ── M3 价差验证：任意两城之间至少 5 条货存在 >18% 正价差 ──
 // 价差只看"地域×全城"（特产×0.7 / 需求×1.35 / 其他×1.0 × goodsScale），不含库存/事件/声望。
 console.log('');

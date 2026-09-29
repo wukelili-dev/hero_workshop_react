@@ -8,7 +8,10 @@ const REL_OWNER: Record<string, NpcRelation[]> = {
   changan_biaotou: [{ target: 'changan_tavern', type: 'lover', strength: 70, jealous: true }],
   // 老张头 × 孙二娘：西市老街坊
   changan_blacksmith: [{ target: 'changan_herbalist', type: 'friend', strength: 55 }],
-  changan_herbalist: [{ target: 'changan_blacksmith', type: 'friend', strength: 55 }],
+  changan_herbalist: [
+    { target: 'changan_blacksmith', type: 'friend', strength: 55 },
+    { target: 'yangguan_merchant', type: 'friend', strength: 45 },
+  ],
   // 魏征 × 唐太宗：君臣
   changan_weizheng: [{ target: 'changan_tangwang', type: 'colleague', strength: 80 }],
   changan_tangwang: [{ target: 'changan_weizheng', type: 'colleague', strength: 80 }],
@@ -16,6 +19,17 @@ const REL_OWNER: Record<string, NpcRelation[]> = {
   // 神秘老者 × 袁守城：旧怨
   changan_mysterious: [{ target: 'changan_fortune', type: 'rival', strength: -30 }],
   changan_fortune: [{ target: 'changan_mysterious', type: 'rival', strength: -30 }],
+  // ── 跨城关系（跑商人情线） ──
+  // 阳关胡商 × 长安商会掌柜（孙二娘）：旧识
+  yangguan_merchant: [{ target: 'changan_herbalist', type: 'friend', strength: 45 }],
+  // 洛阳大贾 × 益州牙人：生意伙伴；洛阳大贾 × 建邺织娘：供货关系
+  luoyang_merchant: [
+    { target: 'yizhou_broker', type: 'friend', strength: 50 },
+    { target: 'jianye_weaver', type: 'colleague', strength: 55 },
+  ],
+  yizhou_broker: [{ target: 'luoyang_merchant', type: 'friend', strength: 50 }],
+  // 建邺织娘 × 洛阳大贾：供货关系
+  jianye_weaver: [{ target: 'luoyang_merchant', type: 'colleague', strength: 55 }],
 };
 
 export function getRelationDef(a: string, b: string): NpcRelation | undefined {
@@ -373,6 +387,37 @@ export const NPC_ECO: Record<string, NpcEcoDef> = {
     dialogueRules: [
       { id: 'zhao_jealous', channel: 'greet', weight: 8, cooldownDays: 1, when: { relationAffinity: { target: 'changan_tavern', min: 60 } }, lines: ['（他打量你两眼）常去酒肆？那儿的酒，后劲大。'] },
       { id: 'zhao_hate', channel: 'greet', when: { bond: ['仇敌'] }, weight: 10, lines: ['（他手按在刀上，没拔）……你娶了她。往后镖局的镖，我另找人押。'] },
+    ],
+  },
+  // 洛阳大贾：行情人（花钱打听行情 + 生意经）
+  luoyang_merchant: {
+    traits: ['重利', '精算', '爱打听'],
+    voice: { tone: '市井', selfCall: '老夫', callPlayer: { stranger: '客官', acquaintance: '小友', close: '贤弟', spouse: '当家的' }, catchphrase: '东都的货，老夫心里有数' },
+    wallet: { base: 800, dailyIncome: 35 },
+    agenda: ['trade', 'gossip'],
+    dialogueRules: [
+      { id: 'ly_intel', channel: 'rumor', when: { affinity: { min: 20 } }, weight: 4, lines: ['「洛阳收蜀锦、珍珠、海盐。」${self}拨了拨算盘，「你在益州买蜀锦，贩到洛阳，一进一出利厚。」'] },
+      { id: 'ly_carry', channel: 'chat', when: { affinity: { min: 40 } }, weight: 3, lines: ['「你若带货来，${self}给你按老主顾的价。」'] },
+    ],
+  },
+  // 益州牙人：行情人 + 蜀道带路
+  yizhou_broker: {
+    traits: ['精算', '健谈'],
+    voice: { tone: '市井', selfCall: '某家', callPlayer: { stranger: '客官', acquaintance: '朋友', close: '贤弟', spouse: '当家的' }, catchphrase: '蜀中的货，某家都熟' },
+    wallet: { base: 500, dailyIncome: 25 },
+    agenda: ['trade', 'gossip'],
+    dialogueRules: [
+      { id: 'yz_intel', channel: 'rumor', when: { affinity: { min: 15 } }, weight: 4, lines: ['「蜀锦、井盐、川芎，蜀中便宜。」${self}压低声音，「贩到洛阳、长安，翻倍不止。」'] },
+    ],
+  },
+  // 扬州牙人：行情人
+  yangzhou_broker: {
+    traits: ['精算', '爱打听'],
+    voice: { tone: '市井', selfCall: '某家', callPlayer: { stranger: '客官', acquaintance: '朋友', close: '贤弟', spouse: '当家的' }, catchphrase: '扬州的码头，货如流水' },
+    wallet: { base: 450, dailyIncome: 22 },
+    agenda: ['trade', 'gossip'],
+    dialogueRules: [
+      { id: 'yzh_intel', channel: 'rumor', when: { affinity: { min: 15 } }, weight: 4, lines: ['「扬州收药材、山珍、内丹。」${self}说，「锦缎、海盐本地便宜。」'] },
     ],
   },
 };

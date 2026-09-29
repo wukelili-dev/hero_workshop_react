@@ -5,6 +5,7 @@
 import React, { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { getNpcsByMap, NPCS } from '../../data/npcs';
+import { cityAtCell } from '../../data/cities';
 import { allRelationPairs, NPC_SECRETS, relationsOf } from '../../data/npcEcology';
 import { useGameStore } from '../../store/useGameStore';
 import { useNpcEcoStore } from '../../store/useNpcEcoStore';
@@ -45,6 +46,7 @@ const H = 360;
 
 export const NpcEcology: React.FC = () => {
   const mapId = useGameStore((s) => s.currentMapId);
+  const currentCellId = useWorldStore((s) => s.currentCellId);
   const day = Math.floor(useWorldStore((s) => s.day));
   const states = useNpcEcoStore((s) => s.states);
   const events = useNpcEcoStore((s) => s.events);
@@ -58,7 +60,16 @@ export const NpcEcology: React.FC = () => {
   const [line, setLine] = useState<string | null>(null);
   const [giftFor, setGiftFor] = useState<string | null>(null);
 
-  const locals = useMemo(() => getNpcsByMap(mapId), [mapId]);
+  // 城内 NPC 列表：优先按当前城的 CityDef.npcIds（一城一群人），回退到按地图 id 匹配（旧逻辑）
+  const locals = useMemo(() => {
+    const here = cityAtCell(currentCellId);
+    if (here && here.npcIds.length > 0) {
+      const set = new Set(here.npcIds);
+      const fromIds = NPCS.filter((n) => set.has(n.id));
+      if (fromIds.length > 0) return fromIds;
+    }
+    return getNpcsByMap(mapId);
+  }, [currentCellId, mapId]);
   const nodes = useMemo(() => {
     const ids = new Set(locals.map((n) => n.id));
     allRelationPairs().forEach(({ a, b }) => {

@@ -1626,6 +1626,293 @@ export const NPCS: NpcDefinition[] = [
     tradeItems: [],
     personalItem: { name: '金鲤', icon: '🐟', description: '一条会发光的金色鲤鱼，似是灵物', sellPrice: 300 },
   },
+
+  // ═══════════════════════════════════════
+  // 洛阳（东都）· 城内 NPC
+  // ═══════════════════════════════════════
+  {
+    id: 'luoyang_merchant', name: '洛阳大贾', title: '商会掌柜', type: 'merchant', location: 'luoyang',
+    initialGold: 800, avatarEmoji: '🧮', stealDifficulty: 0.3,
+    description: '东都商会的总掌柜，柜台上一把算盘打得噼啪响。',
+    greetings: ['客官从西边来？长安的官绸，到了洛阳可就不是那个价了。', '洛阳的牡丹、唐三彩，出了河洛，翻着跟头涨。'],
+    chatDialogues: [
+      '他拨了拨算盘："东都洛阳，收蜀锦、珍珠、海盐。你在益州买蜀锦，贩到洛阳，一进一出利厚。"',
+      '"牡丹只在洛阳开得好。这花出了河洛就蔫，价却是一等一的贵。"',
+      '"河洛图书，文人雅士抢着要。你要是带几卷去南边，保准不亏。"',
+    ],
+    personalItem: { name: '河洛商册', icon: '📜', description: '记载洛阳行情的册子', sellPrice: 350 },
+  },
+  {
+    id: 'luoyang_poet', name: '洛阳才子', title: '诗社领袖', type: 'flavor', location: 'luoyang',
+    initialGold: 200, avatarEmoji: '📖', stealDifficulty: 0.1,
+    description: '一袭青衫的读书人，整日在牡丹花下吟诗。',
+    greetings: ['"唯有牡丹真国色，花开时节动京城。"', '足下可是来赏花的？'],
+    chatDialogues: [
+      '"洛阳纸贵，说的就是此地的书卷。你带书南贩，能换不少铜钱。"',
+      '"唐三彩，窑里出的宝贝。外乡人见了，眼睛都直。"',
+    ],
+    personalItem: { name: '洛阳诗稿', icon: '📜', description: '才子手书的诗稿', sellPrice: 120 },
+  },
+  {
+    id: 'luoyang_guard', name: '洛阳都尉', title: '东都守将', type: 'challenger', location: 'luoyang',
+    initialGold: 400, avatarEmoji: '🛡️', stealDifficulty: 0.5,
+    description: '东都城门的守将，甲胄齐整，目光如炬。',
+    greetings: ['东都重地，闲人勿扰。', '入城先验路引。'],
+    chatDialogues: ['"近来东都盘查严了，商队进出都得交验。"'],
+    challengeStats: { hp: 1800, atk: 75, def: 50 },
+    challengeReward: { exp: 40, gold: 50, message: '都尉抱拳："好汉武艺高强，某家佩服！"' },
+    personalItem: { name: '东都令牌', icon: '🎫', description: '东都城门通行令牌', sellPrice: 200 },
+  },
+  {
+    id: 'luoyang_innkeeper', name: '洛阳店小二', title: '客栈掌柜', type: 'merchant', location: 'luoyang',
+    initialGold: 300, avatarEmoji: '🍶', stealDifficulty: 0.2,
+    description: '洛阳客栈的掌柜，肩头搭着白巾，满脸堆笑。',
+    greetings: ['客官打尖还是住店？', '本店有上好的河洛陈酿。'],
+    chatDialogues: ['"外乡来的商人，都在本店打听行情。洛阳收什么、卖什么，问我准没错。"', '"南边来的药材，到了洛阳能翻倍。"'],
+    personalItem: { name: '洛阳陈酿', icon: '🍶', description: '河洛陈酿，一坛难求', sellPrice: 180 },
+  },
+  {
+    id: 'luoyang_porcelain', name: '唐三彩师傅', title: '窑匠', type: 'merchant', location: 'luoyang',
+    initialGold: 350, avatarEmoji: '🏺', stealDifficulty: 0.2,
+    description: '烧了一辈子唐三彩的老师傅，手上都是陶土。',
+    greetings: ['客官看这三彩，釉色可是河洛一绝。', '出窑的货，热乎着呢。'],
+    chatDialogues: ['"唐三彩出了河洛就稀罕。你贩到南边，值老鼻子钱。"', '"烧一窑要二十天，慢工出细活。"'],
+    personalItem: { name: '唐三彩骆驼', icon: '🐫', description: '三彩釉陶骆驼，河洛名物', sellPrice: 280 },
+  },
+  {
+    id: 'luoyang_scholar', name: '河洛书商', title: '书肆掌柜', type: 'merchant', location: 'luoyang',
+    initialGold: 320, avatarEmoji: '📚', stealDifficulty: 0.15,
+    description: '书肆里堆满了竹简与帛书，墨香扑鼻。',
+    greetings: ['客官要什么书？河洛图书，天下第一。', '书里有黄金屋。'],
+    chatDialogues: ['"河洛图书，出了洛阳就是稀罕货。益州、荆州都缺书。"', '"读书人走到哪，都得带几卷书。"'],
+    personalItem: { name: '河洛孤本', icon: '📜', description: '书肆珍藏的孤本', sellPrice: 400 },
+  },
+
+  // ═══════════════════════════════════════
+  // 益州（蜀中）· 城内 NPC
+  // ═══════════════════════════════════════
+  {
+    id: 'yizhou_broker', name: '蜀中牙人', title: '商行牙人', type: 'merchant', location: 'yizhou',
+    initialGold: 500, avatarEmoji: '🤝', stealDifficulty: 0.25,
+    description: '蜀中商行的牙人，撮合买卖，抽成过活。',
+    greetings: ['客官要出货还是进货？蜀中的货，我都熟。', '剑门关外的行情，问我就对了。'],
+    chatDialogues: [
+      '"蜀锦是蜀中的招牌，便宜。贩到洛阳、长安，翻倍不止。"',
+      '"井盐、川芎，都是蜀中特产。外头可没这个价。"',
+      '"蜀道难走，可越难走，货越值钱。"',
+    ],
+    personalItem: { name: '蜀中商帖', icon: '📜', description: '牙人手里的商帖', sellPrice: 300 },
+  },
+  {
+    id: 'yizhou_weaver', name: '蜀锦织娘', title: '锦官城织户', type: 'merchant', location: 'yizhou',
+    initialGold: 350, avatarEmoji: '🧵', stealDifficulty: 0.15,
+    description: '锦官城的织娘，手里一匹蜀锦，花色绚丽。',
+    greetings: ['客官看这蜀锦，一梭一线都是功夫。', '锦官城出的锦，天下无双。'],
+    chatDialogues: ['"蜀锦出了蜀，就贵。洛阳、建邺都抢着要。"'],
+    personalItem: { name: '蜀锦残匹', icon: '🧵', description: '织娘手边的蜀锦残匹', sellPrice: 260 },
+  },
+  {
+    id: 'yizhou_saltman', name: '井盐盐户', title: '盐户', type: 'merchant', location: 'yizhou',
+    initialGold: 280, avatarEmoji: '🧂', stealDifficulty: 0.2,
+    description: '打井取卤的盐户，盐粒雪白。',
+    greetings: ['客官看这井盐，粒粒如雪。', '蜀中的井盐，比海盐还细。'],
+    chatDialogues: ['"井盐是蜀中的宝。贩到缺盐的地方，利厚。"'],
+    personalItem: { name: '井盐一罐', icon: '🧂', description: '上等井盐', sellPrice: 120 },
+  },
+  {
+    id: 'yizhou_herbalist', name: '蜀中药商', title: '药铺掌柜', type: 'merchant', location: 'yizhou',
+    initialGold: 300, avatarEmoji: '🌿', stealDifficulty: 0.15,
+    description: '药铺里飘着川芎的辛香。',
+    greetings: ['客官抓药还是看货？', '蜀中的川芎，道地药材。'],
+    chatDialogues: ['"川芎是蜀中特产，外头药铺都来进。"'],
+    personalItem: { name: '川芎一包', icon: '🌿', description: '道地川芎', sellPrice: 150 },
+  },
+  {
+    id: 'yizhou_guide', name: '剑阁带路人', title: '脚夫', type: 'flavor', location: 'yizhou',
+    initialGold: 100, avatarEmoji: '🥾', stealDifficulty: 0.1,
+    description: '专门带人走剑阁蜀道的老脚夫，认得每一条栈道。',
+    greetings: ['客官要出蜀还是入蜀？剑阁的路，我熟。', '蜀道难，没个带路的，容易走岔。'],
+    chatDialogues: ['"剑阁的栈道，一夫当关。带上我，省你三天路。"'],
+    personalItem: { name: '蜀道图', icon: '🗺️', description: '手绘的蜀道地图', sellPrice: 220 },
+  },
+
+  // ═══════════════════════════════════════
+  // 荆州（荆楚）· 城内 NPC
+  // ═══════════════════════════════════════
+  {
+    id: 'jingzhou_lacquerer', name: '荆楚漆匠', title: '漆器坊主', type: 'merchant', location: 'jingzhou',
+    initialGold: 380, avatarEmoji: '🪵', stealDifficulty: 0.2,
+    description: '漆器坊里，一件件漆器光亮照人。',
+    greetings: ['客官看这漆器，荆楚一绝。', '漆要上七道，才成器。'],
+    chatDialogues: ['"荆楚漆器，出了荆楚就贵。益州、江南都来进货。"'],
+    personalItem: { name: '荆楚漆盘', icon: '🪵', description: '红黑漆盘，荆楚名物', sellPrice: 240 },
+  },
+  {
+    id: 'jingzhou_scribe', name: '竹简书吏', title: '书吏', type: 'merchant', location: 'jingzhou',
+    initialGold: 200, avatarEmoji: '📜', stealDifficulty: 0.1,
+    description: '案头堆满竹简，刀笔吏埋头刻字。',
+    greetings: ['客官要抄录什么？', '荆楚竹简，字字工整。'],
+    chatDialogues: ['"竹简轻便好带，贩到缺书的州府，值钱。"'],
+    personalItem: { name: '荆楚竹简', icon: '📜', description: '一捆新刻的竹简', sellPrice: 130 },
+  },
+  {
+    id: 'jingzhou_fisherman', name: '荆江渔夫', title: '渔户', type: 'merchant', location: 'jingzhou',
+    initialGold: 150, avatarEmoji: '🐟', stealDifficulty: 0.1,
+    description: '荆江边的渔夫，鱼篓里江鱼活蹦乱跳。',
+    greetings: ['客官看这江鱼，刚出水的。', '荆江的鱼，肥着呢。'],
+    chatDialogues: ['"江鱼鲜美，贩到洛阳、长安，能卖好价。"'],
+    personalItem: { name: '江鱼一篓', icon: '🐟', description: '荆江鲜鱼', sellPrice: 90 },
+  },
+  {
+    id: 'jingzhou_merchant', name: '荆楚行商', title: '行商', type: 'merchant', location: 'jingzhou',
+    initialGold: 320, avatarEmoji: '🐪', stealDifficulty: 0.2,
+    description: '九省通衢的行商，什么货都收，什么货都卖。',
+    greetings: ['荆州是九省通衢，客官要什么货？', '南北的货，都在荆州过手。'],
+    chatDialogues: ['"荆州收铁器、盐、书。你从北边贩铁器来，稳赚。"'],
+    personalItem: { name: '荆楚商册', icon: '📜', description: '记载荆楚行情的册子', sellPrice: 280 },
+  },
+
+  // ═══════════════════════════════════════
+  // 扬州（江都）· 城内 NPC
+  // ═══════════════════════════════════════
+  {
+    id: 'yangzhou_lacquerer', name: '扬州漆匠', title: '漆器坊主', type: 'merchant', location: 'yangzhou',
+    initialGold: 380, avatarEmoji: '🪵', stealDifficulty: 0.2,
+    description: '扬州漆器坊，螺钿嵌得流光溢彩。',
+    greetings: ['客官看这扬州漆器，螺钿嵌银。', '江都的漆，天下闻名。'],
+    chatDialogues: ['"扬州漆器、铜镜，出了江都就稀罕。"'],
+    personalItem: { name: '扬州漆盒', icon: '🪵', description: '螺钿漆盒，江都名物', sellPrice: 260 },
+  },
+  {
+    id: 'yangzhou_mirrormaker', name: '铜镜匠', title: '镜匠', type: 'merchant', location: 'yangzhou',
+    initialGold: 300, avatarEmoji: '🪞', stealDifficulty: 0.15,
+    description: '打磨铜镜的匠人，镜面光可鉴人。',
+    greetings: ['客官看这铜镜，磨得能照见人心。', '江都铜镜，一文不虚。'],
+    chatDialogues: ['"铜镜是扬州一绝。北边贵人都来求。"'],
+    personalItem: { name: '江都铜镜', icon: '🪞', description: '磨得锃亮的铜镜', sellPrice: 200 },
+  },
+  {
+    id: 'yangzhou_broker', name: '扬州牙人', title: '商行牙人', type: 'merchant', location: 'yangzhou',
+    initialGold: 450, avatarEmoji: '🤝', stealDifficulty: 0.25,
+    description: '扬州的牙人，专撮合南北大宗买卖。',
+    greetings: ['客官出货还是进货？扬州的码头，货如流水。', '烟花三月，扬州最热闹。'],
+    chatDialogues: ['"扬州收药材、山珍、妖兽内丹。你从北边贩药材来，利厚。"', '"扬州的锦缎、海盐便宜，贩到西边翻倍。"'],
+    personalItem: { name: '扬州商帖', icon: '📜', description: '扬州牙人的商帖', sellPrice: 320 },
+  },
+  {
+    id: 'yangzhou_boatman', name: '扬州船主', title: '漕船船主', type: 'merchant', location: 'yangzhou',
+    initialGold: 400, avatarEmoji: '⛵', stealDifficulty: 0.3,
+    description: '跑漕运的船主，一条大船横在码头。',
+    greetings: ['客官要运货？扬州的水路，四通八达。', '船上的货，昼夜不停。'],
+    chatDialogues: ['"水路运货比陆路快。你若有重货，走漕运最省。"'],
+    personalItem: { name: '漕运图', icon: '🗺️', description: '扬州水路的漕运图', sellPrice: 240 },
+  },
+
+  // ═══════════════════════════════════════
+  // 建邺（升州·江南门户）· 城内 NPC
+  // ═══════════════════════════════════════
+  {
+    id: 'jianye_weaver', name: '云锦织娘', title: '织造坊主', type: 'merchant', location: 'jianye',
+    initialGold: 400, avatarEmoji: '🧵', stealDifficulty: 0.2,
+    description: '建邺织造坊，云锦如云，吴绫似水。',
+    greetings: ['客官看这云锦，天工造物。', '建邺的云锦、吴绫，江南头一份。'],
+    chatDialogues: ['"云锦、吴绫，出了建邺就金贵。贩到洛阳、长安，翻倍不止。"'],
+    personalItem: { name: '云锦残匹', icon: '🧵', description: '织造坊的云锦残匹', sellPrice: 300 },
+  },
+  {
+    id: 'jianye_stone', name: '雨花石贩', title: '石商', type: 'merchant', location: 'jianye',
+    initialGold: 200, avatarEmoji: '🪨', stealDifficulty: 0.1,
+    description: '摊上摆满雨花石，晶莹剔透。',
+    greetings: ['客官看这雨花石，五色斑斓。', '建邺的雨花石，水里泡出来的。'],
+    chatDialogues: ['"雨花石是建邺特产，出了江南就少。"'],
+    personalItem: { name: '雨花石', icon: '🪨', description: '五色斑斓的雨花石', sellPrice: 130 },
+  },
+  {
+    id: 'jianye_potter', name: '青瓷窑匠', title: '窑匠', type: 'merchant', location: 'jianye',
+    initialGold: 320, avatarEmoji: '🏺', stealDifficulty: 0.15,
+    description: '青瓷窑前，一窑窑的青瓷泛着青光。',
+    greetings: ['客官看这青瓷，胎薄如纸。', '建邺青瓷，雨过天青。'],
+    chatDialogues: ['"青瓷出了江南就金贵。北边贵族争着要。"'],
+    personalItem: { name: '青瓷盏', icon: '🏺', description: '雨过天青的青瓷盏', sellPrice: 220 },
+  },
+  {
+    id: 'jianye_tea', name: '江南茶娘', title: '茶商', type: 'merchant', location: 'jianye',
+    initialGold: 250, avatarEmoji: '🍵', stealDifficulty: 0.1,
+    description: '茶香袅袅，江南的茶娘正在焙茶。',
+    greetings: ['客官喝碗茶？江南的茶，解乏。', '建邺的茶，江南一绝。'],
+    chatDialogues: ['"茶是建邺特产，贩到缺茶的西边，利厚。"'],
+    personalItem: { name: '江南春茶', icon: '🍵', description: '新焙的江南春茶', sellPrice: 150 },
+  },
+  {
+    id: 'jianye_boatman', name: '建邺船家', title: '渡口船家', type: 'flavor', location: 'jianye',
+    initialGold: 120, avatarEmoji: '🛶', stealDifficulty: 0.1,
+    description: '建邺渡口的船家，摇着乌篷船。',
+    greetings: ['客官要渡河？出建邺就是东海湾。', '建邺紧贴东海，走水路最便。'],
+    chatDialogues: ['"建邺是江南门户，出城就是东海渡口，直通龙宫。"'],
+    personalItem: { name: '乌篷船桨', icon: '🛶', description: '江南乌篷船的船桨', sellPrice: 80 },
+  },
+
+  // ═══════════════════════════════════════
+  // 大唐东 / 大唐南 / 花果山 / 五指山（非跑商据点 NPC）
+  // ═══════════════════════════════════════
+  {
+    id: 'dong_innkeeper', name: '东都客栈掌柜', title: '客栈掌柜', type: 'merchant', location: 'datangdong',
+    initialGold: 280, avatarEmoji: '🍶', stealDifficulty: 0.2,
+    description: '大唐东客栈的掌柜，迎来送往。',
+    greetings: ['客官打尖住店？', '东边来的商队，都在本店歇脚。'],
+    chatDialogues: ['"大唐东只是路过歇脚的地方，真要买卖，得去洛阳、扬州。"'],
+    personalItem: { name: '东都陈酿', icon: '🍶', description: '大唐东客栈的陈酿', sellPrice: 140 },
+  },
+  {
+    id: 'dong_guard', name: '大唐东校尉', title: '守城校尉', type: 'challenger', location: 'datangdong',
+    initialGold: 300, avatarEmoji: '🛡️', stealDifficulty: 0.4,
+    description: '大唐东的守城校尉。',
+    greetings: ['入城先验路引。', '大唐东重地。'],
+    challengeStats: { hp: 1600, atk: 70, def: 45 },
+    challengeReward: { exp: 35, gold: 40, message: '校尉抱拳："好汉！"' },
+    personalItem: { name: '东都令牌', icon: '🎫', description: '大唐东通行令牌', sellPrice: 180 },
+  },
+  {
+    id: 'nan_merchant', name: '大唐南商贩', title: '商贩', type: 'merchant', location: 'datangnan',
+    initialGold: 260, avatarEmoji: '🐪', stealDifficulty: 0.2,
+    description: '大唐南的商贩，什么货都倒腾。',
+    greetings: ['客官要什么货？南边的东西，我都有。', '大唐南是南来北往的集散地。'],
+    chatDialogues: ['"大唐南只做中转，真买卖得去荆州、益州。"'],
+    personalItem: { name: '南方货册', icon: '📜', description: '大唐南商贩的货册', sellPrice: 160 },
+  },
+  {
+    id: 'nan_innkeeper', name: '大唐南客栈掌柜', title: '客栈掌柜', type: 'merchant', location: 'datangnan',
+    initialGold: 260, avatarEmoji: '🍶', stealDifficulty: 0.2,
+    description: '大唐南客栈，南来北往的客商歇脚处。',
+    greetings: ['客官打尖住店？', '南边的客商，都在本店落脚。'],
+    chatDialogues: ['"大唐南是歇脚地，买卖得去荆州。"'],
+    personalItem: { name: '南方陈酿', icon: '🍶', description: '大唐南的陈酿', sellPrice: 140 },
+  },
+  {
+    id: 'nan_guard', name: '大唐南校尉', title: '守城校尉', type: 'challenger', location: 'datangnan',
+    initialGold: 300, avatarEmoji: '🛡️', stealDifficulty: 0.4,
+    description: '大唐南的守城校尉。',
+    greetings: ['入城先验路引。'],
+    challengeStats: { hp: 1600, atk: 70, def: 45 },
+    challengeReward: { exp: 35, gold: 40, message: '校尉抱拳："好汉！"' },
+    personalItem: { name: '南方令牌', icon: '🎫', description: '大唐南通行令牌', sellPrice: 180 },
+  },
+  {
+    id: 'huaguo_monkeymerchant', name: '猴妖商贩', title: '花果山商贩', type: 'merchant', location: 'huaguoshan',
+    initialGold: 220, avatarEmoji: '🐒', stealDifficulty: 0.3,
+    description: '花果山的猴妖商贩，用果子换些人间物事。',
+    greetings: ['吱吱，客官要换点什么？', '花果山的猴儿酒、灵果，都是好东西。'],
+    chatDialogues: ['"猴儿酒、九转灵果，是花果山的特产。你若要，得拿好东西换。"'],
+    personalItem: { name: '猴儿酒', icon: '🍶', description: '花果山猴儿酿的酒', sellPrice: 200 },
+  },
+  {
+    id: 'wuzhi_monk', name: '五指山僧', title: '守山僧人', type: 'flavor', location: 'wuzhishan',
+    initialGold: 100, avatarEmoji: '🧘', stealDifficulty: 0.1,
+    description: '守在五行山下的老僧，日日诵经。',
+    greetings: ['施主，五行山下，曾有猢狲被压五百年。', '施主来此，可是寻那旧事？'],
+    chatDialogues: ['"五指山是边地，只有悬赏可接，无买卖可做。"'],
+    personalItem: { name: '五行山经', icon: '📜', description: '老僧手抄的经卷', sellPrice: 100 },
+  },
 ];
 
 
