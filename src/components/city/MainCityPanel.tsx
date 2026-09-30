@@ -41,20 +41,20 @@ function formatCost(cost: Record<string, number>): React.ReactNode[] {
 // ── framer-motion 动画变体 ──
 const cardVariants: Variants = {
   hidden: { opacity: 0, y: 16 },
-  visible: (i: number) => ({
+  visible: {
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.06, duration: 0.35, ease: 'easeOut' },
-  }),
+    transition: { delay: 0.12, duration: 0.35, ease: 'easeOut' },
+  },
 };
 
 const resourceVariants: Variants = {
   hidden: { opacity: 0, x: -10 },
-  visible: (i: number) => ({
+  visible: {
     opacity: 1,
     x: 0,
-    transition: { delay: i * 0.05, duration: 0.3, ease: 'easeOut' },
-  }),
+    transition: { delay: 0.12, duration: 0.3, ease: 'easeOut' },
+  },
 };
 
 interface MainCityPanelProps {
@@ -160,7 +160,7 @@ export const MainCityPanel: React.FC<MainCityPanelProps> = ({ onOpenWorldMap }) 
   };
 
   return (
-    <div className="h-full overflow-y-auto p-3 space-y-4">
+    <div className="h-full overflow-y-auto p-2 space-y-2.5">
       {/* 资源区 */}
       <div>
         <div className="flex items-center justify-between mb-2">
@@ -232,7 +232,7 @@ export const MainCityPanel: React.FC<MainCityPanelProps> = ({ onOpenWorldMap }) 
                 initial="hidden"
                 animate="visible"
                 whileHover={{ scale: 1.015, boxShadow: '0 4px 20px rgba(59,130,246,0.12)' }}
-                className="bg-white rounded-xl border border-gray-200/80 p-2.5 cursor-default shadow-sm hover:border-blue-200/80 transition-colors duration-200"
+                className="bg-white rounded-xl border border-gray-200/80 p-2 cursor-default shadow-sm hover:border-blue-200/80 transition-colors duration-200"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-800">{name}</span>
@@ -269,7 +269,7 @@ export const MainCityPanel: React.FC<MainCityPanelProps> = ({ onOpenWorldMap }) 
                 initial="hidden"
                 animate="visible"
                 whileHover={isBuilt ? {} : { scale: 1.015, boxShadow: '0 4px 20px rgba(251,146,60,0.15)' }}
-                className={`rounded-xl border p-2.5 shadow-sm transition-colors duration-200 ${
+                className={`rounded-xl border p-2 shadow-sm transition-colors duration-200 ${
                   isBuilt
                     ? 'border-green-300 bg-gradient-to-r from-green-50/60 to-emerald-50/40 shadow-green-100/50'
                     : 'border-orange-200/80 bg-white hover:border-orange-300/80'

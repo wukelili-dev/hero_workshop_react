@@ -9,7 +9,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { Toaster, toast } from 'sonner';
 import { TopBar } from './TopBar';
 import { TabBar } from './TabBar';
-import { SideNav, type PageId } from './SideNav';
+import { SideNav, type PageId, type HeroTabId } from './SideNav';
 import { MainCityPanel } from '../city/MainCityPanel';
 import { CenterPanel } from '../city/CenterPanel';
 import { MarketPanel } from '../city/MarketPanel';
@@ -185,13 +185,13 @@ export const AppShell: React.FC = () => {
     const hereCity = cityAtCell(cellId);
     const marketCityId = hereCity?.id ?? 'changan';
     return (
-    <div className="flex h-full min-h-0 flex-col gap-2 p-3">
+    <div className="flex h-full min-h-0 flex-col gap-2 p-2">
       <div className="ink-panel ink-frame flex-shrink-0">
         <div className="ink-head">
           <h3 className="ink-title text-[15px]">城中铺子</h3>
           <span className="ink-tag ml-auto">买卖也可直接找城中商人</span>
         </div>
-        <div className="flex flex-wrap gap-2 p-3">
+        <div className="flex flex-wrap gap-2 p-2">
           {SHOPS.map((s) => (
             <button
               key={s.id}
@@ -203,7 +203,7 @@ export const AppShell: React.FC = () => {
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2 border-t border-[#8a7a63]/30 px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2 border-t border-[#8a7a63]/30 px-3 py-1.5">
           <span className="ink-tag">今日悬赏</span>
           {bounties.map((b) => {
             const got = killCounts?.[b.monsterId] ?? 0;
@@ -284,7 +284,7 @@ export const AppShell: React.FC = () => {
 
       {/* === 桌面端：左去处 / 中主视图 / 右日志 === */}
       <div className="hidden min-h-0 flex-1 overflow-hidden md:flex">
-        <SideNav page={page} onNavigate={setPage} />
+        <SideNav page={page} onNavigate={setPage} heroTab={heroTab as HeroTabId} onNavigateHero={(t) => { setPage('hero'); setHeroTab(t); }} />
         <motion.main
           key={page}
           initial={{ opacity: 0, y: 10 }}
@@ -292,10 +292,12 @@ export const AppShell: React.FC = () => {
           transition={{ duration: 0.25, ease: 'easeOut' }}
           className="min-w-0 flex-1 overflow-hidden"
         >
-          {renderMain()}
+          <div className="mx-auto h-full w-full max-w-[1120px]">
+            {renderMain()}
+          </div>
         </motion.main>
         {page !== 'map' && (
-          <aside className="hidden w-[320px] flex-shrink-0 flex-col overflow-hidden border-l border-[#8a7a63]/45 bg-[#faf6ea]/60 xl:flex">
+          <aside className="hidden w-[260px] flex-shrink-0 flex-col overflow-hidden border-l border-[#8a7a63]/45 bg-[#faf6ea]/60 lg:flex">
             <GameLogPanel />
           </aside>
         )}

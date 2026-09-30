@@ -75,7 +75,7 @@ export const CenterPanel: React.FC = () => {
   ];
 
   return (
-    <div className="h-full overflow-y-auto p-3 space-y-3">
+    <div className="h-full overflow-y-auto p-2 space-y-2.5">
       {/* 队伍标签栏 */}
       <div className="flex items-center gap-2">
         <span className="text-sm font-bold text-gray-700 flex items-center gap-1"><FaUsers /> 队伍</span>
@@ -100,7 +100,7 @@ export const CenterPanel: React.FC = () => {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
-        className="ink-panel ink-frame rounded-xl p-3 space-y-2"
+        className="ink-panel ink-frame rounded-xl p-2 space-y-2"
       >
         <div className="flex items-center gap-2">
           <span className="text-lg">🧙</span>
@@ -219,7 +219,7 @@ export const CenterPanel: React.FC = () => {
         initial="hidden"
         animate="visible"
         transition={{ delay: 0.15 }}
-        className="ink-panel ink-frame rounded-xl p-3"
+        className="ink-panel ink-frame rounded-xl p-2"
       >
         <div className="text-xs font-bold text-[#3f3527] flex items-center gap-1 mb-2">
           <FaBagShopping /> 背包
