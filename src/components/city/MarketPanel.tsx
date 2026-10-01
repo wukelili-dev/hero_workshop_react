@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { useWorldStore } from '../../store/useWorldStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { useGameStore } from '../../store/useGameStore';
-import { priceOf, contrabandPrice, carryCapacity, cargoWeight, freeCapacity, isIntelStale, recordTradeProfit } from '../../engine/Trade';
+import { priceOf, contrabandPrice, carryCapacity, cargoWeight, freeCapacity, isIntelStale, recordTradeProfit, adjustStockCapped } from '../../engine/Trade';
 import { markRumorFollowed, credibilityText } from '../../engine/Rumor';
 import { addRep } from '../../engine/FactionSystem';
 import { goodOf, TRADE_GOODS } from '../../data/tradeGoods';
@@ -89,8 +89,8 @@ export const MarketPanel: React.FC<{ cityId: string }> = ({ cityId }) => {
     if (good.weight * n > free) { toast.error('运力不足'); return; }
     game.addGold(-total);
     useInventoryStore.getState().addCargo(goodId, n);
-    // 买走货物 → 库存下降 → 价涨；同时标记相关流言"已跟单"
-    useWorldStore.getState().adjustMarketStock(cityId, goodId, -n);
+    // 买走货物 → 库存下降 → 价涨；单日冲击封顶；同时标记相关流言"已跟单"
+    adjustStockCapped(cityId, goodId, -n);
     markRumorFollowed(cityId, goodId);
     toast.success(`购入 ${good.name} ×${n}，花 ${total} 金（你抬高了本城价）`, { icon: '🧺' });
   };
@@ -108,8 +108,8 @@ export const MarketPanel: React.FC<{ cityId: string }> = ({ cityId }) => {
     const total = unit * n;
     useInventoryStore.getState().removeCargo(goodId, n);
     useGameStore.getState().addGold(total);
-    // 倾销 → 库存上升 → 价降；同时标记相关流言"已跟单"
-    useWorldStore.getState().adjustMarketStock(cityId, goodId, n);
+    // 倾销 → 库存上升 → 价降；单日冲击封顶；同时标记相关流言"已跟单"
+    adjustStockCapped(cityId, goodId, n);
     markRumorFollowed(cityId, goodId);
     if (isContraband && city.factionId) {
       addRep(city.factionId, -8);

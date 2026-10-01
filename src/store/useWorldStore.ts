@@ -65,6 +65,8 @@ export interface WorldSave {
   marketIntel: { cityId: string; goodId: string; price: number; day: number }[];
   /** 每日波动漂移因子：key = `${cityId}:${goodId}` → drift（-DRIFT_CAP ~ +DRIFT_CAP） */
   drift: Record<string, number>;
+  /** 单日库存冲击记录：key = `${cityId}:${goodId}` → { day, total }（当日累计净冲击，供 DAILY_IMPACT_CAP 封顶） */
+  dailyStockImpact: Record<string, { day: number; total: number }>;
   /** 城内流言 */
   rumors: import('../types').Rumor[];
   /** NPC 消息信誉：npcId → { hits, misses }（应验/落空计数） */
@@ -152,6 +154,7 @@ const DEFAULT_WORLD: WorldState = {
   marketStock: {},
   marketIntel: [],
   drift: {},
+  dailyStockImpact: {},
   rumors: [],
   npcCredibility: {},
   chronicle: [],
@@ -278,6 +281,7 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
       marketStock: (data as WorldSave & { marketStock?: Record<string, number> }).marketStock ?? {},
       marketIntel: (data as WorldSave & { marketIntel?: { cityId: string; goodId: string; price: number; day: number }[] }).marketIntel ?? [],
       drift: (data as WorldSave & { drift?: Record<string, number> }).drift ?? {},
+      dailyStockImpact: (data as WorldSave & { dailyStockImpact?: Record<string, { day: number; total: number }> }).dailyStockImpact ?? {},
       rumors: (data as WorldSave & { rumors?: import('../types').Rumor[] }).rumors ?? [],
       npcCredibility: (data as WorldSave & { npcCredibility?: Record<string, { hits: number; misses: number }> }).npcCredibility ?? {},
       chronicle: (data as WorldSave & { chronicle?: ChronicleEntry[] }).chronicle ?? [],

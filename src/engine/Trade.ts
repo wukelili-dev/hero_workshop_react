@@ -12,7 +12,7 @@
 import { goodOf, TRADE_GOODS } from '../data/tradeGoods';
 import { cityById, isSpecialty, isDemand, stockTargetOf, tradeCities } from '../data/cities';
 import { cityOf } from '../data/regions';
-import { K_SD, SD_MIN, SD_MAX, VOLATILITY_BASE, DRIFT_DECAY, DRIFT_CAP, STOCK_RECOVER } from '../data/marketTuning';
+import { K_SD, SD_MIN, SD_MAX, VOLATILITY_BASE, DRIFT_DECAY, DRIFT_CAP, STOCK_RECOVER, DAILY_IMPACT_CAP } from '../data/marketTuning';
 import { repOf } from './FactionSystem';
 import { record } from './Chronicle';
 import { advanceRumors, settleRumors } from './Rumor';
@@ -36,6 +36,40 @@ export function supplyDemandMult(cityId: string, goodId: string, stockDeviation:
   const target = stockTargetOf(cityId, goodId);
   if (target <= 0) return 1;
   return clamp(1 - K_SD * (stockDeviation / target), SD_MIN, SD_MAX);
+}
+
+/**
+ * 带「单日单货价格影响上限」的库存调整（E 补齐）。
+ * 单日累计净冲击导致的供需系数偏离封顶 DAILY_IMPACT_CAP（建议 ±35%），
+ * 防止一回合把价格打穿；跨天自动重置当日累计。
+ *
+ * 上限换算：供需系数偏离 = K_SD × (Δstock/target) ≤ DAILY_IMPACT_CAP
+ *           → Δstock 上限 = target × DAILY_IMPACT_CAP / K_SD
+ */
+export function adjustStockCapped(cityId: string, goodId: string, delta: number): number {
+  const world = useWorldStore.getState();
+  const key = `${cityId}:${goodId}`;
+  const day = Math.floor(world.day);
+  const target = stockTargetOf(cityId, goodId);
+  const cap = target > 0 ? (target * DAILY_IMPACT_CAP) / K_SD : Infinity;
+
+  const rec = world.dailyStockImpact[key];
+  const sameDay = rec && rec.day === day;
+  const accumulated = sameDay ? rec.total : 0;
+
+  // 剩余可冲击量（按方向累计净冲击的绝对值封顶）
+  const remaining = Math.max(0, cap - Math.abs(accumulated));
+  let applied = delta;
+  if (Math.abs(delta) > remaining) {
+    applied = (delta >= 0 ? 1 : -1) * remaining;
+  }
+
+  const next = Math.max(-1000, Math.min(1000, (world.marketStock[key] ?? 0) + applied));
+  useWorldStore.setState((s) => ({
+    marketStock: { ...s.marketStock, [key]: next },
+    dailyStockImpact: { ...s.dailyStockImpact, [key]: { day, total: (sameDay ? accumulated : 0) + applied } },
+  }));
+  return next;
 }
 
 /** 当日世界事件倍率（集市/丰饶/妖气），缺省 1.0 */
@@ -163,8 +197,8 @@ export function buyAtCity(cityId: string, goodId: string, qty: number, _day: num
   if (game.hero.gold < total) return null;
   game.addGold(-total);
   useInventoryStore.getState().addCargo(goodId, qty);
-  // 买走货物 → 库存下降（偏离 -qty）→ 价涨
-  useWorldStore.getState().adjustMarketStock(cityId, goodId, -qty);
+  // 买走货物 → 库存下降（偏离 -qty）→ 价涨；单日冲击封顶
+  adjustStockCapped(cityId, goodId, -qty);
   return { unitPrice, total, over: false };
 }
 
@@ -174,8 +208,8 @@ export function sellAtCity(cityId: string, goodId: string, qty: number, _day: nu
   const total = unitPrice * qty;
   useInventoryStore.getState().removeCargo(goodId, qty);
   useGameStore.getState().addGold(total);
-  // 倾销 → 库存上升（偏离 +qty）→ 降价
-  useWorldStore.getState().adjustMarketStock(cityId, goodId, qty);
+  // 倾销 → 库存上升（偏离 +qty）→ 降价；单日冲击封顶
+  adjustStockCapped(cityId, goodId, qty);
   return { unitPrice, total };
 }
 

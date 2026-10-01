@@ -32,7 +32,7 @@ try {
   const { useWorldStore } = world;
   const { hash01, hashInt } = hash;
 
-  const reset = () => useWorldStore.setState({ day: 1, marketStock: {}, drift: {}, rumors: [], npcCredibility: {} });
+  const reset = () => useWorldStore.setState({ day: 1, marketStock: {}, drift: {}, dailyStockImpact: {}, rumors: [], npcCredibility: {} });
 
   // ═══ E1：供需库存 ═══
   console.log('—— E1 供需库存 ——');
@@ -71,6 +71,17 @@ try {
   const recoverDev = (afterRecover - baseBefore) / baseBefore;
   console.log(`回弹：买空后 ${afterBuy} → 5 天后 ${afterRecover}（偏离 ${pct(recoverDev)}，基准 ${baseBefore}）`);
   ok(Math.abs(recoverDev) <= 0.10, `5 天后应回到基准 ±10%，实际偏离 ${pct(recoverDev)}`);
+
+  // 单日冲击封顶：一天内疯狂买，价格影响封顶 ±35%
+  reset();
+  const cappedBase = priceOf(spGoodId, 'changan', { side: 'buy' });
+  for (let i = 0; i < 50; i++) {
+    Trade.adjustStockCapped('changan', spGoodId, -50); // 反复买走 50 件
+  }
+  const cappedPrice = priceOf(spGoodId, 'changan', { side: 'buy' });
+  const cappedRise = (cappedPrice - cappedBase) / cappedBase;
+  console.log(`单日疯狂买入后：${cappedBase} → ${cappedPrice}（单日影响 ${pct(cappedRise)}，应 ≤35%）`);
+  ok(cappedRise <= 0.36, `单日价格影响应封顶 ≤35%，实际 ${pct(cappedRise)}`);
 
   // ═══ E2：每日波动 ═══
   console.log('');
