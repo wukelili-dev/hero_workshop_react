@@ -83,7 +83,8 @@ export const MarketPanel: React.FC<{ cityId: string }> = ({ cityId }) => {
     if (good.weight * n > free) { toast.error('运力不足'); return; }
     game.addGold(-total);
     useInventoryStore.getState().addCargo(goodId, n);
-    useWorldStore.getState().adjustMarketStock(cityId, goodId, n);
+    // 买走货物 → 库存下降 → 价涨
+    useWorldStore.getState().adjustMarketStock(cityId, goodId, -n);
     toast.success(`购入 ${good.name} ×${n}，花 ${total} 金（你抬高了本城价）`, { icon: '🧺' });
   };
 
@@ -100,7 +101,8 @@ export const MarketPanel: React.FC<{ cityId: string }> = ({ cityId }) => {
     const total = unit * n;
     useInventoryStore.getState().removeCargo(goodId, n);
     useGameStore.getState().addGold(total);
-    useWorldStore.getState().adjustMarketStock(cityId, goodId, -n);
+    // 倾销 → 库存上升 → 价降
+    useWorldStore.getState().adjustMarketStock(cityId, goodId, n);
     if (isContraband && city.factionId) {
       addRep(city.factionId, -8);
       toast.success(`售出违禁品 ${good.name} ×${n}，得 ${total} 金；${city.name} 势力声望下降`, { icon: '⚠️' });

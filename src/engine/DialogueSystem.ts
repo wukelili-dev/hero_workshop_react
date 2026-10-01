@@ -15,7 +15,7 @@ import { useInventoryStore } from '../store/useInventoryStore';
 import { nameOf } from './NpcAutonomy';
 import { factionName } from '../data/factions';
 import { inquirePrice } from './Trade';
-import { goodName } from './Market';
+import { goodName } from '../data/tradeGoods';
 import { cityOf } from '../data/regions';
 import type {
   ChatTopic, DialogueNode, DialogueOption, DialogueTree, NpcDefinition, WorldEffect,

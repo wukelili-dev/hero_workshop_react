@@ -187,3 +187,16 @@ export function isSpecialty(cityId: string, goodId: string): boolean {
 export function isDemand(cityId: string, goodId: string): boolean {
   return cityById(cityId)?.demands.includes(goodId) ?? false;
 }
+
+// ── 基准库存（供需系统 target，E1） ──
+import { TARGET_SPECIALTY, TARGET_NORMAL, TARGET_DEMAND } from './marketTuning';
+
+/**
+ * 某城某货的基准库存（target）：特产货多、需求货少、普通居中。
+ * 供需系数 = clamp(1 - K_SD × (stock - target)/target, SD_MIN, SD_MAX)。
+ */
+export function stockTargetOf(cityId: string, goodId: string): number {
+  if (isSpecialty(cityId, goodId)) return TARGET_SPECIALTY;
+  if (isDemand(cityId, goodId)) return TARGET_DEMAND;
+  return TARGET_NORMAL;
+}

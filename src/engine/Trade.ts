@@ -9,9 +9,10 @@
  * 价格唯一出口：priceOf(goodId, cityId, { side }) —— 所有买卖价只走这里，禁止组件散写定价。
  * 净收益 = 卖价 − 买价 − 路费/税 − 风险损失；随距离与价差正相关；超载禁止出发。
  */
-import { goodOf } from '../data/tradeGoods';
-import { cityById, isSpecialty, isDemand } from '../data/cities';
+import { goodOf, TRADE_GOODS } from '../data/tradeGoods';
+import { cityById, isSpecialty, isDemand, stockTargetOf, tradeCities } from '../data/cities';
 import { cityOf } from '../data/regions';
+import { K_SD, SD_MIN, SD_MAX, VOLATILITY_BASE, DRIFT_DECAY, DRIFT_CAP, STOCK_RECOVER } from '../data/marketTuning';
 import { repOf } from './FactionSystem';
 import { record } from './Chronicle';
 import { sum as sumEffect } from './ItemEffects';
@@ -20,7 +21,21 @@ import { useInventoryStore } from '../store/useInventoryStore';
 import { useGameStore } from '../store/useGameStore';
 import { useWorldStore } from '../store/useWorldStore';
 import { useNpcStore } from '../store/useNpcStore';
-import { effectivePrice, buyGood, sellGood } from './Market';
+
+function clamp(v: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, v));
+}
+
+/**
+ * 供需系数：由"库存偏离 vs 基准库存"决定。
+ * stock 为偏离值（正=积压、负=稀缺），target 为基准库存。
+ * 买空 → 偏离变负 → 系数 >1 涨价；倾销 → 偏离变正 → 系数 <1 降价。
+ */
+export function supplyDemandMult(cityId: string, goodId: string, stockDeviation: number): number {
+  const target = stockTargetOf(cityId, goodId);
+  if (target <= 0) return 1;
+  return clamp(1 - K_SD * (stockDeviation / target), SD_MIN, SD_MAX);
+}
 
 /** 当日世界事件倍率（集市/丰饶/妖气），缺省 1.0 */
 export function dailyEventMult(day: number): number {
@@ -36,15 +51,16 @@ export function dailyEventMult(day: number): number {
  * 唯一价格出口。只对 8 座跑商城（CityDef.trade === true）有效；
  * 非跑商据点返回 null（拒绝报价，避免顺手给大唐东也接上买卖）。
  *
- * 公式：
- *   基准 = basePrice
- *   地域 = 特产×0.70 ｜ 需求×1.35 ｜ 其他×1.00
- *   全城 = city.goodsScale
- *   库存 = 1 + marketStock×0.02（±50）
- *   事件 = dailyEventMult
- *   声望 = 1 - min(0.15, factionRep/1000 + 城内亲密度/2000)
- *   买价 = round(基准×地域×全城×库存×事件×声望)
- *   卖价 = round(...×0.85)
+ * 公式（§2，系数集中 marketTuning）：
+ *   基准   = basePrice
+ *   地域   = 特产×0.70 ｜ 需求×1.35 ｜ 其他×1.00（isSpecialty/isDemand）
+ *   全城   = city.goodsScale
+ *   供需   = supplyDemandMult（库存偏离 vs 基准库存，SD_MIN~SD_MAX）
+ *   波动   = 1 + drift（每日 AR(1) 漂移，E2）
+ *   事件   = dailyEventMult
+ *   声望   = 1 - min(0.15, factionRep/1000 + 城内亲密度/2000)
+ *   买价   = round(基准×地域×全城×供需×波动×事件×声望)
+ *   卖价   = round(...×0.85)
  */
 export function priceOf(goodId: string, cityId: string, opts?: { side: 'buy' | 'sell' }): number | null {
   const city = cityById(cityId);
@@ -61,9 +77,13 @@ export function priceOf(goodId: string, cityId: string, opts?: { side: 'buy' | '
   if (isSpecialty(cityId, goodId)) region = 0.7;
   else if (isDemand(cityId, goodId)) region = 1.35;
 
-  // 库存
+  // 供需：库存偏离 vs 基准库存
   const stock = useWorldStore.getState().getMarketStock(cityId, goodId);
-  const stockMult = 1 + stock * 0.02;
+  const sdMult = supplyDemandMult(cityId, goodId, stock);
+
+  // 每日波动（E2）
+  const drift = useWorldStore.getState().drift[`${cityId}:${goodId}`] ?? 0;
+  const driftMult = 1 + drift;
 
   // 声望：势力声望 + 城内亲密度
   let repDiscount = 0;
@@ -80,7 +100,8 @@ export function priceOf(goodId: string, cityId: string, opts?: { side: 'buy' | '
   const raw = good.basePrice
     * region
     * city.goodsScale
-    * stockMult
+    * sdMult
+    * driftMult
     * dailyEventMult(day)
     * repMult
     * (side === 'sell' ? 0.85 : 1.0);
@@ -127,8 +148,8 @@ export function freeCapacity(): number {
   return Math.max(0, carryCapacity() - cargoWeight());
 }
 
-/** 买入：校验运力，超载返回 null */
-export function buyAtCity(cityId: string, goodId: string, qty: number, day: number): { unitPrice: number; total: number; over: boolean } | null {
+/** 买入：校验运力，超载返回 null；成交后按数量写库存（买走 → 库存偏离变负 → 涨价） */
+export function buyAtCity(cityId: string, goodId: string, qty: number, _day: number): { unitPrice: number; total: number; over: boolean } | null {
   const good = goodOf(goodId);
   if (!good) return null;
   const need = good.weight * qty;
@@ -136,19 +157,30 @@ export function buyAtCity(cityId: string, goodId: string, qty: number, day: numb
     return { unitPrice: 0, total: 0, over: true };
   }
   const game = useGameStore.getState();
-  const { unitPrice, total } = buyGood(cityId, goodId, qty, day);
+  const unitPrice = priceOf(goodId, cityId, { side: 'buy' }) ?? 0;
+  const total = unitPrice * qty;
   if (game.hero.gold < total) return null;
   game.addGold(-total);
   useInventoryStore.getState().addCargo(goodId, qty);
+  // 买走货物 → 库存下降（偏离 -qty）→ 价涨
+  useWorldStore.getState().adjustMarketStock(cityId, goodId, -qty);
   return { unitPrice, total, over: false };
 }
 
-/** 卖出：结算当前价，清空 cargo */
-export function sellAtCity(cityId: string, goodId: string, qty: number, day: number): { unitPrice: number; total: number } {
-  const { unitPrice, total } = sellGood(cityId, goodId, qty, day);
+/** 卖出：结算当前价，清空 cargo；成交后按数量写库存（倾销 → 偏离变正 → 降价） */
+export function sellAtCity(cityId: string, goodId: string, qty: number, _day: number): { unitPrice: number; total: number } {
+  const unitPrice = priceOf(goodId, cityId, { side: 'sell' }) ?? 0;
+  const total = unitPrice * qty;
   useInventoryStore.getState().removeCargo(goodId, qty);
   useGameStore.getState().addGold(total);
+  // 倾销 → 库存上升（偏离 +qty）→ 降价
+  useWorldStore.getState().adjustMarketStock(cityId, goodId, qty);
   return { unitPrice, total };
+}
+
+/** 某城某货的当前价（情报/风险估值统一走 priceOf 的买价口径） */
+export function effectivePrice(cityId: string, goodId: string, _day: number): number {
+  return priceOf(goodId, cityId, { side: 'buy' }) ?? 0;
 }
 
 // ── 路线风险 ──
@@ -279,4 +311,59 @@ export function isIntelStale(intel: MarketIntel, currentDay: number): boolean {
 /** 打听某城某货的真实报价（intel 节点会调用） */
 export function inquirePrice(cityId: string, goodId: string, day: number): MarketIntel {
   return { cityId, goodId, price: effectivePrice(cityId, goodId, day), day };
+}
+
+// ── 整城货架快照（原 Market.cityMarket 迁入，唯一价格口径） ──
+
+export interface MarketQuote {
+  cityId: string;
+  goodId: string;
+  day: number;
+  price: number;
+}
+
+/** 城市市场一览：列出所有货物当日买价（唯一走 priceOf） */
+export function cityMarket(cityId: string, day: number): MarketQuote[] {
+  return TRADE_GOODS
+    .filter((g) => g.category !== 'contraband')
+    .map((g) => ({ cityId, goodId: g.id, day, price: priceOf(g.id, cityId, { side: 'buy' }) ?? 0 }));
+}
+
+// ── 每日结算（波动 + 回弹；挂 applyDayCrossing，一次跨 N 天结算 N 次） ──
+
+/** 确定性近似正态（3 次均匀和），用 hash01 保证同日同城同货稳定 */
+function gauss01(seed: string): number {
+  // 3 个 [0,1) 均匀值之和 → 均值 1.5，减 1.5 后近似 N(0, ~0.5)
+  const u = hash01(`${seed}:0`) + hash01(`${seed}:1`) + hash01(`${seed}:2`);
+  return (u - 1.5) / 0.5; // 归一化到近似标准正态
+}
+
+/**
+ * 推进市场 N 天（每次跨整数天调用 N 次）。
+ * 每天：① 波动 drift 做 AR(1) 漂移；② 库存偏离向 0 回弹；③ 流言生成/过期（E3 由 Rumor 挂接）。
+ */
+export function advanceMarketDays(days: number): void {
+  const world = useWorldStore.getState();
+  const day = Math.floor(world.day);
+  const drift = { ...world.drift };
+  const stock = { ...world.marketStock };
+
+  for (let i = 0; i < days; i++) {
+    const curDay = day - days + i + 1; // 逐日推进（第 N 天）
+    for (const city of tradeCities()) {
+      for (const g of TRADE_GOODS) {
+        const key = `${city.id}:${g.id}`;
+        // ① 波动：AR(1)
+        const sigma = VOLATILITY_BASE * g.volatility;
+        const prev = drift[key] ?? 0;
+        const next = clamp(prev * DRIFT_DECAY + gauss01(`${curDay}:${key}:drift`) * sigma, -DRIFT_CAP, DRIFT_CAP);
+        drift[key] = next;
+        // ② 回弹：偏离向 0 回归
+        const cur = stock[key] ?? 0;
+        stock[key] = cur * (1 - STOCK_RECOVER);
+      }
+    }
+  }
+
+  useWorldStore.setState({ drift, marketStock: stock });
 }

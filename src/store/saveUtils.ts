@@ -14,9 +14,9 @@ import { useNpcEcoStore } from './useNpcEcoStore';
 
 // 存档键 + 版本：口径大改（战斗/属性/装备/加点）时不迁移旧档，直接换键开新档。
 // 旧键会在一处统一清掉，避免占用 localStorage。
-const SAVE_KEY = 'hero_workshop_save_v4';
-const SAVE_VERSION = 'v4';
-const LEGACY_SAVE_KEYS = ['hero_workshop_save_v1', 'hero_workshop_save_v2', 'hero_workshop_save_v3'];
+const SAVE_KEY = 'hero_workshop_save_v5';
+const SAVE_VERSION = 'v5';
+const LEGACY_SAVE_KEYS = ['hero_workshop_save_v1', 'hero_workshop_save_v2', 'hero_workshop_save_v3', 'hero_workshop_save_v4'];
 
 export interface SaveMeta {
   version: string;

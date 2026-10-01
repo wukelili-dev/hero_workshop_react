@@ -10,6 +10,7 @@ import { useGameStore } from './useGameStore';
 import { useInventoryStore } from './useInventoryStore';
 import { advanceNpcDay } from '../engine/NpcAutonomy';
 import { tickVisits } from '../engine/VisitSystem';
+import { advanceMarketDays } from '../engine/Trade';
 import { sum as sumEffect } from '../engine/ItemEffects';
 import { regionOfCell, gateBetween, type RegionGate } from '../data/regions';
 import type { ChronicleEntry, Consequence, PendingVisit, PlaceState } from '../types';
@@ -23,8 +24,13 @@ export const START_CELL_ID = 'cp_9_2';
  * advanceDays()、moveTo() 都会调用它。
  */
 function applyDayCrossing(from: number, to: number): void {
-  if (Math.floor(to) <= Math.floor(from)) return;
-  const d = Math.floor(to);
+  const fromInt = Math.floor(from);
+  const toInt = Math.floor(to);
+  if (toInt <= fromInt) return;
+  const days = toInt - fromInt;
+  // 市场逐日结算：一次跨 N 天就结算 N 次（波动/回弹/流言）
+  advanceMarketDays(days);
+  const d = toInt;
   advanceNpcDay(d);
   tickVisits(d);
   useWorldStore.getState().pruneConsequences(d);
@@ -53,10 +59,16 @@ export interface WorldSave {
   consequences: Consequence[];
   /** 玩家对每个势力的声望 */
   factionRep: Record<string, number>;
-  /** 市场库存（跑商价格冲击）：key = `${cityId}:${goodId}` → 偏离基准的存量 */
+  /** 市场库存偏离（跑商供需）：key = `${cityId}:${goodId}` → 相对 target 的偏离（正=积压，负=稀缺） */
   marketStock: Record<string, number>;
   /** 打听到的行情情报（3 天过期） */
   marketIntel: { cityId: string; goodId: string; price: number; day: number }[];
+  /** 每日波动漂移因子：key = `${cityId}:${goodId}` → drift（-DRIFT_CAP ~ +DRIFT_CAP） */
+  drift: Record<string, number>;
+  /** 城内流言 */
+  rumors: import('../types').Rumor[];
+  /** NPC 消息信誉：npcId → { hits, misses }（应验/落空计数） */
+  npcCredibility: Record<string, { hits: number; misses: number }>;
   /** 世界叙事台账（回声层：玩家行为史） */
   chronicle: ChronicleEntry[];
   /** 地方状态（城市/区域记忆） */
@@ -84,7 +96,7 @@ interface WorldActions {
   pruneConsequences: (day: number) => void;
   addFactionRep: (factionId: string, delta: number) => void;
   getFactionRep: (factionId: string) => number;
-  /** 调整某城某货的库存（正=买入推高价格，负=卖出压低），并返回新库存 */
+  /** 调整某城某货的库存偏离（正=积压，负=稀缺），并返回新偏离值 */
   adjustMarketStock: (cityId: string, goodId: string, delta: number) => number;
   getMarketStock: (cityId: string, goodId: string) => number;
   /** 记录一条行情情报（同城同货覆盖为最新） */
@@ -139,6 +151,9 @@ const DEFAULT_WORLD: WorldState = {
   factionRep: {},
   marketStock: {},
   marketIntel: [],
+  drift: {},
+  rumors: [],
+  npcCredibility: {},
   chronicle: [],
   places: {},
   letters: [],
@@ -262,6 +277,9 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
       factionRep: (data as WorldSave & { factionRep?: Record<string, number> }).factionRep ?? {},
       marketStock: (data as WorldSave & { marketStock?: Record<string, number> }).marketStock ?? {},
       marketIntel: (data as WorldSave & { marketIntel?: { cityId: string; goodId: string; price: number; day: number }[] }).marketIntel ?? [],
+      drift: (data as WorldSave & { drift?: Record<string, number> }).drift ?? {},
+      rumors: (data as WorldSave & { rumors?: import('../types').Rumor[] }).rumors ?? [],
+      npcCredibility: (data as WorldSave & { npcCredibility?: Record<string, { hits: number; misses: number }> }).npcCredibility ?? {},
       chronicle: (data as WorldSave & { chronicle?: ChronicleEntry[] }).chronicle ?? [],
       places: (data as WorldSave & { places?: Record<string, PlaceState> }).places ?? {},
       letters: (data as WorldSave & { letters?: import('../types').LetterInstance[] }).letters ?? [],
@@ -299,7 +317,8 @@ export const useWorldStore = create<WorldState & WorldActions>((set, get) => ({
 
   adjustMarketStock: (cityId, goodId, delta) => {
     const key = `${cityId}:${goodId}`;
-    const next = Math.max(-50, Math.min(50, (get().marketStock[key] ?? 0) + delta));
+    // 库存偏离实数化：允许较大范围（供需系数会在 SD_MIN~SD_MAX 内 clamp，这里只防溢出）
+    const next = Math.max(-1000, Math.min(1000, (get().marketStock[key] ?? 0) + delta));
     set((s) => ({ marketStock: { ...s.marketStock, [key]: next } }));
     return next;
   },
