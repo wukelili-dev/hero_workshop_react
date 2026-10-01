@@ -30,7 +30,7 @@ try {
   const { stockTargetOf } = cities;
   const { TRADE_GOODS, goodOf } = goods;
   const { useWorldStore } = world;
-  const { hash01 } = hash;
+  const { hash01, hashInt } = hash;
 
   const reset = () => useWorldStore.setState({ day: 1, marketStock: {}, drift: {}, rumors: [], npcCredibility: {} });
 
@@ -120,6 +120,80 @@ try {
   console.log(`200 次随机 A→B 行程（随机城对+随机货，${tripDays} 天）：亏损 ${lossTrips} 次（${pct(lossRatio)}）`);
   ok(lossRatio >= 0.15 && lossRatio <= 0.95, `"运过去反而亏"比例应在 15%~95% 之间，实际 ${pct(lossRatio)}`);
 
+  // ═══ E3：流言生成与真伪 ═══
+  console.log('');
+  console.log('—— E3 流言生成与真伪 ——');
+  const Rumor = await server.ssrLoadModule('/src/engine/Rumor.ts');
+  const { advanceRumors, credibilityOf } = Rumor;
+
+  // 先制造真实市场状态：随机给 20 个 (城,货) 制造短缺（负偏离）或积压（正偏离）
+  reset();
+  useWorldStore.setState({ day: 1 });
+  const madeStates = new Map(); // `${cityId}:${goodId}` -> 'shortage' | 'glut'
+  for (let i = 0; i < 20; i++) {
+    const cityId = tradeCityIds[hashInt(`seed:${i}:c`, tradeCityIds.length)];
+    const goodId = normalGoods[hashInt(`seed:${i}:g`, normalGoods.length)].id;
+    const dir = hash01(`seed:${i}:d`) < 0.5 ? 'shortage' : 'glut';
+    const delta = dir === 'shortage' ? -30 : 30;
+    useWorldStore.getState().adjustMarketStock(cityId, goodId, delta);
+    madeStates.set(`${cityId}:${goodId}`, dir);
+  }
+
+  // 生成流言（逐日推进收集）
+  const allRumors = [];
+  for (let d = 1; d <= 30; d++) {
+    useWorldStore.setState({ day: d });
+    advanceRumors(d);
+    allRumors.push(...useWorldStore.getState().rumors.filter((r) => r.bornDay === d));
+  }
+  const rumors = allRumors.slice(0, 200);
+  const truthy = rumors.filter((r) => r.credible).length;
+  const truthRatio = truthy / rumors.length;
+  const expCred = rumors.reduce((s, r) => s + credibilityOf(r.fromNpcId), 0) / rumors.length;
+  console.log(`生成 ${rumors.length} 条流言：真 ${truthy} 条（${pct(truthRatio)}），来源平均可信度 ${pct(expCred)}`);
+  ok(Math.abs(truthRatio - expCred) <= 0.05, `真假比例应与来源可信度吻合（±5%），实际 ${pct(truthRatio)} vs ${pct(expCred)}`);
+
+  // 真流言：目标城该货方向与"制造的真实状态"吻合（针对指向已制造状态城货的流言）
+  let verified = 0, verifiedTotal = 0;
+  for (const r of rumors) {
+    const real = madeStates.get(`${r.targetCityId}:${r.goodId}`);
+    if (!real) continue; // 该城货没被制造状态，跳过
+    verifiedTotal++;
+    const match = r.kind === real;
+    // 真流言应与真实状态吻合；假流言应与真实状态相反
+    if (r.credible === match) verified++;
+  }
+  const verifyRatio = verifiedTotal > 0 ? verified / verifiedTotal : 1;
+  console.log(`可验证流言 ${verifiedTotal} 条，真伪与真实状态吻合 ${verified} 条（${pct(verifyRatio)}）`);
+  ok(verifyRatio >= 0.5, `真流言目标城方向吻合应 ≥50%，实际 ${pct(verifyRatio)}`);
+
+  // ═══ E4：打听与信誉 ═══
+  console.log('');
+  console.log('—— E4 打听与信誉 ——');
+  // inquirePrice 与 priceOf 一致
+  reset();
+  const qGood = 'porcelain';
+  const qPrice = priceOf(qGood, 'changan', { side: 'buy' });
+  const intel = Trade.inquirePrice('changan', qGood, 1);
+  console.log(`inquirePrice(瓷器,长安) = ${intel.price}，priceOf = ${qPrice}`);
+  ok(intel.price === qPrice, `inquirePrice 应返回真实价 ${qPrice}，实际 ${intel.price}`);
+
+  // 信誉结算：标记跟单 + 结算，验证 npcCredibility 累计
+  reset();
+  useWorldStore.setState({ day: 1 });
+  advanceRumors(1);
+  const aRumor = useWorldStore.getState().rumors[0];
+  const npcId = aRumor.fromNpcId;
+  // 标记跟单
+  useWorldStore.setState({ rumors: useWorldStore.getState().rumors.map((r) => ({ ...r, followed: true })) });
+  // 推进到流言过期（先 set day 到目标，再让 advanceMarketDays 用正确的 day 结算）
+  const expireDay = aRumor.bornDay + aRumor.ttlDays + 1;
+  useWorldStore.setState({ day: expireDay });
+  advanceMarketDays(expireDay - 1);
+  const rate = Rumor.credibilityRate(npcId);
+  console.log(`流言结算后，${npcId} 应验率 = ${rate === null ? 'null' : pct(rate)}（跟单 1 条，真伪=${aRumor.credible}）`);
+  ok(rate !== null, '跟单后 npcCredibility 应有记录（应验率非 null）');
+
 } catch (e) {
   fails.push(`执行异常：${e && e.message ? e.message : e}`);
 } finally {
@@ -132,5 +206,5 @@ if (fails.length > 0) {
   for (const f of fails) console.log('  - ' + f);
   process.exitCode = 1;
 } else {
-  console.log('✓ E1/E2 经济模拟全部通过');
+  console.log('✓ 跑商经济模拟（E1~E4）全部通过');
 }

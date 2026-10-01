@@ -15,6 +15,7 @@ import { cityOf } from '../data/regions';
 import { K_SD, SD_MIN, SD_MAX, VOLATILITY_BASE, DRIFT_DECAY, DRIFT_CAP, STOCK_RECOVER } from '../data/marketTuning';
 import { repOf } from './FactionSystem';
 import { record } from './Chronicle';
+import { advanceRumors, settleRumors } from './Rumor';
 import { sum as sumEffect } from './ItemEffects';
 import { hash01, hashRange } from './hash';
 import { useInventoryStore } from '../store/useInventoryStore';
@@ -366,4 +367,9 @@ export function advanceMarketDays(days: number): void {
   }
 
   useWorldStore.setState({ drift, marketStock: stock });
+
+  // 流言：先结算过期（把到期流言计入信誉），再生成新流言（会清理已过期条目）
+  const finalDay = Math.floor(useWorldStore.getState().day);
+  settleRumors(finalDay);
+  advanceRumors(finalDay);
 }
