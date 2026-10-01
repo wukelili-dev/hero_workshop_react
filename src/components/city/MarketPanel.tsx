@@ -9,10 +9,11 @@ import { useWorldStore } from '../../store/useWorldStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { useGameStore } from '../../store/useGameStore';
 import { priceOf, contrabandPrice, carryCapacity, cargoWeight, freeCapacity, isIntelStale, recordTradeProfit } from '../../engine/Trade';
-import { markRumorFollowed } from '../../engine/Rumor';
+import { markRumorFollowed, credibilityText } from '../../engine/Rumor';
 import { addRep } from '../../engine/FactionSystem';
 import { goodOf, TRADE_GOODS } from '../../data/tradeGoods';
-import { cityById } from '../../data/cities';
+import { cityById, stockTargetOf } from '../../data/cities';
+import { NPCS } from '../../data/npcs';
 
 const CATEGORY_LABEL: Record<string, string> = {
   food: '粮食', craft: '手工艺', luxury: '奢侈品', medicine: '药材',
@@ -24,6 +25,7 @@ export const MarketPanel: React.FC<{ cityId: string }> = ({ cityId }) => {
   const gold = useGameStore((s) => s.hero.gold);
   const marketStock = useWorldStore((s) => s.marketStock);
   const marketIntel = useWorldStore((s) => s.marketIntel);
+  const rumors = useWorldStore((s) => s.rumors);
   const day = useWorldStore((s) => Math.floor(s.day));
 
   const [qty, setQty] = useState<Record<string, number>>({});
@@ -43,9 +45,12 @@ export const MarketPanel: React.FC<{ cityId: string }> = ({ cityId }) => {
       const sell = priceOf(g.id, cityId, { side: 'sell' }) ?? 0;
       const base = Math.round(g.basePrice * city.goodsScale);
       const stock = marketStock[`${cityId}:${g.id}`] ?? 0;
+      const target = stockTargetOf(cityId, g.id);
       const isSp = city.specialties.includes(g.id);
       const isDm = city.demands.includes(g.id);
-      return { good: g, buy, sell, base, stock, isSp, isDm };
+      // 库存档位：偏离/target 归一化到 -1..1，正=积压、负=稀缺
+      const level = Math.max(-1, Math.min(1, stock / Math.max(1, target)));
+      return { good: g, buy, sell, base, stock, target, level, isSp, isDm };
     });
   }, [city, cityId, marketStock]);
 
@@ -132,6 +137,37 @@ export const MarketPanel: React.FC<{ cityId: string }> = ({ cityId }) => {
 
       <div className="text-[11px] text-gray-500">{city.desc}</div>
 
+      {/* 今日流言（本城听到的、关于别城的货流言；真伪自辨） */}
+      {(() => {
+        const localRumors = rumors.filter((r) => r.fromCityId === cityId && day - r.bornDay < r.ttlDays);
+        if (localRumors.length === 0) return null;
+        return (
+          <div className="rounded-xl border border-[#8a7a63]/30 bg-[#faf6ea] p-2">
+            <div className="ink-title text-[12px] mb-1">📣 今日流言</div>
+            <div className="space-y-1">
+              {localRumors.map((r) => {
+                const npc = NPCS.find((n) => n.id === r.fromNpcId);
+                const target = cityById(r.targetCityId);
+                const good = goodOf(r.goodId);
+                const age = day - r.bornDay;
+                const stale = age >= r.ttlDays;
+                return (
+                  <div key={r.id} className={`text-[11px] leading-relaxed ${stale ? 'opacity-40' : ''}`}>
+                    <span className="text-[#6b6252]">
+                      「{target?.name ?? r.targetCityId}的{good?.name ?? r.goodId}
+                      {r.kind === 'shortage' ? '紧缺，去卖必赚' : '积压，千万别去'}」
+                    </span>
+                    <span className="text-[#9c917b]">—— {npc?.name ?? r.fromNpcId} 言</span>
+                    <span className="ml-1 text-[10px] text-[#9c917b]">{age > 0 ? `${age} 天前` : '今日'}{stale ? ' · 旧讯' : ''}</span>
+                    <span className="ml-1 text-[10px] text-[#4f7a8c]">({credibilityText(r.fromNpcId)})</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="overflow-hidden rounded-xl border border-[#8a7a63]/30">
         <table className="w-full text-left text-xs">
           <thead className="bg-[#f3efe4] text-[#6b6252]">
@@ -159,14 +195,26 @@ export const MarketPanel: React.FC<{ cityId: string }> = ({ cityId }) => {
                   </td>
                   <td className="px-2 py-1.5 font-medium text-amber-700">
                     {r.buy}
+                    {diff !== 0 && <span className={`ml-1 text-[11px] ${diff > 0 ? 'text-[#8f2b23]' : 'text-green-700'}`}>{diff > 0 ? '↑' : '↓'}</span>}
                     {isStale(r.good.id) && <span className="ml-1 text-[10px] text-[#9c917b]">（旧讯）</span>}
                   </td>
                   <td className="px-2 py-1.5 text-gray-600">{r.sell}</td>
                   <td className="px-2 py-1.5">
-                    <span className={r.stock >= 20 ? 'text-[#8f2b23]' : r.stock <= -20 ? 'text-green-700' : 'text-gray-500'}>
-                      {r.stock > 0 ? `+${r.stock}` : r.stock}
+                    {/* 库存条：中点为 target（满库存），左=稀缺右=积压 */}
+                    <div className="relative h-1.5 w-16 rounded-full bg-[#e8e2d2] overflow-hidden">
+                      <div
+                        className="absolute top-0 h-full rounded-full"
+                        style={{
+                          left: r.level >= 0 ? '50%' : `${50 + r.level * 50}%`,
+                          width: `${Math.abs(r.level) * 50}%`,
+                          backgroundColor: r.level < 0 ? '#b5382f' : '#4f7a8c',
+                        }}
+                      />
+                      <div className="absolute left-1/2 top-0 h-full w-px bg-[#8a7a63]" />
+                    </div>
+                    <span className={`ml-1 text-[10px] ${r.level < -0.3 ? 'text-[#8f2b23]' : r.level > 0.3 ? 'text-[#4f7a8c]' : 'text-[#9c917b]'}`}>
+                      {r.level < -0.3 ? '稀缺' : r.level > 0.3 ? '积压' : '充足'}
                     </span>
-                    {diff !== 0 && <span className={`ml-1 text-[10px] ${diff > 0 ? 'text-[#8f2b23]' : 'text-green-700'}`}>{diff > 0 ? '↑' : '↓'}</span>}
                   </td>
                   <td className="px-2 py-1.5 text-gray-600">{have}</td>
                   <td className="px-2 py-1.5">

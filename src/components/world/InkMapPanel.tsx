@@ -23,6 +23,9 @@ import { senseOf } from '../../data/sense';
 import { loreForTerrain, cityLore } from '../../data/placeLore';
 import { unrestNote } from '../../engine/PlaceSystem';
 import { hash01 } from '../../engine/hash';
+import { cityAtCell } from '../../data/cities';
+import { goodOf } from '../../data/tradeGoods';
+import { NPCS } from '../../data/npcs';
 import { FaMapLocationDot, FaSkullCrossbones, FaXmark, FaLock, FaShoePrints } from 'react-icons/fa6';
 
 interface InkMapPanelProps {
@@ -86,6 +89,8 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
   const currentCellId = useWorldStore((s) => s.currentCellId);
   const currentRegionId = useWorldStore((s) => s.currentRegionId);
   const revealedCells = useWorldStore((s) => s.revealedCells);
+  const rumors = useWorldStore((s) => s.rumors);
+  const worldDay = useWorldStore((s) => Math.floor(s.day));
   const moveTo = useWorldStore((s) => s.moveTo);
 
   const hero = useGameStore((s) => s.hero);
@@ -314,6 +319,28 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
             {unrest && (
               <div className="mt-1 text-[11px] text-[#8f2b23]">⚠ {unrest}</div>
             )}
+            {/* 此城流言（有人传言此城某货紧缺/积压，真伪自辨） */}
+            {(() => {
+              const hereCity = cityAtCell(currentCellId);
+              if (!hereCity) return null;
+              const about = rumors.filter((r) => r.targetCityId === hereCity.id && worldDay - r.bornDay < r.ttlDays);
+              if (about.length === 0) return null;
+              return (
+                <div className="mt-1.5 rounded-lg border border-[#c1932f]/30 bg-[#f6edd6] px-2 py-1.5 text-[11px] leading-relaxed text-[#8a6b2a]">
+                  📣 有流言称：
+                  {about.slice(0, 2).map((r) => {
+                    const good = goodOf(r.goodId);
+                    const npc = NPCS.find((n) => n.id === r.fromNpcId);
+                    return (
+                      <div key={r.id}>
+                        「此城{good?.name ?? r.goodId}{r.kind === 'shortage' ? '紧缺' : '积压'}」
+                        <span className="text-[#9c917b]">（{npc?.name ?? r.fromNpcId} 言，真伪自辨）</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
             {loreLine && !sense && (
               <div className="mt-1 text-[11px] italic leading-relaxed text-[#6b6252]">{loreLine}</div>
             )}

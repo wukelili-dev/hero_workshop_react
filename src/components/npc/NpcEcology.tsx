@@ -20,6 +20,7 @@ import { factionName } from '../../data/factions';
 import { allFactionRep } from '../../engine/FactionSystem';
 import { query as queryChronicle } from '../../engine/Chronicle';
 import { buildPlayerChronicle } from '../../engine/TitleSystem';
+import { credibilityText } from '../../engine/Rumor';
 import { biographyOf } from '../../data/biographies';
 
 const GOAL_ZH: Record<string, string> = {
@@ -180,6 +181,7 @@ export const NpcEcology: React.FC = () => {
                 <span className="ink-tag">关系 {eco.bond}</span>
                 <span className="ink-tag">财富 {wealthOf(sel.id)}（{getNpcGold(sel.id)} 金）</span>
                 <span className="ink-tag">好感 {Math.round(getNpcAffinity(sel.id))}</span>
+                <span className="ink-tag">信誉 {credibilityText(sel.id)}</span>
                 {NPC_SECRETS[sel.id] && (
                   <span className="ink-tag">{(eco.flags['被揭发'] ?? 0) > 0 ? '把柄已揭' : '有把柄'}</span>
                 )}
