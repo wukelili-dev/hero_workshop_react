@@ -26,7 +26,7 @@ import { hash01, hashInt } from '../../engine/hash';
 import { cityAtCell } from '../../data/cities';
 import { goodOf } from '../../data/tradeGoods';
 import { NPCS } from '../../data/npcs';
-import { isWildCell, wildStateOf, wildOpportunityOf, wildRespawnDays } from '../../engine/WildCell';
+import { isWildCell, wildStateOf, wildOpportunityOf, wildRespawnDays, wildNamedEncounter } from '../../engine/WildCell';
 import { MONSTERS } from '../../data/maps';
 import { FaMapLocationDot, FaSkullCrossbones, FaXmark, FaLock, FaShoePrints } from 'react-icons/fa6';
 
@@ -300,6 +300,10 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
   const wildState = isWildCell(currentCellId) ? wildStateOf(currentCellId) : null;
   const wildOpp = isWildCell(currentCellId) ? wildOpportunityOf(currentCellId) : null;
   const wildMonsters = (wildOpp?.monsterIds ?? []).map((id) => MONSTERS[id]).filter(Boolean);
+  // 野地偶遇名角（等级达标 + 未降伏 + 该格 hash 命中）
+  const namedEncounter = isWildCell(currentCellId)
+    ? wildNamedEncounter(currentCellId, hero.level, useGameStore.getState().discoveredMonsters ?? [])
+    : null;
   // 本格重生周期（1~10 天随机）
   const respawnDays = wildRespawnDays(currentCellId);
   // 采光后剩余冷却天数（>0 表示已采光，未刷新）
@@ -445,6 +449,24 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
                     )
                   )}
                 </div>
+              </div>
+            )}
+            {/* 野地偶遇名角（等级达标 + 未降伏 + 该格命中） */}
+            {namedEncounter && (
+              <div className="mt-1.5 rounded-lg border border-[#8f2b23]/40 bg-[#fbe9e7] px-2 py-1.5 text-[11px] leading-relaxed">
+                <div className="flex items-center gap-1">
+                  <span className="text-[#8f2b23] font-bold">⚔ 撞见名角</span>
+                  <span className="text-[#3f3527] font-medium">{namedEncounter.name}</span>
+                  <span className="text-[10px] text-[#9c917b]">{namedEncounter.chapter}</span>
+                </div>
+                <div className="mt-0.5 text-[#6b6252]">Lv.{namedEncounter.level} · 名角大妖，击败可得其法宝。</div>
+                <button
+                  type="button"
+                  className="ink-btn-seal mt-1 w-full text-xs"
+                  onClick={() => startBattle(namedEncounter)}
+                >
+                  上前讨伐
+                </button>
               </div>
             )}
             {currentRec && (

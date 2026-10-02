@@ -205,3 +205,19 @@ export function isWildCell(cellId: string): boolean {
   const cell = getCellById(cellId);
   return Boolean(cell && cell.features.length === 0);
 }
+
+/**
+ * 野地格偶遇名角：玩家等级达到某未降伏名角的门槛时，按格子的确定性 hash 决定是否在此撞见。
+ * 返回撞见的名角（Monster），否则 null。
+ * 概率 ~12%（名角偶遇应当是稀缺事件），同一格当天结果稳定。
+ */
+export function wildNamedEncounter(cellId: string, heroLevel: number, defeatedIds: string[]): import('../types').Monster | null {
+  const roll = hash01(`${cellId}:named`);
+  if (roll > 0.12) return null;
+  // 满足等级门槛、且尚未降伏的名角
+  const candidates = Object.values(MONSTERS).filter(
+    (m) => m.isNamedBoss && heroLevel >= (m.level ?? 0) && !defeatedIds.includes(m.id),
+  );
+  if (candidates.length === 0) return null;
+  return candidates[hashInt(`${cellId}:named:pick`, candidates.length)];
+}

@@ -92,6 +92,22 @@ export const SKILLS: Record<string, SkillDef> = {
     cost: 100, kind: 'burst', power: 3.0, hits: 4, apply: ['bleed', 'stun'],
     desc: '四象连击，合计 300% 攻击伤害，血光与雷震齐下',
   },
+  // ══ 法宝专属大招（装备名角法宝解锁） ══
+  'gourd_devour': {
+    id: 'gourd_devour', name: '葫芦吞天', grade: 5, school: 'art',
+    cost: 100, kind: 'drain', power: 3.0, drain: 0.4, apply: ['sunder'],
+    desc: '紫金红葫芦一吸，造成 300% 攻击伤害并吞其四成精气回血',
+  },
+  'golden_glow': {
+    id: 'golden_glow', name: '金光护体', grade: 5, school: 'body',
+    cost: 100, kind: 'guard', power: 0.5, shield: 0.5, apply: ['guard'],
+    desc: '百眼金光罩一开，举 50% 最大生命护盾并格挡',
+  },
+  'ox_charge': {
+    id: 'ox_charge', name: '青兕撞天', grade: 5, school: 'body',
+    cost: 100, kind: 'burst', power: 3.4, apply: ['sunder'],
+    desc: '金刚琢护体，青牛之力直撞，造成 340% 攻击伤害并破其防御',
+  },
   // ══ 妖类（怪物 / Boss 使用） ══
   'poison_breath': {
     id: 'poison_breath', name: '剧毒吐息', grade: 2, school: 'art',

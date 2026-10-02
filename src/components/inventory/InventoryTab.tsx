@@ -19,6 +19,7 @@ export const InventoryTab: React.FC = () => {
     // 将武器放回背包
     useInventoryStore.getState().addToInventory('weapon', weapon.id, 1, weapon);
     useGameStore.getState().setHero({ weapon: null });
+    if (weapon.skillId) useGameStore.getState().unequipSkill(weapon.skillId);
     useGameStore.getState().syncHero();
   };
 
@@ -28,6 +29,7 @@ export const InventoryTab: React.FC = () => {
     // 将护甲放回背包
     useInventoryStore.getState().addToInventory('armor', armor.id, 1, armor);
     useGameStore.getState().setHero({ armor: null });
+    if (armor.skillId) useGameStore.getState().unequipSkill(armor.skillId);
     useGameStore.getState().syncHero();
   };
 
@@ -38,6 +40,7 @@ export const InventoryTab: React.FC = () => {
     addGold(sellPrice);
     useGameStore.getState().addGameLog(`出售 ${weapon.name},获得 ${sellPrice}G`);
     useGameStore.getState().setHero({ weapon: null });
+    if (weapon.skillId) useGameStore.getState().unequipSkill(weapon.skillId);
     useGameStore.getState().syncHero();
   };
 
@@ -48,6 +51,7 @@ export const InventoryTab: React.FC = () => {
     addGold(sellPrice);
     useGameStore.getState().addGameLog(`出售 ${armor.name},获得 ${sellPrice}G`);
     useGameStore.getState().setHero({ armor: null });
+    if (armor.skillId) useGameStore.getState().unequipSkill(armor.skillId);
     useGameStore.getState().syncHero();
   };
 

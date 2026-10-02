@@ -52,6 +52,8 @@ export interface Equipment {
   form?: EquipmentFormId;
   /** 套装 id（C4：同 setId 2/4 件触发套装词条） */
   setId?: string;
+  /** 法宝独特大招（装备后注入技能槽的武学 id） */
+  skillId?: string;
   forge_level?: number;
   is_perfect?: boolean;
   crit_rate?: number;

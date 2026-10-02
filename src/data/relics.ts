@@ -24,6 +24,8 @@ export interface Relic {
   primary: Equipment['primary'];
   /** 装备词条（equip 触发） */
   effects: ItemEffect[];
+  /** 独特大招（装备后注入技能槽的武学 id，grade 5 仙品） */
+  skillId?: string;
 }
 
 const eff = (kind: ItemEffect['kind'], value: number): ItemEffect => ({ kind, trigger: 'equip', value });
@@ -50,6 +52,38 @@ export const RELICS: Relic[] = [
     primary: { qi: 130, root: 60 },
     effects: [eff('atkPct', 0.28), eff('armorPen', 20), eff('damageCut', 0.08)],
   },
+  // ── armor 型法宝（带独特大招） ──
+  {
+    id: 'jin_gang_zhuo', name: '金刚琢', ownerId: 'qingniu', ownerName: '青牛精', icon: '⭕', grade: '至宝',
+    lore: '太上老君的金刚琢，被独角兕大王盗下界，套尽天下兵器。',
+    type: 'armor', form: 'heavy_armor',
+    primary: { root: 90, qi: 70 },
+    effects: [eff('defPct', 0.25), eff('damageCut', 0.12), eff('reflect', 15)],
+    skillId: 'ox_charge',
+  },
+  {
+    id: 'zi_jin_hulu', name: '紫金红葫芦', ownerId: 'jinjiao', ownerName: '金角大王', icon: '🍶', grade: '稀世',
+    lore: '太上老君盛丹的紫金红葫芦，叫一声便收人入内。',
+    type: 'armor', form: 'robe',
+    primary: { spirit: 80, root: 60 },
+    effects: [eff('hpPct', 0.20), eff('resist', 0.12), eff('lifesteal', 0.12)],
+    skillId: 'gourd_devour',
+  },
+  {
+    id: 'jin_guang_zhao', name: '金光罩', ownerId: 'baiyanmojun', ownerName: '百眼魔君', icon: '☀️', grade: '稀世',
+    lore: '百眼魔君胁下千眼，迸发金光，罩定一方，触之即伤。',
+    type: 'armor', form: 'robe',
+    primary: { root: 75, spirit: 65 },
+    effects: [eff('defPct', 0.20), eff('damageCut', 0.10), eff('thorns', 0.15)],
+    skillId: 'golden_glow',
+  },
+  {
+    id: 'yin_yang_ping', name: '阴阳二气瓶', ownerId: 'dapengdiao', ownerName: '大鹏金翅雕', icon: '⚱️', grade: '至宝',
+    lore: '狮驼岭大鹏雕的阴阳二气瓶，瓶中二气，须臾化尽。',
+    type: 'weapon', form: 'talisman',
+    primary: { qi: 140, spirit: 80 },
+    effects: [eff('atkPct', 0.30), eff('crit', 0.14), eff('lifesteal', 0.15)],
+  },
 ];
 
 /** 按 id 查法宝 */
@@ -72,5 +106,7 @@ export function buildRelicEquipment(relicId: string): Equipment | null {
     form: r.form,
     sellPrice: 5000,
     cost: { 金币: 0 },
+    // 法宝独特大招（装备时注入技能槽）
+    ...(r.skillId ? { skillId: r.skillId } : {}),
   };
 }

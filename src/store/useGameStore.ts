@@ -162,6 +162,8 @@ interface GameActions {
   allocatePrimary: (key: keyof PrimaryStats) => boolean;
   /** 依据主属性 + 装备重算英雄派生缓存（换装/卸装/读档后调用） */
   syncHero: () => void;
+  /** 卸下带大招的法宝后，从技能槽移除其独特大招 */
+  unequipSkill: (skillId: string) => void;
 }
 
 // 中文材料名store resources key 映射
@@ -395,6 +397,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
   syncHero: () => set((s) => ({ hero: syncHeroDerived(s.hero) })),
 
+  unequipSkill: (skillId) => set((s) => ({
+    hero: { ...s.hero, skills: (s.hero.skills ?? [...DEFAULT_HERO_SKILLS]).filter((x) => x !== skillId) },
+  })),
+
   setHp: (hp) => set((s) => ({ hero: { ...s.hero, hp: Math.max(0, Math.min(hp, s.hero.maxHp)) } })),
 
   fightMonster: (monster) => {
@@ -622,12 +628,22 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const form = w.form ?? getWeaponFormByName(w.name);
     const setId = w.setId ?? formSetId(form);
     const wEquip: Equipment = { ...w, form, setId };
+    // 法宝独特大招：装备后注入技能槽（满 3 顶替最旧）
+    let skills = hero.skills ?? [...DEFAULT_HERO_SKILLS];
+    if (w.skillId && SKILLS[w.skillId] && !skills.includes(w.skillId)) {
+      const next = [...skills];
+      if (next.length >= 3) next.shift();
+      next.push(w.skillId);
+      skills = next;
+      get().addGameLog(`法宝「${w.name}」附灵，习得大招「${SKILLS[w.skillId].name}」`);
+    }
     // 装备词条（atk/crit/critDmg/…）全部由 engine/HeroCombat 的派生层统一结算
-    set((s) => ({
+    set((s2) => ({
       hero: syncHeroDerived({
-        ...s.hero,
-        gold: s.hero.gold - goldCost,
+        ...s2.hero,
+        gold: s2.hero.gold - goldCost,
         weapon: wEquip,
+        skills,
       }),
       resources: newRes,
     }));
@@ -661,12 +677,22 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const form = a.form ?? getArmorFormByName(a.name);
     const setId = a.setId ?? formSetId(form);
     const aEquip: Equipment = { ...a, form, setId };
+    // 法宝独特大招：装备后注入技能槽（满 3 顶替最旧）
+    let skills = hero.skills ?? [...DEFAULT_HERO_SKILLS];
+    if (a.skillId && SKILLS[a.skillId] && !skills.includes(a.skillId)) {
+      const next = [...skills];
+      if (next.length >= 3) next.shift();
+      next.push(a.skillId);
+      skills = next;
+      get().addGameLog(`法宝「${a.name}」附灵，习得大招「${SKILLS[a.skillId].name}」`);
+    }
     // 护甲词条（def/hpMax/defPct/hpPct）同样由派生层统一结算
-    set((s) => ({
+    set((s2) => ({
       hero: syncHeroDerived({
-        ...s.hero,
-        gold: s.hero.gold - goldCost,
+        ...s2.hero,
+        gold: s2.hero.gold - goldCost,
         armor: aEquip,
+        skills,
       }),
       resources: newRes,
     }));
