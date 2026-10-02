@@ -132,6 +132,9 @@ const RESOURCE_OF: Record<TerrainType, string> = {
   swamp: 'herbs', desert: 'crystal', snow: 'crystal', volcanic: 'crystal', celestial: 'crystal',
 };
 
+/** 野地资源采光后重新长出的天数 */
+export const WILD_RESPAWN_DAYS = 3;
+
 // ── 查询 ──
 
 /** 某野地格子的随机状态（确定性） */

@@ -26,7 +26,7 @@ import { hash01, hashInt } from '../../engine/hash';
 import { cityAtCell } from '../../data/cities';
 import { goodOf } from '../../data/tradeGoods';
 import { NPCS } from '../../data/npcs';
-import { isWildCell, wildStateOf, wildOpportunityOf } from '../../engine/WildCell';
+import { isWildCell, wildStateOf, wildOpportunityOf, WILD_RESPAWN_DAYS } from '../../engine/WildCell';
 import { MONSTERS } from '../../data/maps';
 import { FaMapLocationDot, FaSkullCrossbones, FaXmark, FaLock, FaShoePrints } from 'react-icons/fa6';
 
@@ -215,13 +215,14 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
     setLastResult(null);
   };
 
-  /** 领取野地奇遇（金币/经验/宝箱），每格只领一次（消耗 1 天） */
+  /** 领取野地奇遇（金币/经验/宝箱），领一次就没了，不耗天，过 N 天刷新 */
   const handleWildFortune = () => {
     if (!wildOpp || wildOpp.kind !== 'fortune') return;
     const world = useWorldStore.getState();
     const day = Math.floor(world.day);
-    if ((world.gathered[currentCellId] ?? -1) >= day) {
-      toast('此地机遇已取，明日再来。');
+    const last = world.gathered[currentCellId] ?? -999;
+    if (last + WILD_RESPAWN_DAYS > day) {
+      toast(`此地机遇已取，约 ${last + WILD_RESPAWN_DAYS - day} 天后刷新。`);
       return;
     }
     const g = useGameStore.getState();
@@ -243,16 +244,17 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
       toast.success(`开箱得材料 ×${amount}`, { icon: '🎁' });
     }
     world.markGathered(currentCellId);
-    world.advanceDays(1);
   };
 
-  /** 野地采集（空格子的随机采集点），消耗 1 天 */
+  /** 野地采集（空格子的随机采集点）：采一次采光，不耗天，过 N 天重新长出 */
   const handleWildGather = () => {
     if (!wildOpp || wildOpp.kind !== 'gather') return;
     const world = useWorldStore.getState();
     const day = Math.floor(world.day);
-    if ((world.gathered[currentCellId] ?? -1) >= day) {
-      toast('此地已采过，明日再来。');
+    const lastGathered = world.gathered[currentCellId] ?? -999;
+    if (lastGathered + WILD_RESPAWN_DAYS > day) {
+      const left = lastGathered + WILD_RESPAWN_DAYS - day;
+      toast(`此地药草已采光，约 ${left} 天后重新长出。`);
       return;
     }
     const yieldMap: Record<string, { key: string; name: string }> = {
@@ -264,10 +266,9 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
     const y = yieldMap[wildOpp.resourceType ?? 'herbs'] ?? { key: 'wood', name: '木材' };
     const amount = 2 + hashInt(`${currentCellId}:gather`, 5);
     useGameStore.getState().addResource(y.key, amount);
-    useGameStore.getState().addGameLog(`在野地「${wildState?.label}」采集得 ${y.name} ×${amount}`);
+    useGameStore.getState().addGameLog(`在野地「${wildState?.label}」采得 ${y.name} ×${amount}（已采光，${WILD_RESPAWN_DAYS} 天后重生）`);
     world.markGathered(currentCellId);
-    world.advanceDays(1);
-    toast.success(`采集得 ${y.name} ×${amount}（耗 1 天）`, { icon: '🌿' });
+    toast.success(`采得 ${y.name} ×${amount}（此地已采光）`, { icon: '🌿' });
   };
 
   /** 天下总览：点击区域卡片进入（同区域则切回棋盘视图） */
@@ -299,6 +300,12 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
   const wildState = isWildCell(currentCellId) ? wildStateOf(currentCellId) : null;
   const wildOpp = isWildCell(currentCellId) ? wildOpportunityOf(currentCellId) : null;
   const wildMonsters = (wildOpp?.monsterIds ?? []).map((id) => MONSTERS[id]).filter(Boolean);
+  // 采光后剩余冷却天数（>0 表示已采光，未刷新）
+  const gatherCooldown = (() => {
+    const last = useWorldStore.getState().gathered[currentCellId];
+    if (last == null) return 0;
+    return Math.max(0, last + WILD_RESPAWN_DAYS - Math.floor(useWorldStore.getState().day));
+  })();
   const monsters = [...(currentEncounter?.monsters ?? []), ...wildMonsters].sort((a, b) => (a.level ?? 0) - (b.level ?? 0));
 
   // 感官/地名志：城市进入显示感官 note + 盘查；野外格显示地名志开场句（按 day+cell 轮换）
@@ -418,14 +425,22 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
                   <span className="text-[#3f3527]">{wildOpp.label}</span>
                   {wildOpp.kind === 'monster' && <span className="text-[#8f2b23]">（见下方「此处妖怪」可讨伐）</span>}
                   {wildOpp.kind === 'gather' && (
-                    <button type="button" className="ink-btn ml-auto text-[10px]" onClick={handleWildGather}>
-                      采集
-                    </button>
+                    gatherCooldown > 0 ? (
+                      <span className="ml-auto text-[10px] text-[#9c917b]">已采光（{gatherCooldown} 天后重生）</span>
+                    ) : (
+                      <button type="button" className="ink-btn ml-auto text-[10px]" onClick={handleWildGather}>
+                        采集
+                      </button>
+                    )
                   )}
                   {wildOpp.kind === 'fortune' && (
-                    <button type="button" className="ink-btn ml-auto text-[10px]" onClick={handleWildFortune}>
-                      领取
-                    </button>
+                    gatherCooldown > 0 ? (
+                      <span className="ml-auto text-[10px] text-[#9c917b]">已取（{gatherCooldown} 天后刷新）</span>
+                    ) : (
+                      <button type="button" className="ink-btn ml-auto text-[10px]" onClick={handleWildFortune}>
+                        领取
+                      </button>
+                    )
                   )}
                 </div>
               </div>
