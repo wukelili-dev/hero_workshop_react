@@ -8,6 +8,7 @@ import {
   type MapCell,
   type TerrainType,
 } from '../../data/cellMap';
+import { wildOpportunityOf } from '../../engine/WildCell';
 
 let S = 72;      // 每格边长（applyLayout 按实际列/行数重算）
 let OX = 64;     // 网格左上角 x（左边只留竖排题款 + 闲章的窄条）
@@ -268,9 +269,18 @@ export function buildInkMapSvg(opts: InkMapOptions): string {
   out.push('<g>');
   explored.forEach((c) => {
     const feature = c.features[0];
-    if (!feature) return;
-    const kind = FEATURE_ICON[feature.type] ?? 'random';
     const [px, py] = centerOf(c);
+    // 野地空格子：随机机遇（未写死的格子，探索后揭示随机内容）
+    if (!feature) {
+      const opp = wildOpportunityOf(c.id);
+      if (!opp || opp.kind === 'calm') return;
+      const kind: IconKind = opp.kind === 'monster' ? 'monster' : opp.kind === 'gather' ? 'resource' : 'event';
+      const iconScale = Math.max(9, Math.round(S * 0.18));
+      out.push(iconFor(kind, px, py - 6, iconScale, '#6b6252'));
+      out.push(`<text class="inkmap-label" x="${px}" y="${r1(py + Math.round(S * 0.4))}" text-anchor="middle" font-size="${Math.max(9, Math.round(S * 0.16))}">${opp.label}</text>`);
+      return;
+    }
+    const kind = FEATURE_ICON[feature.type] ?? 'random';
     const inkColor = kind === 'city' ? '#8f2b23' : '#3f3527';
     const iconScale = Math.max(9, Math.round(S * 0.18));
     out.push(iconFor(kind, px, py - 6, iconScale, inkColor));
