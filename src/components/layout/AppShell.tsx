@@ -301,7 +301,7 @@ export const AppShell: React.FC = () => {
           transition={{ duration: 0.25, ease: 'easeOut' }}
           className="min-w-0 flex-1 overflow-hidden"
         >
-          <div className="mx-auto h-full w-full max-w-[1120px]">
+          <div className="mx-auto h-full w-full max-w-[1680px]">
             {renderMain()}
           </div>
         </motion.main>

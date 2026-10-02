@@ -10,7 +10,7 @@ import {
 } from '../../data/cellMap';
 
 let S = 72;      // 每格边长（applyLayout 按实际列/行数重算）
-let OX = 108;    // 网格左上角 x
+let OX = 64;     // 网格左上角 x（左边只留竖排题款 + 闲章的窄条）
 let OY = 28;     // 网格左上角 y
 const VB_W = 720;
 const VB_H = 560;
@@ -202,7 +202,7 @@ export function buildInkMapSvg(opts: InkMapOptions): string {
   const route = opts.routePath ?? [];
 
   const out: string[] = [];
-  out.push(`<svg viewBox="0 0 ${VB_W} ${VB_H}" class="inkmap-svg" role="img" aria-label="${regionName}世界地图">`);
+  out.push(`<svg viewBox="0 0 ${VB_W} ${VB_H}" preserveAspectRatio="xMinYMid meet" class="inkmap-svg" role="img" aria-label="${regionName}世界地图">`);
   out.push(
     `<style>.inkmap-cell .hl{opacity:0;transition:opacity .12s}` +
       `.inkmap-cell:hover .hl{opacity:1}.inkmap-hit{fill:transparent;cursor:pointer}.inkmap-label{font-family:${FONT_KAI};fill:#3f3527;paint-order:stroke;stroke:#efe9dc;stroke-width:3px}</style>`
@@ -317,10 +317,10 @@ export function buildInkMapSvg(opts: InkMapOptions): string {
     out.push(`<text x="${r1(px + 19)}" y="${r1(py - 17)}" text-anchor="middle" font-size="12" fill="#f7f1e4" font-family="${FONT_KAI}">你</text>`);
   }
 
-  // 题款 + 闲章
-  out.push(`<text x="56" y="96" class="inkmap-label" font-size="20" letter-spacing="4" style="writing-mode:vertical-rl">${regionName}</text>`);
-  out.push(`<rect x="40" y="252" width="30" height="30" rx="3" fill="#b5382f"/>`);
-  out.push(`<text x="55" y="273" text-anchor="middle" font-size="15" fill="#f7f1e4" font-family="${FONT_KAI}">勇</text>`);
+  // 题款 + 闲章（靠左窄条，不挤压棋盘）
+  out.push(`<text x="28" y="96" class="inkmap-label" font-size="18" letter-spacing="3" style="writing-mode:vertical-rl">${regionName}</text>`);
+  out.push(`<rect x="16" y="252" width="28" height="28" rx="3" fill="#b5382f"/>`);
+  out.push(`<text x="30" y="272" text-anchor="middle" font-size="14" fill="#f7f1e4" font-family="${FONT_KAI}">勇</text>`);
   out.push(`<text x="704" y="549" text-anchor="end" font-size="11" fill="#9c917b" font-family="${FONT_KAI}">未探之地，云雾缭绕</text>`);
 
   // 悬停 / 点击热区（放在最上层）
