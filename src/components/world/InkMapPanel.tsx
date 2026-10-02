@@ -285,19 +285,19 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
         </div>
       )}
 
-      {/* 主体（棋盘视图） */}
+      {/* 主体（棋盘视图）：窄屏上下排（地图保底高度，情报自身滚动），宽屏左右排 */}
       {!showOverview && (
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* 地图 */}
         <div
-          className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-[#f3efe4] p-2"
+          className="flex min-h-[340px] flex-1 items-center justify-center overflow-hidden bg-[#f3efe4] p-2 lg:min-h-0"
           onClick={handleMapClick}
         >
           <div className="h-full w-full" dangerouslySetInnerHTML={{ __html: svg }} />
         </div>
 
         {/* 右侧情报 */}
-        <aside className="flex w-full shrink-0 flex-col gap-2 overflow-y-auto border-amber-900/10 bg-white/70 p-3 lg:w-[300px] lg:border-l">
+        <aside className="flex min-h-0 w-full flex-1 flex-col gap-2 overflow-y-auto border-amber-900/10 bg-white/70 p-3 lg:w-[300px] lg:flex-none lg:border-l">
           {/* 所在地 */}
           <div className="rounded-2xl border border-amber-900/10 bg-white p-3 shadow-sm">
             <div className="flex items-center gap-2">
