@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { FaBookOpen, FaGift, FaSeedling, FaPaw, FaUser } from 'react-icons/fa6';
+import { FaBookOpen, FaGift, FaSeedling, FaPaw, FaUser, FaSkull } from 'react-icons/fa6';
 import * as Tooltip from '@radix-ui/react-tooltip';
+import * as Dialog from '@radix-ui/react-dialog';
 import { useGameStore } from '../../store/useGameStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
-import { MAPS } from '../../data/maps';
+import { MAPS, MONSTERS } from '../../data/maps';
 import type { Monster } from '../../types';
 import { monsterStatsOf } from '../../engine/Stats';
 import { NOVELTY_ITEMS, NOVELTY_RARITY_COLORS, NOVELTY_RARITY_NAMES } from '../../data/inventory';
@@ -14,6 +15,7 @@ import { RANCH_CATALOG } from '../../data/ranch';
 import { NPCS } from '../../data/npcs';
 import { getAllEncounterMonsters } from '../../data/cellEncounters';
 import { biographyOf } from '../../data/biographies';
+import { relicOf } from '../../data/relics';
 
 const MAP_MONSTERS: Monster[] = MAPS.flatMap((m) => [...(m.monsters ?? []), ...(m.boss ? [m.boss] : [])]);
 
@@ -70,18 +72,23 @@ const MONSTER_ICON_MAP: Record<string, React.ReactNode> = {
 };
 const DEFAULT_MONSTER_ICON: React.ReactNode = <span>👹</span>;
 
-type TabKey = 'monster' | 'novelty' | 'plant' | 'creature' | 'npc';
+type TabKey = 'monster' | 'named' | 'novelty' | 'plant' | 'creature' | 'npc';
 
 const TABS = [
   { key: 'monster' as const, label: '怪物', icon: <FaBookOpen /> },
+  { key: 'named' as const, label: '名角', icon: <FaSkull /> },
   { key: 'novelty' as const, label: '杂货', icon: <FaGift /> },
   { key: 'plant' as const, label: '植物', icon: <FaSeedling /> },
   { key: 'creature' as const, label: '动物', icon: <FaPaw /> },
   { key: 'npc' as const, label: '人物', icon: <FaUser /> },
 ];
 
+/** 西游名角大 BOSS（isNamedBoss） */
+const NAMED_BOSSES: Monster[] = Object.values(MONSTERS).filter((m) => m.isNamedBoss);
+
 export const BestiaryTab: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('monster');
+  const [bioFor, setBioFor] = useState<Monster | null>(null);
 
   // 全部用 || [] 兜底，防止旧存档缺少这些字段
   const discoveredMonsters = useGameStore((s) => s.discoveredMonsters) || [];
@@ -215,6 +222,58 @@ export const BestiaryTab: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* 名角 Tab：西游章回体大妖，击败掉法宝，点开看原文传记 */}
+        {activeTab === 'named' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {NAMED_BOSSES.map((monster) => {
+              const discovered = discoveredMonsterSet.has(monster.id);
+              const relic = relicOf(monster.relicId ?? '');
+              return (
+                <div
+                  key={monster.id}
+                  className={`rounded-lg border p-3 transition-all duration-200 ${
+                    discovered
+                      ? 'bg-gradient-to-br from-red-50 via-orange-50 to-amber-100 border-2 border-red-400 shadow-red-400/40 shadow-lg'
+                      : 'bg-gray-100 border-gray-200 opacity-70'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-2xl">{relic?.icon ?? '👹'}</span>
+                    <div className="min-w-0">
+                      <div className="font-bold text-sm text-gray-800">{monster.name}</div>
+                      <div className="text-[10px] text-gray-500">{monster.chapter ?? ''} · Lv.{monster.level}</div>
+                    </div>
+                    <span className="ml-auto text-xs px-1.5 py-0.5 rounded bg-gradient-to-r from-red-500 to-amber-500 text-white font-bold shadow-sm">名角</span>
+                  </div>
+                  {discovered ? (
+                    <>
+                      <div className="text-xs text-gray-600 mb-1.5">
+                        法宝：<b className="text-red-700">{relic?.name ?? '——'}</b>
+                        {relic && <span className="ml-1 text-[10px] text-amber-600">（{relic.grade}）</span>}
+                      </div>
+                      <button
+                        type="button"
+                        className="w-full py-1 text-xs bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded transition-colors"
+                        onClick={() => setBioFor(monster)}
+                      >
+                        📜 查看传记
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-16 text-gray-400 text-sm">
+                      <span className="text-2xl opacity-40">❓</span>
+                      未降伏
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {NAMED_BOSSES.length === 0 && (
+              <div className="col-span-full text-center text-gray-400 text-sm py-8">尚无收录的名角。</div>
+            )}
           </div>
         )}
 
@@ -441,6 +500,30 @@ export const BestiaryTab: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* 名角传记弹窗（原文，楷体） */}
+      <Dialog.Root open={!!bioFor} onOpenChange={(o) => { if (!o) setBioFor(null); }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-40 bg-[#3f3527]/50" />
+          <Dialog.Content className="ink-panel ink-frame fixed left-1/2 top-1/2 z-50 w-[min(560px,90vw)] -translate-x-1/2 -translate-y-1/2 p-6">
+            <Dialog.Title className="ink-title mb-1 text-xl">{bioFor?.name}</Dialog.Title>
+            <div className="mb-2 text-xs text-[#9c917b]">{bioFor?.chapter ?? ''} · Lv.{bioFor?.level ?? '?'}</div>
+            <div className="max-h-[50vh] overflow-y-auto space-y-3 text-[15px] leading-relaxed text-[#3f3527]">
+              {(biographyOf(bioFor?.id ?? '')?.body ?? []).map((para, i) => (
+                <p key={i} style={{ fontFamily: 'var(--font-kai)' }} className="indent-8">{para}</p>
+              ))}
+              {bioFor && !biographyOf(bioFor.id) && (
+                <p className="text-[#9c917b] italic">此人传记尚在编纂中。</p>
+              )}
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Dialog.Close asChild>
+                <button className="ink-btn-seal text-sm">合上</button>
+              </Dialog.Close>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </Tooltip.Provider>
   );
 };

@@ -13,6 +13,7 @@ import { buildMonsterDerived } from './Stats';
 import { deriveTeammate } from './NpcStats';
 import { buildHeroCombatant, heroEquipEffects, type HeroStats } from './HeroCombat';
 import { generateDrop } from './equipmentDrops';
+import { buildRelicEquipment } from '../data/relics';
 import { useGameStore } from '../store/useGameStore';
 import {
   RAGE_MAX, addStatus, battleCtxFrom, bossArtsOf, checkCrit, heroArtsOf,
@@ -115,6 +116,15 @@ export function battleRewards(monster: Monster, victory: boolean): Rewards {
     if (Math.random() < drop.chance) {
       const qty = Math.floor(Math.random() * (drop.quantity[1] - drop.quantity[0] + 1)) + drop.quantity[0];
       rewards.drops.push({ itemId: drop.itemId, quantity: qty });
+    }
+  }
+  // 名角大 BOSS：掉落专属法宝（100% 首次，之后不再掉法宝，只走下方随机装备）
+  if (monster.isNamedBoss && monster.relicId) {
+    const kills = useGameStore.getState().killCounts?.[monster.id] ?? 0;
+    if (kills === 0) {
+      const relic = buildRelicEquipment(monster.relicId);
+      if (relic) rewards.equipment.push(relic);
+      return rewards;
     }
   }
   const equip = generateDrop(monster.level || 1, monster.isBoss || false);

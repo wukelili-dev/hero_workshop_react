@@ -222,6 +222,22 @@ export const BIOGRAPHIES: BiographyDef[] = [
   { id: 'bio_qingfeng', subjectId: 'wanshou_qingfeng', kind: 'npc', unlock: {}, title: '清风道童传', body: ['清风，万寿山五庄观的道童，镇元大仙的弟子。', '他守着人参果树，却因孙悟空的推倒果树而受责。', '他的性子有几分傲气，是道观里出了名的机灵鬼。'] },
   { id: 'bio_tongbei', subjectId: 'huaguo_tongbei', kind: 'npc', unlock: {}, title: '通背猿猴传', body: ['通背猿猴，花果山四健将之一，白毛老猿，活了不知多少年。', '它辅佐孙悟空，是花果山的老臣。', '它的半熟蟠桃，是蟠桃会上遗落的灵物，灵气尚存。'] },
   { id: 'bio_chencheng', subjectId: 'wuzhi_chen', kind: 'npc', unlock: {}, title: '陈员外传', body: ['陈澄，陈家庄的员外，家境殷实，乐善好施。', '他与佛有缘，常施舍过路的僧人。', '他的庄上干粮，是赶路人最实在的口粮。'] },
+  // ═══════════ 西游名角传记（原文摘录，一二百字） ═══════════
+  { id: 'bio_baigujing', subjectId: '白骨精', kind: 'relic', unlock: {}, title: '白骨夫人传', body: [
+    '却说这妖精，本是白虎岭上一具白骨，因吸了日月精华，才成了精，变作一个俊俏的女子。她善变化，能变作女子、老妇、老翁，三番两次戏弄取经人，故有"尸魔三戏唐三藏"之说。',
+    '她手段不硬，却最善攻心。先变作村姑送斋，再变作老母寻女，三变作老父寻妻，惹得唐僧心软、八戒起哄，直教那悟空三打才现了原形。',
+    '三打白骨精，悟空被逐回花果山，取经路上师徒生嫌隙，皆因此妖而起。她所持白骨法杖，是吸食生人骨血所化，最是阴毒。',
+  ]},
+  { id: 'bio_honghaier', subjectId: '红孩儿', kind: 'relic', unlock: {}, title: '圣婴大王传', body: [
+    '红孩儿，牛魔王与铁扇公主之子，号圣婴大王，住在枯松涧火云洞。他生得面如傅粉，唇若涂朱，却有一身惊天动地的本事。',
+    '他在火焰山修行三百年，炼成三昧真火，口鼻能喷烟，眼中能冒火，一扇扇去，直烧得那孙大圣也落荒而逃。',
+    '他变作七岁孩童吊在树上，哄得唐僧心软，掳进火云洞，要吃唐僧肉以求长生。悟空战他不过，几番请兵，最后借了观音的甘露，才把他收了去，做了善财童子。',
+  ]},
+  { id: 'bio_niumowang', subjectId: '牛魔王', kind: 'relic', unlock: {}, title: '大力牛魔王传', body: [
+    '牛魔王，号平天大圣，火焰山摩云洞主，是孙悟空的结义大哥，也是红孩儿之父、铁扇公主之夫。他力大无穷，善使一条混铁棍，与金箍棒不相上下。',
+    '他本与悟空有旧，却因借芭蕉扇之事反目。悟空变作他的模样骗走芭蕉扇，他察觉后又变作猪八戒骗了回来，二人斗法，各显神通。',
+    '最后惊动了天兵天将，李天王、哪吒率兵围剿，牛魔王现出本相，是一头千余丈的白牛，仍是不服，直斗到力竭才被收伏。',
+  ]},
 ];
 
 
@@ -229,6 +245,6 @@ export function biographyOf(subjectId: string): BiographyDef | undefined {
   return BIOGRAPHIES.find((b) => b.subjectId === subjectId);
 }
 
-export function biographiesOfKind(kind: 'npc' | 'boss' | 'place'): BiographyDef[] {
+export function biographiesOfKind(kind: 'npc' | 'boss' | 'place' | 'relic'): BiographyDef[] {
   return BIOGRAPHIES.filter((b) => b.kind === kind);
 }

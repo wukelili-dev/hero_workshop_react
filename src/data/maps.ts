@@ -71,6 +71,10 @@ export const MONSTERS: Record<string, Monster> = {
   '山贼头目': { id: '山贼头目', name: '山贼头目', level: 9, primary: { root: 24.1667, qi: 14.25, spirit: 8.125, agility: 5, fortune: 1 }, rarity: 1, expReward: 90, goldReward: 70, drops: [{ itemId: '铁矿', chance: 1, quantity: [3, 3] }, { itemId: '皮革', chance: 1, quantity: [2, 2] }], isBoss: true },
   '黑熊精': { id: '黑熊精', name: '黑熊精', level: 13, primary: { root: 29.1667, qi: 24.75, spirit: 16.875, agility: 5, fortune: 1 }, rarity: 2, expReward: 120, goldReward: 95, drops: [{ itemId: '皮革', chance: 1, quantity: [5, 5] }, { itemId: '铁矿', chance: 1, quantity: [2, 2] }], isBoss: true },
   '蛟': { id: '蛟', name: '蛟', level: 14, primary: { root: 35, qi: 29.25, spirit: 18.75, agility: 5, fortune: 1 }, rarity: 2, expReward: 150, goldReward: 120, drops: [{ itemId: '皮革', chance: 1, quantity: [6, 6] }, { itemId: '木材', chance: 1, quantity: [4, 4] }], isBoss: true },
+  // ── 西游名角大 BOSS（章回体大妖，难度高于常规 Boss，掉落专属法宝） ──
+  '白骨精': { id: '白骨精', name: '白骨精', level: 65, primary: { root: 500, qi: 175, spirit: 130, agility: 8, fortune: 2 }, rarity: 4, expReward: 3200, goldReward: 2600, drops: [{ itemId: '铁矿', chance: 1, quantity: [30, 30] }, { itemId: '皮革', chance: 1, quantity: [28, 28] }], isBoss: true, isNamedBoss: true, relicId: 'baigu_zhang', chapter: '尸魔三戏唐三藏' },
+  '红孩儿': { id: '红孩儿', name: '红孩儿', level: 68, primary: { root: 550, qi: 200, spirit: 150, agility: 9, fortune: 2 }, rarity: 4, expReward: 3800, goldReward: 3000, drops: [{ itemId: '铁矿', chance: 1, quantity: [32, 32] }, { itemId: '木材', chance: 1, quantity: [30, 30] }], isBoss: true, isNamedBoss: true, relicId: 'sanmei_shan', chapter: '圣婴大王火云洞' },
+  '牛魔王': { id: '牛魔王', name: '牛魔王', level: 74, primary: { root: 650, qi: 240, spirit: 170, agility: 8, fortune: 2 }, rarity: 4, expReward: 4800, goldReward: 3800, drops: [{ itemId: '铁矿', chance: 1, quantity: [38, 38] }, { itemId: '皮革', chance: 1, quantity: [35, 35] }], isBoss: true, isNamedBoss: true, relicId: 'hun_tie_gun', chapter: '火焰山三借芭蕉扇' },
 };
 
 // 地图数据

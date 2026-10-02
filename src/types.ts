@@ -225,6 +225,12 @@ export interface Monster {
   hp?: number;
   atk?: number;
   def?: number;
+  /** 名角大 BOSS（西游章回体大妖，难度高于常规 Boss，掉落专属法宝） */
+  isNamedBoss?: boolean;
+  /** 名角掉落的法宝 id（对应 data/relics.ts） */
+  relicId?: string;
+  /** 章节名（原著回目，如「尸魔三戏唐三藏」） */
+  chapter?: string;
 }
 
 export interface GameMap {
@@ -756,7 +762,7 @@ export interface LetterInstance {
 export interface BiographyDef {
   id: string;
   subjectId: string;
-  kind: 'npc' | 'boss' | 'place';
+  kind: 'npc' | 'boss' | 'place' | 'relic';
   unlock: { bond?: NpcBond[]; tags?: Record<string, { min?: number }>; worldFlag?: string };
   title: string;
   body: string[];
