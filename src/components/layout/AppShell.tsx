@@ -29,6 +29,7 @@ import { ForgeTab } from '../forge/ForgeTab';
 import { BestiaryTab } from '../bestiary/BestiaryTab';
 import { InkMapPanel } from '../world/InkMapPanel';
 import { NpcProfilePanel } from '../npc/NpcProfilePanel';
+import { NamedBossTab } from '../named/NamedBossTab';
 import { OfflineModal } from '../shared/OfflineModal';
 import { VisitModal } from '../shared/VisitModal';
 import { dueVisits } from '../../engine/VisitSystem';
@@ -40,14 +41,14 @@ import { syncWorldClock, useWorldStore } from '../../store/useWorldStore';
 import { cityAtCell } from '../../data/cities';
 import {
   FaFloppyDisk, FaFolderOpen, FaBookOpen, FaCircleQuestion, FaMapLocationDot, FaCity,
-  FaUser, FaWheatAwn, FaSkullCrossbones, FaBagShopping, FaHammer, FaPaw,
+  FaUser, FaWheatAwn, FaSkullCrossbones, FaBagShopping, FaHammer, FaPaw, FaSkull,
   FaShieldHalved, FaCube, FaBeerMugEmpty, FaIndustry, FaGift,
 } from 'react-icons/fa6';
 import { FaBomb } from 'react-icons/fa';
 
 export type TabId =
   | 'status' | 'weapon' | 'armor' | 'novelty' | 'inventory' | 'materials' | 'bestiary'
-  | 'farm' | 'ranch' | 'factory' | 'forge' | 'tavern' | 'estate';
+  | 'farm' | 'ranch' | 'factory' | 'forge' | 'tavern' | 'estate' | 'named';
 
 interface SubTab {
   id: TabId;
@@ -66,6 +67,7 @@ const HERO_TABS: SubTab[] = [
 
 /** 家业：挂机产出与经营 */
 const HOME_TABS: SubTab[] = [
+  { id: 'named', label: '降妖', icon: <FaSkull />, description: '挑战西游名角大妖，夺其法宝' },
   { id: 'farm', label: '农桑', icon: <FaWheatAwn />, description: '种植作物获取金币' },
   { id: 'ranch', label: '牧场', icon: <FaPaw />, description: '养殖灵兽获取资源' },
   { id: 'factory', label: '工坊', icon: <FaIndustry />, description: '建部门雇工人被动产金' },
@@ -162,6 +164,7 @@ export const AppShell: React.FC = () => {
       case 'forge': return <ForgeTab />;
       case 'tavern': return <TavernTab />;
       case 'estate': return <MainCityPanel onOpenWorldMap={() => setPage('map')} />;
+      case 'named': return <NamedBossTab />;
     }
   };
 
