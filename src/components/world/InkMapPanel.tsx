@@ -26,7 +26,7 @@ import { hash01, hashInt } from '../../engine/hash';
 import { cityAtCell } from '../../data/cities';
 import { goodOf } from '../../data/tradeGoods';
 import { NPCS } from '../../data/npcs';
-import { isWildCell, wildStateOf, wildOpportunityOf, WILD_RESPAWN_DAYS } from '../../engine/WildCell';
+import { isWildCell, wildStateOf, wildOpportunityOf, wildRespawnDays } from '../../engine/WildCell';
 import { MONSTERS } from '../../data/maps';
 import { FaMapLocationDot, FaSkullCrossbones, FaXmark, FaLock, FaShoePrints } from 'react-icons/fa6';
 
@@ -221,8 +221,8 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
     const world = useWorldStore.getState();
     const day = Math.floor(world.day);
     const last = world.gathered[currentCellId] ?? -999;
-    if (last + WILD_RESPAWN_DAYS > day) {
-      toast(`此地机遇已取，约 ${last + WILD_RESPAWN_DAYS - day} 天后刷新。`);
+    if (last + respawnDays > day) {
+      toast(`此地机遇已取，约 ${last + respawnDays - day} 天后刷新。`);
       return;
     }
     const g = useGameStore.getState();
@@ -252,8 +252,8 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
     const world = useWorldStore.getState();
     const day = Math.floor(world.day);
     const lastGathered = world.gathered[currentCellId] ?? -999;
-    if (lastGathered + WILD_RESPAWN_DAYS > day) {
-      const left = lastGathered + WILD_RESPAWN_DAYS - day;
+    if (lastGathered + respawnDays > day) {
+      const left = lastGathered + respawnDays - day;
       toast(`此地药草已采光，约 ${left} 天后重新长出。`);
       return;
     }
@@ -266,7 +266,7 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
     const y = yieldMap[wildOpp.resourceType ?? 'herbs'] ?? { key: 'wood', name: '木材' };
     const amount = 2 + hashInt(`${currentCellId}:gather`, 5);
     useGameStore.getState().addResource(y.key, amount);
-    useGameStore.getState().addGameLog(`在野地「${wildState?.label}」采得 ${y.name} ×${amount}（已采光，${WILD_RESPAWN_DAYS} 天后重生）`);
+    useGameStore.getState().addGameLog(`在野地「${wildState?.label}」采得 ${y.name} ×${amount}（已采光，${respawnDays} 天后重生）`);
     world.markGathered(currentCellId);
     toast.success(`采得 ${y.name} ×${amount}（此地已采光）`, { icon: '🌿' });
   };
@@ -300,11 +300,13 @@ export const InkMapPanel: React.FC<InkMapPanelProps> = ({ onClose, embedded = fa
   const wildState = isWildCell(currentCellId) ? wildStateOf(currentCellId) : null;
   const wildOpp = isWildCell(currentCellId) ? wildOpportunityOf(currentCellId) : null;
   const wildMonsters = (wildOpp?.monsterIds ?? []).map((id) => MONSTERS[id]).filter(Boolean);
+  // 本格重生周期（1~10 天随机）
+  const respawnDays = wildRespawnDays(currentCellId);
   // 采光后剩余冷却天数（>0 表示已采光，未刷新）
   const gatherCooldown = (() => {
     const last = useWorldStore.getState().gathered[currentCellId];
     if (last == null) return 0;
-    return Math.max(0, last + WILD_RESPAWN_DAYS - Math.floor(useWorldStore.getState().day));
+    return Math.max(0, last + respawnDays - Math.floor(useWorldStore.getState().day));
   })();
   const monsters = [...(currentEncounter?.monsters ?? []), ...wildMonsters].sort((a, b) => (a.level ?? 0) - (b.level ?? 0));
 

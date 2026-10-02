@@ -132,8 +132,10 @@ const RESOURCE_OF: Record<TerrainType, string> = {
   swamp: 'herbs', desert: 'crystal', snow: 'crystal', volcanic: 'crystal', celestial: 'crystal',
 };
 
-/** 野地资源采光后重新长出的天数 */
-export const WILD_RESPAWN_DAYS = 3;
+/** 某格野地资源采光/领取后的重生周期：1~10 天随机（确定性，同一格子结果稳定） */
+export function wildRespawnDays(cellId: string): number {
+  return 1 + hashInt(`${cellId}:respawn`, 10);
+}
 
 // ── 查询 ──
 
