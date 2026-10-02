@@ -28,7 +28,7 @@ import { RanchTab } from '../ranch/RanchTab';
 import { ForgeTab } from '../forge/ForgeTab';
 import { BestiaryTab } from '../bestiary/BestiaryTab';
 import { InkMapPanel } from '../world/InkMapPanel';
-import { NpcEcology } from '../npc/NpcEcology';
+import { NpcProfilePanel } from '../npc/NpcProfilePanel';
 import { OfflineModal } from '../shared/OfflineModal';
 import { VisitModal } from '../shared/VisitModal';
 import { dueVisits } from '../../engine/VisitSystem';
@@ -94,7 +94,8 @@ export const AppShell: React.FC = () => {
   const [heroTab, setHeroTab] = useState<TabId>('status');
   const [homeTab, setHomeTab] = useState<TabId>('farm');
   const [shop, setShop] = useState<ShopId>('none');
-  const [cityView, setCityView] = useState<'eco' | 'team' | 'market'>('eco');
+  const [cityView, setCityView] = useState<'team' | 'market'>('team');
+  const [npcFocusId, setNpcFocusId] = useState<string | null>(null);
   const [offline, setOffline] = useState<OfflineReport | null>(null);
   const [visitQueue, setVisitQueue] = useState<ReturnType<typeof dueVisits>>([]);
   const day = Math.floor(useWorldStore((s) => s.day));
@@ -179,7 +180,7 @@ export const AppShell: React.FC = () => {
     return null;
   };
 
-  /** 据点：城中铺子（兵器/甲胄/杂货）+ 队伍与遭遇 */
+  /** 据点：城中铺子（兵器/甲胄/杂货）+ 队伍与市场 */
   const renderCity = () => {
     const cellId = useWorldStore.getState().currentCellId;
     const hereCity = cityAtCell(cellId);
@@ -228,13 +229,6 @@ export const AppShell: React.FC = () => {
       <div className="flex flex-shrink-0 gap-2">
         <button
           type="button"
-          onClick={() => setCityView('eco')}
-          className={cityView === 'eco' ? 'ink-btn-seal text-sm' : 'ink-btn text-sm'}
-        >
-          人物志 · 关系网
-        </button>
-        <button
-          type="button"
           onClick={() => setCityView('team')}
           className={cityView === 'team' ? 'ink-btn-seal text-sm' : 'ink-btn text-sm'}
         >
@@ -249,13 +243,21 @@ export const AppShell: React.FC = () => {
         </button>
       </div>
       <div className="min-h-0 flex-1 overflow-hidden">
-        {cityView === 'eco' ? <NpcEcology /> : cityView === 'team' ? <CenterPanel /> : <MarketPanel cityId={marketCityId} />}
+        {cityView === 'team' ? <CenterPanel /> : <MarketPanel cityId={marketCityId} />}
       </div>
     </div>
     );
   };
 
   const renderMain = () => {
+    // 左栏点了某个 NPC → 主视图打开其档案 + 互动
+    if (npcFocusId) {
+      return (
+        <div className="h-full overflow-hidden p-3">
+          <NpcProfilePanel npcId={npcFocusId} onBack={() => setNpcFocusId(null)} />
+        </div>
+      );
+    }
     if (page === 'map') return <InkMapPanel embedded />;
     if (page === 'city') return renderCity();
     if (page === 'hero') {
@@ -284,7 +286,14 @@ export const AppShell: React.FC = () => {
 
       {/* === 桌面端：左去处 / 中主视图 / 右日志 === */}
       <div className="hidden min-h-0 flex-1 overflow-hidden md:flex">
-        <SideNav page={page} onNavigate={setPage} heroTab={heroTab as HeroTabId} onNavigateHero={(t) => { setPage('hero'); setHeroTab(t); }} />
+        <SideNav
+          page={page}
+          onNavigate={setPage}
+          heroTab={heroTab as HeroTabId}
+          onNavigateHero={(t) => { setPage('hero'); setHeroTab(t); }}
+          onSelectNpc={(id) => setNpcFocusId(id)}
+          focusedNpcId={npcFocusId}
+        />
         <motion.main
           key={page}
           initial={{ opacity: 0, y: 10 }}
