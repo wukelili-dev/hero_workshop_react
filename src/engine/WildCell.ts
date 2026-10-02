@@ -132,9 +132,13 @@ const RESOURCE_OF: Record<TerrainType, string> = {
   swamp: 'herbs', desert: 'crystal', snow: 'crystal', volcanic: 'crystal', celestial: 'crystal',
 };
 
-/** 某格野地资源采光/领取后的重生周期：1~10 天随机（确定性，同一格子结果稳定） */
+/** 某格野地资源采光/领取后的重生周期：带权重随机，多数集中在 5 天左右（1~10） */
 export function wildRespawnDays(cellId: string): number {
-  return 1 + hashInt(`${cellId}:respawn`, 10);
+  // 两个均匀分布之和 → 近似三角分布（中心 5 天），映射到 1~10
+  const a = hash01(`${cellId}:respawn:a`);
+  const b = hash01(`${cellId}:respawn:b`);
+  const centered = (a + b - 1) * 4.5; // [-4.5, +4.5]，中心 0
+  return Math.max(1, Math.min(10, Math.round(5 + centered)));
 }
 
 // ── 查询 ──
