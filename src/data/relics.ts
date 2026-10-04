@@ -84,6 +84,22 @@ export const RELICS: Relic[] = [
     primary: { qi: 140, spirit: 80 },
     effects: [eff('atkPct', 0.30), eff('crit', 0.14), eff('lifesteal', 0.15)],
   },
+  {
+    id: 'qingshi_hou', name: '青狮吞天钹', ownerId: 'qingshijing', ownerName: '青狮精', icon: '🦁', grade: '至宝',
+    lore: '狮驼岭青毛狮子怪的镇洞之宝，一钹能吞十万天兵。',
+    type: 'armor', form: 'heavy_armor',
+    primary: { root: 95, qi: 75 },
+    effects: [eff('defPct', 0.22), eff('damageCut', 0.12), eff('thorns', 0.18)],
+    skillId: 'lion_roar',
+  },
+  {
+    id: 'baixiang_qiang', name: '白象玉鼻枪', ownerId: 'baixiangjing', ownerName: '白象精', icon: '🐘', grade: '至宝',
+    lore: '狮驼岭白象精的长鼻所化，卷山裂岳，无物不摧。',
+    type: 'weapon', form: 'heavy_blade',
+    primary: { qi: 135, root: 65 },
+    effects: [eff('atkPct', 0.26), eff('armorPen', 18), eff('speed', 10)],
+    skillId: 'elephant_sweep',
+  },
 ];
 
 /** 按 id 查法宝 */

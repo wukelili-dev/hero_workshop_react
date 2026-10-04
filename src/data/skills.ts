@@ -108,6 +108,16 @@ export const SKILLS: Record<string, SkillDef> = {
     cost: 100, kind: 'burst', power: 3.4, apply: ['sunder'],
     desc: '金刚琢护体，青牛之力直撞，造成 340% 攻击伤害并破其防御',
   },
+  'lion_roar': {
+    id: 'lion_roar', name: '狮吼吞天', grade: 5, school: 'body',
+    cost: 100, kind: 'drain', power: 3.2, drain: 0.35, apply: ['stun'],
+    desc: '青狮吞天钹一震，狮吼摄魄，造成 320% 攻击伤害并吞其精气回血、震晕敌方',
+  },
+  'elephant_sweep': {
+    id: 'elephant_sweep', name: '象鼻卷山', grade: 5, school: 'body',
+    cost: 100, kind: 'burst', power: 3.5, hits: 2, apply: ['stun'],
+    desc: '白象玉鼻横扫，两段合计 350% 攻击伤害并震晕敌方',
+  },
   // ══ 妖类（怪物 / Boss 使用） ══
   'poison_breath': {
     id: 'poison_breath', name: '剧毒吐息', grade: 2, school: 'art',
