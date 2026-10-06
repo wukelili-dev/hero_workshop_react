@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { FaBookOpen, FaGift, FaSeedling, FaPaw, FaUser, FaSkull } from 'react-icons/fa6';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import * as Dialog from '@radix-ui/react-dialog';
+import { BiographyModal } from './BiographyModal';
 import { useGameStore } from '../../store/useGameStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { MAPS, MONSTERS } from '../../data/maps';
@@ -501,29 +501,8 @@ export const BestiaryTab: React.FC = () => {
         )}
       </div>
 
-      {/* 名角传记弹窗（原文，楷体） */}
-      <Dialog.Root open={!!bioFor} onOpenChange={(o) => { if (!o) setBioFor(null); }}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-40 bg-[#3f3527]/50" />
-          <Dialog.Content className="ink-panel ink-frame fixed left-1/2 top-1/2 z-50 w-[min(560px,90vw)] -translate-x-1/2 -translate-y-1/2 p-6">
-            <Dialog.Title className="ink-title mb-1 text-xl">{bioFor?.name}</Dialog.Title>
-            <div className="mb-2 text-xs text-[#9c917b]">{bioFor?.chapter ?? ''} · Lv.{bioFor?.level ?? '?'}</div>
-            <div className="max-h-[50vh] overflow-y-auto space-y-3 text-[15px] leading-relaxed text-[#3f3527]">
-              {(biographyOf(bioFor?.id ?? '')?.body ?? []).map((para, i) => (
-                <p key={i} style={{ fontFamily: 'var(--font-kai)' }} className="indent-8">{para}</p>
-              ))}
-              {bioFor && !biographyOf(bioFor.id) && (
-                <p className="text-[#9c917b] italic">此人传记尚在编纂中。</p>
-              )}
-            </div>
-            <div className="mt-4 flex justify-end">
-              <Dialog.Close asChild>
-                <button className="ink-btn-seal text-sm">合上</button>
-              </Dialog.Close>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+      {/* 名角传记弹窗（影神图式：左文名右画卷，楷体原文） */}
+      <BiographyModal monster={bioFor} onClose={() => setBioFor(null)} />
     </Tooltip.Provider>
   );
 };

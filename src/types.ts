@@ -767,6 +767,8 @@ export interface BiographyDef {
   kind: 'npc' | 'boss' | 'place' | 'relic';
   unlock: { bond?: NpcBond[]; tags?: Record<string, { min?: number }>; worldFlag?: string };
   title: string;
+  /** 影神图式韵文小赞（两句，五言对偶，显示在正文之前） */
+  verse?: string[];
   body: string[];
 }
 
