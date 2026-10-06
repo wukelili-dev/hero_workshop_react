@@ -41,13 +41,22 @@ const SPLATS = [
 interface Props {
   monster: Monster | null;
   onClose: () => void;
+  /** 无传记时兜底的正文（普通怪通用志文） */
+  fallbackBody?: string[];
+  /** 属性 + 掉落信息（普通怪图鉴展示） */
+  stats?: { hp: number; atk: number; def: number } | null;
+  drops?: Array<{ itemId: string; chance: number; quantity: [number, number] }>;
 }
 
-export function BiographyModal({ monster, onClose }: Props) {
+export function BiographyModal({ monster, onClose, fallbackBody, stats, drops }: Props) {
   const bio = monster ? biographyOf(monster.id) : undefined;
   const relic = monster ? relicOf(monster.relicId ?? '') : undefined;
   const icon = relic?.icon ?? monster?.icon ?? '👹';
   const sealChar = monster?.name?.[0] ?? '妖';
+  const body = bio?.body ?? fallbackBody ?? [];
+  const subtitle = monster?.chapter
+    ? `${monster.chapter} · Lv.${monster.level ?? '?'}`
+    : `Lv.${monster?.level ?? '?'}`;
 
   return (
     <Dialog.Root open={!!monster} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -66,8 +75,24 @@ export function BiographyModal({ monster, onClose }: Props) {
               {monster?.name}
             </Dialog.Title>
             <div className="mb-3 text-xs tracking-widest" style={{ color: '#877b64' }}>
-              {monster?.chapter ?? ''} · Lv.{monster?.level ?? '?'}{relic ? ` · 法宝 ${relic.name}` : ''}
+              {subtitle}{relic ? ` · 法宝 ${relic.name}` : ''}
             </div>
+
+            {/* 属性 + 掉落（普通怪图鉴） */}
+            {stats && (
+              <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] tracking-wider" style={{ color: '#9a8d74' }}>
+                <span>气血 <b style={{ color: '#cfa54e' }}>{stats.hp}</b></span>
+                <span>攻击 <b style={{ color: '#cfa54e' }}>{stats.atk}</b></span>
+                <span>防御 <b style={{ color: '#cfa54e' }}>{stats.def}</b></span>
+                {drops && drops.length > 0 && (
+                  <span>
+                    掉落　{drops.map((d, i) => (
+                      <span key={i}>{i > 0 ? '、' : ''}{d.itemId}{Math.round(d.chance * 100)}%</span>
+                    ))}
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* 韵文小赞 */}
             {bio?.verse && bio.verse.length > 0 && (
@@ -83,7 +108,7 @@ export function BiographyModal({ monster, onClose }: Props) {
             {/* 正文 */}
             <Dialog.Description className="min-h-0 flex-1 overflow-y-auto pr-2">
               <div className="space-y-3">
-                {(bio?.body ?? []).map((para, i) => (
+                {body.map((para, i) => (
                   <p
                     key={i}
                     className="indent-8 text-[15.5px] leading-8"
@@ -92,7 +117,7 @@ export function BiographyModal({ monster, onClose }: Props) {
                     {para}
                   </p>
                 ))}
-                {monster && !bio && (
+                {monster && body.length === 0 && (
                   <p className="text-sm italic" style={{ color: '#877b64' }}>此人传记尚在编纂中。</p>
                 )}
               </div>

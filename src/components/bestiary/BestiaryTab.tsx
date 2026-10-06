@@ -86,6 +86,20 @@ const TABS = [
 /** 西游名角大 BOSS（isNamedBoss） */
 const NAMED_BOSSES: Monster[] = Object.values(MONSTERS).filter((m) => m.isNamedBoss);
 
+/** 普通怪无传记时的通用志文（影神图式，短小无韵文） */
+function fallbackBioFor(monster: Monster): string[] {
+  const tier = RARITY_NAME[monster.rarity ?? 0] || '寻常';
+  const kind = monster.isBoss ? '一境之主' : '寻常妖孽';
+  const hp = monsterStatsOf(monster);
+  return [
+    `${monster.name}，${kind}，${tier}之属。`,
+    monster.isBoss
+      ? `它盘踞一方，为祸已久，需得三思而后行。`
+      : `荒野之间，屡有所见，遇之当谨慎应对。`,
+    `气血 ${hp.hp}，攻击 ${hp.atk}，防御 ${hp.def}。击败或有所获。`,
+  ];
+}
+
 export const BestiaryTab: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('monster');
   const [bioFor, setBioFor] = useState<Monster | null>(null);
@@ -157,62 +171,34 @@ export const BestiaryTab: React.FC = () => {
                   style={monster.isBoss && discovered ? { boxShadow: '0 0 12px 2px rgba(234,179,8,0.5)' } : {}}
                 >
                   {discovered ? (
-                    <Tooltip.Root>
-                      <Tooltip.Trigger asChild>
-                        <div className="flex items-center gap-2 mb-1.5 cursor-pointer">
-                          <span className="text-xl w-8 h-8 flex items-center justify-center shrink-0">
-                            {icon}
+                    <button
+                      type="button"
+                      onClick={() => setBioFor(monster)}
+                      className="w-full text-left"
+                    >
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-xl w-8 h-8 flex items-center justify-center shrink-0">
+                          {icon}
+                        </span>
+                        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                          <span className="font-bold text-sm text-gray-800">{monster.name}</span>
+                          <span
+                            className="text-xs px-1.5 py-0.5 rounded text-white font-medium"
+                            style={{ backgroundColor: RARITY_COLOR[monster.rarity ?? 0] || '#C0C0C0' }}
+                          >
+                            {RARITY_NAME[monster.rarity ?? 0] || '普通'}
                           </span>
-                          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                            <span className="font-bold text-sm text-gray-800">{monster.name}</span>
-                            <span
-                              className="text-xs px-1.5 py-0.5 rounded text-white font-medium"
-                              style={{ backgroundColor: RARITY_COLOR[monster.rarity ?? 0] || '#C0C0C0' }}
-                            >
-                              {RARITY_NAME[monster.rarity ?? 0] || '普通'}
-                            </span>
-                            {monster.isBoss && (
-                              <span className="text-xs px-1.5 py-0.5 rounded bg-gradient-to-r from-yellow-500 to-amber-400 text-white font-bold shadow-sm">⭐ BOSS</span>
-                            )}
-                          </div>
+                          {monster.isBoss && (
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-gradient-to-r from-yellow-500 to-amber-400 text-white font-bold shadow-sm">⭐ BOSS</span>
+                          )}
                         </div>
-                      </Tooltip.Trigger>
-                      <Tooltip.Portal>
-                        <Tooltip.Content
-                          className="bg-gray-800 text-white text-xs rounded-lg px-3 py-2 shadow-lg max-w-xs"
-                          sideOffset={5}
-                        >
-                          <div className="space-y-1">
-                            <div className="font-bold">{monster.name}</div>
-                            <div>等级：Lv.{monster.level ?? '?'}</div>
-                            <div>HP：{monsterStatsOf(monster).hp}　ATK：{monsterStatsOf(monster).atk}　DEF：{monsterStatsOf(monster).def}</div>
-                            {drops.length > 0 && (
-                              <div className="text-[11px] text-gray-300">
-                                掉落：{drops.map((d, i) => (
-                                  <span key={i}>
-                                    {i > 0 && '、'}
-                                    {d.itemId} ×{d.quantity[0]}
-                                    {d.quantity[0] !== d.quantity[1] ? `~${d.quantity[1]}` : ''}
-                                    ({Math.round(d.chance * 100)}%)
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            {(() => {
-                              const bio = biographyOf(monster.id);
-                              if (!bio) return null;
-                              return (
-                                <div className="mt-1.5 border-t border-gray-700 pt-1.5 text-[11px] leading-relaxed text-gray-200">
-                                  <div className="font-bold text-amber-300">{bio.title}</div>
-                                  {bio.body.slice(0, 3).map((para, i) => <div key={i}>{para}</div>)}
-                                </div>
-                              );
-                            })()}
-                          </div>
-                          <Tooltip.Arrow className="fill-gray-800" />
-                        </Tooltip.Content>
-                      </Tooltip.Portal>
-                    </Tooltip.Root>
+                      </div>
+                      <div className="text-[11px] text-gray-500">
+                        Lv.{monster.level ?? '?'} · {monsterStatsOf(monster).hp} / {monsterStatsOf(monster).atk} / {monsterStatsOf(monster).def}
+                        {drops.length > 0 && <span className="ml-1 text-gray-400">· {drops.map((d) => d.itemId).join('、')}</span>}
+                      </div>
+                      <div className="mt-1 text-[10px] text-amber-600/80">📜 查看传记</div>
+                    </button>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-20 text-gray-400 text-lg font-mono gap-1">
                       <span className="text-2xl opacity-40">{icon}</span>
@@ -501,8 +487,14 @@ export const BestiaryTab: React.FC = () => {
         )}
       </div>
 
-      {/* 名角传记弹窗（影神图式：左文名右画卷，楷体原文） */}
-      <BiographyModal monster={bioFor} onClose={() => setBioFor(null)} />
+      {/* 传记弹窗（影神图式：左文名右画卷，楷体原文）——名角与普通怪共用 */}
+      <BiographyModal
+        monster={bioFor}
+        onClose={() => setBioFor(null)}
+        fallbackBody={bioFor && !bioFor.isNamedBoss && !biographyOf(bioFor.id) ? fallbackBioFor(bioFor) : undefined}
+        stats={bioFor && !bioFor.isNamedBoss ? monsterStatsOf(bioFor) : null}
+        drops={bioFor && !bioFor.isNamedBoss ? bioFor.drops : undefined}
+      />
     </Tooltip.Provider>
   );
 };
