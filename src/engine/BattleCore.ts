@@ -28,6 +28,12 @@ export interface BattleCtx {
 export const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 // ── 状态层 ──
+/** 状态显示名（战斗日志与界面共用的唯一出口） */
+export const STATUS_NAME: Record<StatusEffectId, string> = {
+  bleed: '流血', poison: '中毒', sunder: '破防', shield: '护盾',
+  stun: '麻痹', haste: '疾行', guard: '格挡', rally: '狂热',
+};
+
 export function stacksOf(c: Combatant, id: StatusEffectId): number {
   const s = c.vars.statuses.find((x) => x.id === id);
   return s ? s.stacks : 0;
@@ -37,14 +43,18 @@ export function hasStatus(c: Combatant, id: StatusEffectId): boolean {
   return c.vars.statuses.some((x) => x.id === id && x.turns > 0);
 }
 
-/** 施加状态：同种刷新不叠层（刷新层数与回合），上限 5 层 */
-export function addStatus(c: Combatant, id: StatusEffectId, stacks = 1, turns = 2): void {
+/**
+ * 施加状态：同种刷新不叠层（刷新层数与回合），上限 5 层。
+ * power 只在「施加者是敌方」且该状态会造成持续伤害时由 useMartialArt 传入。
+ */
+export function addStatus(c: Combatant, id: StatusEffectId, stacks = 1, turns = 2, power = 0): void {
   const existing = c.vars.statuses.find((x) => x.id === id);
   if (existing) {
     existing.stacks = Math.min(5, existing.stacks + stacks);
     existing.turns = Math.max(existing.turns, turns);
+    if (power > 0) existing.power = Math.max(existing.power ?? 0, power);
   } else {
-    c.vars.statuses.push({ id, stacks: Math.min(5, stacks), turns });
+    c.vars.statuses.push({ id, stacks: Math.min(5, stacks), turns, ...(power > 0 ? { power } : {}) });
   }
 }
 
@@ -53,6 +63,57 @@ export function tickStatuses(c: Combatant): void {
   c.vars.statuses = c.vars.statuses
     .map((s) => ({ ...s, turns: s.turns - 1 }))
     .filter((s) => s.turns > 0);
+}
+
+// ── 持续伤害（B1）：流血 / 中毒 ──
+/**
+ * 每层每回合的伤害 = 施加者的攻击力快照 × 该系数。
+ * 两者都**无视防御与护盾**直接扣血——这正是持续伤害的立足点：
+ * 面对高防目标时，DOT 是唯一稳定的输出方式。
+ */
+export const DOT_RATIO: Partial<Record<StatusEffectId, number>> = { bleed: 0.25, poison: 0.2 };
+
+/** 一个单位身上的持续伤害明细（回合末结算用） */
+export function dotsOf(c: Combatant): Array<{ id: StatusEffectId; name: string; dmg: number }> {
+  const out: Array<{ id: StatusEffectId; name: string; dmg: number }> = [];
+  for (const s of c.vars.statuses) {
+    const ratio = DOT_RATIO[s.id];
+    if (!ratio) continue;
+    out.push({
+      id: s.id,
+      name: STATUS_NAME[s.id],
+      dmg: Math.max(1, Math.floor((s.power ?? 0) * ratio * s.stacks)),
+    });
+  }
+  return out;
+}
+
+/** 一个单位身上的持续伤害合计 */
+export function dotTotalOf(c: Combatant): number {
+  return dotsOf(c).reduce((sum, d) => sum + d.dmg, 0);
+}
+
+// ── 控制与减控（B1）──
+/** 控制类状态：会被目标韧性抵抗 */
+const CONTROL_STATUSES: readonly StatusEffectId[] = ['stun'];
+
+/**
+ * 韧性减控：抵抗率 = tenacity / (tenacity + 100)，上限 70%。
+ * 用递减曲线而不是线性，避免堆神识直接把控制完全免疫掉。
+ */
+export function controlResistRate(c: Combatant): number {
+  const t = Math.max(0, c.derived.tenacity);
+  return Math.min(0.7, t / (t + 100));
+}
+
+/** 本次控制是否被目标抵抗掉 */
+export function resistsControl(c: Combatant): boolean {
+  return Math.random() < controlResistRate(c);
+}
+
+/** 被麻痹：本回合无法行动 */
+export function isStunned(c: Combatant): boolean {
+  return hasStatus(c, 'stun');
 }
 
 export function speedOf(c: Combatant): number {
@@ -133,6 +194,8 @@ export interface ArtOutcome {
   healed: number;     // 自身回复量（含吸血）
   shieldGained: number;
   skill: SkillDef;
+  /** B1：被目标韧性抵抗掉的状态（日志要如实说明"没挂上"） */
+  resisted: StatusEffectId[];
 }
 
 /**
@@ -153,9 +216,19 @@ export function useMartialArt(attacker: Combatant, defender: Combatant, skill: S
   }
 
   // 附带状态：增益类挂自己，其余挂目标
+  const resisted: StatusEffectId[] = [];
   if (skill.apply && landed > 0) {
     const self = skill.kind === 'support' || skill.kind === 'guard';
-    for (const s of skill.apply) addStatus(self ? attacker : defender, s, 1, 2);
+    for (const s of skill.apply) {
+      const target = self ? attacker : defender;
+      // B1：控制类状态吃目标韧性，抵抗成功则整个状态不生效
+      if (!self && CONTROL_STATUSES.includes(s) && resistsControl(target)) {
+        resisted.push(s);
+        continue;
+      }
+      // B1：挂到敌方身上时记下攻击力快照，供流血/中毒在回合末结算
+      addStatus(target, s, 1, 2, self ? 0 : attacker.derived.atk);
+    }
   }
 
   const shieldGained = skill.shield ? Math.floor(attacker.derived.hpMax * skill.shield) : 0;
@@ -169,7 +242,7 @@ export function useMartialArt(attacker: Combatant, defender: Combatant, skill: S
   if (landed > 0) attacker.vars.rage = Math.min(RAGE_MAX, attacker.vars.rage + RAGE_GAIN_ATK);
   defender.vars.rage = Math.min(RAGE_MAX, defender.vars.rage + RAGE_GAIN_HIT);
 
-  return { hpDmg, missed: landed === 0, multihit: landed, healed, shieldGained, skill };
+  return { hpDmg, missed: landed === 0, multihit: landed, healed, shieldGained, skill, resisted };
 }
 
 /** 玩家已学武学（缺省起手三招） */

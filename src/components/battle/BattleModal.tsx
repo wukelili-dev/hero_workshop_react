@@ -8,12 +8,7 @@ import React, { useEffect, useRef } from 'react';
 import { FaBolt, FaHeart } from 'react-icons/fa6';
 import { useBattleStore } from '../../store/useBattleStore';
 import { availableArts, type BattleState } from '../../engine/Battle';
-import type { StatusEffectId } from '../../types';
-
-const STATUS_NAME: Record<StatusEffectId, string> = {
-  bleed: '流血', poison: '中毒', sunder: '破防', shield: '护盾',
-  stun: '麻痹', haste: '疾行', guard: '格挡', rally: '狂热',
-};
+import { STATUS_NAME, controlResistRate, isStunned } from '../../engine/BattleCore';
 
 const pct = (v: number, max: number) => `${Math.max(0, Math.min(100, (v / Math.max(1, max)) * 100)).toFixed(1)}%`;
 
@@ -51,6 +46,7 @@ export const BattleModal: React.FC = () => {
 
   const arts = availableArts(battle);
   const rage = battle.hero.vars.rage;
+  const stunned = isStunned(battle.hero);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3f3527]/45 p-3">
@@ -78,6 +74,7 @@ export const BattleModal: React.FC = () => {
               <span>闪避 {(battle.hero.derived.dodge * 100).toFixed(0)}%</span>
               <span>暴击 {(battle.hero.derived.crit * 100).toFixed(0)}%</span>
               <span>破甲 {Math.round(battle.hero.derived.pen)}</span>
+              <span title="韧性带来的控制抵抗率">减控 {(controlResistRate(battle.hero) * 100).toFixed(0)}%</span>
             </div>
             <StatusTags c={battle.hero} />
           </div>
@@ -101,7 +98,7 @@ export const BattleModal: React.FC = () => {
         {/* 战报 */}
         <div ref={logRef} className="mt-3 max-h-40 min-h-24 overflow-y-auto border border-[#8a7a63]/30 bg-[#faf6ea]/60 p-2 text-xs leading-relaxed">
           {battle.logs.map((l, i) => (
-            <div key={i} className={l.attacker === '勇者' || l.attacker === '你' ? 'text-[#3f3527]' : 'text-[#b5382f]'}>
+            <div key={i} className={l.defender === '勇者' ? 'text-[#b5382f]' : 'text-[#3f3527]'}>
               <span className="mr-1 text-[#9c917b]">{l.round}.</span>
               {l.description}
             </div>
@@ -111,6 +108,11 @@ export const BattleModal: React.FC = () => {
         {/* 操作区 */}
         {!battle.over ? (
           <div className="mt-3">
+            {stunned && (
+              <div className="mb-2 border border-[#b5382f]/40 bg-[#b5382f]/5 px-2 py-1 text-[11px] text-[#b5382f]">
+                勇者身中麻痹，本回合递不出手（队友仍会协战）。
+              </div>
+            )}
             <div className="mb-1 flex items-center gap-2">
               <span className="ink-title text-[11px]">武学</span>
               <span className="ink-rule flex-1" />
@@ -121,23 +123,23 @@ export const BattleModal: React.FC = () => {
                 <button
                   key={a.id}
                   type="button"
-                  disabled={!a.ready}
+                  disabled={!a.ready || stunned}
                   onClick={() => act({ kind: 'art', artId: a.id })}
                   title={a.desc}
-                  className={`ink-btn px-2 py-1 text-xs ${a.ready ? '' : 'opacity-40'}`}
+                  className={`ink-btn px-2 py-1 text-xs ${a.ready && !stunned ? '' : 'opacity-40'}`}
                 >
                   {a.name}
                 </button>
               ))}
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              <button type="button" className="ink-btn-seal px-3 py-1 text-xs" onClick={() => act({ kind: 'attack' })}>
+              <button type="button" disabled={stunned} className="ink-btn-seal px-3 py-1 text-xs disabled:opacity-40" onClick={() => act({ kind: 'attack' })}>
                 普通攻击
               </button>
-              <button type="button" className="ink-btn px-3 py-1 text-xs" onClick={() => act({ kind: 'defend' })}>
+              <button type="button" disabled={stunned} className="ink-btn px-3 py-1 text-xs disabled:opacity-40" onClick={() => act({ kind: 'defend' })}>
                 防御蓄势
               </button>
-              <button type="button" className="ink-btn px-3 py-1 text-xs" onClick={() => act({ kind: 'flee' })}>
+              <button type="button" disabled={stunned} className="ink-btn px-3 py-1 text-xs disabled:opacity-40" onClick={() => act({ kind: 'flee' })}>
                 逃跑
               </button>
             </div>

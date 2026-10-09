@@ -16,8 +16,8 @@ import { generateDrop } from './equipmentDrops';
 import { buildRelicEquipment } from '../data/relics';
 import { useGameStore } from '../store/useGameStore';
 import {
-  RAGE_MAX, addStatus, battleCtxFrom, bossArtsOf, checkCrit, heroArtsOf,
-  rollDamage, speedOf, strike, tickStatuses, useMartialArt, type BattleCtx,
+  RAGE_MAX, STATUS_NAME, addStatus, battleCtxFrom, bossArtsOf, checkCrit, dotsOf,
+  heroArtsOf, isStunned, rollDamage, speedOf, strike, tickStatuses, useMartialArt, type BattleCtx,
 } from './BattleCore';
 
 export interface BattleLog {
@@ -216,11 +216,15 @@ function heroTurn(state: BattleState, action: BattleAction): void {
         out.shieldGained > 0 ? `结起 ${out.shieldGained} 点护盾` : '',
         out.healed > 0 ? `回复 ${out.healed} 点生命` : '',
       ].filter(Boolean).join('，');
+      // B1：被韧性抵抗掉的控制要如实写出来，否则玩家会以为招式白放了
+      const resistNote = out.resisted.length > 0
+        ? `，但${out.resisted.map((r) => STATUS_NAME[r]).join('、')}被对方硬抗住了`
+        : '';
       push(state, {
         attacker: '勇者', defender: foe.name, damage: out.hpDmg, isCrit: art.kind === 'burst',
         description: out.missed
           ? `勇者施展「${art.name}」，却未击中。`
-          : `勇者施展「${art.name}」${out.multihit > 1 ? `（${out.multihit} 段全中）` : ''}，造成 ${out.hpDmg} 点伤害${extra ? `，${extra}` : ''}。${foe.name} 剩余 HP: ${state.foeHp}`,
+          : `勇者施展「${art.name}」${out.multihit > 1 ? `（${out.multihit} 段全中）` : ''}，造成 ${out.hpDmg} 点伤害${resistNote}${extra ? `，${extra}` : ''}。${foe.name} 剩余 HP: ${state.foeHp}`,
       });
       if (state.foeHp <= 0) finish(state, true);
       return; // 放武学的回合不再触发普攻/连击
@@ -265,9 +269,15 @@ function matesTurn(state: BattleState): void {
   if (state.foeHp <= 0) finish(state, true);
 }
 
-/** 敌方出手（Boss 怒气满会放妖术） */
+/** 敌方出手（Boss 怒气满会放妖术；B1 起麻痹会直接封掉这一手） */
 function foeTurn(state: BattleState): void {
   const { foe, hero, ctx } = state;
+
+  if (isStunned(foe)) {
+    push(state, { attacker: foe.name, defender: '勇者', damage: 0, isCrit: false, description: `${foe.name} 被麻痹，妖气凝滞，这一手没能使出来。` });
+    return;
+  }
+
   const arts = bossArtsOf(foe).filter((a) => foe.vars.rage >= (a.cost ?? RAGE_MAX));
   let hpDmg: number;
   let artName = '';
@@ -309,7 +319,37 @@ function foeTurn(state: BattleState): void {
   if (state.heroHp <= 0) finish(state, false);
 }
 
+/**
+ * 回合末持续伤害（B1）：流血 / 中毒无视防御与护盾，直接扣血。
+ * 队友没有独立血条（协战只输出伤害、不单独受击），因此只结算勇者与敌方。
+ */
+function tickDots(state: BattleState): void {
+  const heroDots = dotsOf(state.hero);
+  if (heroDots.length > 0 && state.heroHp > 0) {
+    const total = heroDots.reduce((s, d) => s + d.dmg, 0);
+    state.heroHp = Math.max(0, state.heroHp - total);
+    push(state, {
+      attacker: heroDots[0].name, defender: '勇者', damage: total, isCrit: false,
+      description: `勇者受${heroDots.map((d) => `${d.name} ${d.dmg}`).join('、')}侵蚀，损失 ${total} 点生命。勇者剩余 HP: ${state.heroHp}`,
+    });
+    if (state.heroHp <= 0) { finish(state, false); return; }
+  }
+
+  const foeDots = dotsOf(state.foe);
+  if (foeDots.length > 0 && state.foeHp > 0) {
+    const total = foeDots.reduce((s, d) => s + d.dmg, 0);
+    state.foeHp = Math.max(0, state.foeHp - total);
+    push(state, {
+      attacker: foeDots[0].name, defender: state.foe.name, damage: total, isCrit: false,
+      description: `${state.foe.name} 受${foeDots.map((d) => `${d.name} ${d.dmg}`).join('、')}侵蚀，损失 ${total} 点生命。${state.foe.name} 剩余 HP: ${state.foeHp}`,
+    });
+    if (state.foeHp <= 0) { finish(state, true); return; }
+  }
+}
+
 function endRound(state: BattleState): void {
+  tickDots(state);
+  if (state.over) return;
   tickStatuses(state.hero);
   tickStatuses(state.foe);
   for (const m of state.mates) tickStatuses(m);
@@ -329,8 +369,16 @@ export function playerAct(state: BattleState, action: BattleAction): BattleState
     if (next.over) return next;
   }
 
-  heroTurn(next, action);
-  if (next.over) return next;
+  // B1：麻痹 → 这一手递不出去（队友协战与敌方还手照常结算，不会白过一整回合）
+  if (isStunned(next.hero)) {
+    push(next, {
+      attacker: '勇者', defender: next.foe.name, damage: 0, isCrit: false,
+      description: '勇者周身麻痹，动弹不得，这一手没能递出去。',
+    });
+  } else {
+    heroTurn(next, action);
+    if (next.over) return next;
+  }
 
   matesTurn(next);
   if (next.over) return next;

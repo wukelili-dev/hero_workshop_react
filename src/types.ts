@@ -886,6 +886,12 @@ export interface StatusEffect {
   stacks: number;   // 1~5（同种状态刷新不叠层）
   turns: number;    // 剩余回合
   source?: string;  // 施加者 id
+  /**
+   * B1：施加瞬间的施加者攻击力快照。
+   * 只有持续伤害类状态（流血/中毒）会带它——回合末按「快照 × 系数 × 层数」扣血，
+   * 这样脱离施加者之后伤害也不会凭空变化，且不会随目标防御而失真。
+   */
+  power?: number;
 }
 
 /** 战斗变量（战斗内存在） */
