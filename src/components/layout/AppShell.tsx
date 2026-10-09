@@ -103,7 +103,9 @@ export const AppShell: React.FC = () => {
   const day = Math.floor(useWorldStore((s) => s.day));
   const bountyClaimed = useWorldStore((s) => s.bountyClaimed);
   const killCounts = useGameStore((s) => s.killCounts);
-  const bounties = useMemo(() => bountiesFor(day), [day]);
+  const heroLevel = useGameStore((s) => s.hero.level);
+  // 悬赏按玩家当前等级开窗（升级后当日悬赏会跟着刷新，避免接到打不动的目标）
+  const bounties = useMemo(() => bountiesFor(day, heroLevel), [day, heroLevel]);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [saveMeta, setSaveMeta] = useState<ReturnType<typeof getSaveMeta>>(null);
 
@@ -221,7 +223,7 @@ export const AppShell: React.FC = () => {
                 onClick={() => toast(claimBounty(b), { icon: '📜' })}
                 className={ready && !claimed ? 'ink-btn-seal text-[11px]' : 'ink-btn text-[11px] opacity-60'}
               >
-                讨伐{b.monsterId} ×{b.need}（{Math.min(got, b.need)}/{b.need}）
+                讨伐{b.monsterId}（Lv{b.level}）×{b.need}（{Math.min(got, b.need)}/{b.need}）
                 {claimed ? ' · 已领' : ` → ${b.gold} 金`}
               </button>
             );

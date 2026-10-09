@@ -20,7 +20,7 @@ import {
   SCHOOL_NAME, SKILLS, SKILL_SCHOOL_IDS, artsBySchool, artsNeedingBook, getSkill, learnableArts,
 } from '../src/data/skills';
 import { ITEM_DEFS } from '../src/data/items/items';
-import { weightedPickByGrade } from '../src/engine/Bounty';
+import { BOUNTY_LEVEL_MARGIN, bountiesFor, weightedPickByGrade } from '../src/engine/Bounty';
 import {
   CHARGE_MULT, ORDER_FOCUS_MULT, ORDER_GUARD_CUT, playerAct,
   type BattleState,
@@ -332,6 +332,85 @@ check('悬赏掉落按品级加权（每高一阶更稀有）', () => {
     detail: grades.map((g, i) => `G${g}:${counts[i]}`).join(' / '),
   };
 }, 3);
+
+// ═══ 今日悬赏：难度按玩家等级开窗（2026-10-09 修：1 级刷出 Lv40 酒鬼） ═══
+
+check('悬赏目标等级不超过玩家等级 + 容差（1~80 级逐级抽查）', () => {
+  const bad: string[] = [];
+  for (let lv = 1; lv <= 80; lv++) {
+    for (const b of bountiesFor(1000 + lv, lv)) {
+      if (b.level > lv + BOUNTY_LEVEL_MARGIN) bad.push(`Lv${lv}→${b.monsterId}(Lv${b.level})`);
+    }
+  }
+  return {
+    ok: bad.length === 0,
+    detail: bad.length === 0 ? `1~80 级全部落在 +${BOUNTY_LEVEL_MARGIN} 窗口内` : `越窗：${bad.slice(0, 5).join(', ')}`,
+  };
+});
+
+check('1 级玩家不会再接到酒鬼 / 五庄道童（本次回归用例）', () => {
+  const seen = new Set<string>();
+  let hit = 0;
+  for (let day = 1; day <= 400; day++) {
+    for (const b of bountiesFor(day, 1)) {
+      seen.add(b.monsterId);
+      if (b.monsterId === '酒鬼' || b.monsterId === '五庄道童') hit++;
+    }
+  }
+  const maxLv = Math.max(...[...seen].map((id) => MONSTERS[id]?.level ?? 1));
+  return {
+    ok: hit === 0 && seen.size >= 3,
+    detail: `400 天共 ${seen.size} 种目标，最高 Lv${maxLv}；酒鬼/道童出现 ${hit} 次`,
+  };
+});
+
+check('悬赏池随玩家等级上移（高等级不再刷新手怪）', () => {
+  const poolAt = (lv: number) => {
+    const s = new Set<string>();
+    for (let day = 1; day <= 200; day++) for (const b of bountiesFor(day, lv)) s.add(b.monsterId);
+    return s;
+  };
+  const low = poolAt(1);
+  const high = poolAt(55);
+  const lvOf = (id: string) => MONSTERS[id]?.level ?? 1;
+  const maxLow = Math.max(...[...low].map(lvOf));
+  const maxHigh = Math.max(...[...high].map(lvOf));
+  const avgHigh = [...high].reduce((a, id) => a + lvOf(id), 0) / high.size;
+  return {
+    ok: maxHigh > maxLow && avgHigh >= 40,
+    detail: `Lv1 池最高 Lv${maxLow}；Lv55 池最高 Lv${maxHigh}（均值 ${avgHigh.toFixed(1)}）`,
+  };
+});
+
+check('悬赏同日同等级结果稳定，且三条不重复', () => {
+  const sig = (lv: number) => bountiesFor(777, lv).map((b) => `${b.monsterId}:${b.need}:${b.gold}`);
+  const stable = sig(12).join('|') === sig(12).join('|');
+  const ids = bountiesFor(777, 12).map((b) => b.monsterId);
+  return {
+    ok: stable && new Set(ids).size === ids.length,
+    detail: `稳定=${stable}，去重=${new Set(ids).size === ids.length}（${ids.join('、')}）`,
+  };
+});
+
+check('任何等级都能凑满 3 条悬赏（不会因过滤而空池）', () => {
+  const bad: string[] = [];
+  for (let lv = 1; lv <= 120; lv++) {
+    const n = bountiesFor(500 + lv, lv).length;
+    if (n !== 3) bad.push(`Lv${lv}:${n}`);
+  }
+  return { ok: bad.length === 0, detail: bad.length === 0 ? '1~120 级均给出 3 条' : bad.slice(0, 5).join(', ') };
+});
+
+check('悬赏条按玩家等级生成并显示目标等级（接线断言）', () => {
+  const shell = readFileSync(join(root, 'src/components/layout/AppShell.tsx'), 'utf8');
+  const passLevel = /bountiesFor\(day,\s*heroLevel\)/.test(shell);
+  const depLevel = /\[day,\s*heroLevel\]/.test(shell);
+  const showsLv = /b\.level/.test(shell);
+  return {
+    ok: passLevel && depLevel && showsLv,
+    detail: `传等级=${passLevel} 依赖刷新=${depLevel} 显示 Lv=${showsLv}`,
+  };
+});
 
 // ═══ B4：动作空间（用药 / 蓄力反击 / 队友指令） ═══
 
