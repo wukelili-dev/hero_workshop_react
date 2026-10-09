@@ -16,8 +16,9 @@ import { generateDrop } from './equipmentDrops';
 import { buildRelicEquipment } from '../data/relics';
 import { useGameStore } from '../store/useGameStore';
 import {
-  RAGE_MAX, RAGE_INIT, STATUS_NAME, addStatus, battleCtxFrom, bossArtsOf, checkCrit, dotsOf,
-  heroArtsOf, isStunned, rollDamage, speedOf, strike, tickStatuses, useMartialArt, type BattleCtx,
+  RAGE_MAX, RAGE_INIT, STATUS_NAME, addStatus, applyShield, battleCtxFrom, bossArtsOf, checkCrit,
+  dotsOf, heroArtsOf, isStunned, rollDamage, speedOf, strike, tickStatuses, useMartialArt,
+  type BattleCtx,
 } from './BattleCore';
 
 export interface BattleLog {
@@ -38,12 +39,27 @@ export interface Rewards {
   resources?: Record<string, number>;
 }
 
+/** 队友指令（B4）：让协战从"每回合自动打一下"变成一条可指挥的战线 */
+export type MateOrder = 'focus' | 'guard';
+
+/** B4：蓄力后下一击的伤害倍率 */
+export const CHARGE_MULT = 1.6;
+/** B4：蓄力期间被击中时的反击系数（按普攻期望伤害折算） */
+export const CHARGE_COUNTER_RATIO = 0.5;
+/** B4：队友指令效果 —— 强攻增伤 / 掩护减伤 */
+export const ORDER_FOCUS_MULT = 1.7;
+export const ORDER_GUARD_CUT = 0.75;
+
 /** 玩家在手动战斗里能做的选择 */
 export type BattleAction =
   | { kind: 'attack' }
   | { kind: 'defend' }
   | { kind: 'art'; artId: string }
-  | { kind: 'flee' };
+  | { kind: 'flee' }
+  // B4：动作空间扩容
+  | { kind: 'charge' }
+  | { kind: 'item'; itemId: string; heal: number }
+  | { kind: 'order'; command: MateOrder };
 
 export interface BattleState {
   monster: Monster;
@@ -63,6 +79,12 @@ export interface BattleState {
   victory: boolean;
   fled: boolean;
   rewards: Rewards;
+  /** B4：是否处于蓄力态（下一击 ×CHARGE_MULT，被击时可反击） */
+  charged: boolean;
+  /** B4：本回合队友指令（回合末清空，需要每回合重新下令） */
+  mateOrder: MateOrder | null;
+  /** B5：Boss 当前阶段（1 常在 / 2 半血后的狂暴姿态） */
+  foePhase: 1 | 2;
 }
 
 const NEUTRAL_AXES = { hit: 0.85, dodge: 0, speed: 14, pen: 0, tenacity: 0, resist: 0 } as const;
@@ -160,6 +182,9 @@ export function createBattle(heroStats: HeroStats, team: TeamMember[], monster: 
     victory: false,
     fled: false,
     rewards: { ...EMPTY_REWARDS, drops: [], equipment: [] },
+    charged: false,
+    mateOrder: null,
+    foePhase: 1,
   };
 
   state.logs.push({
@@ -191,7 +216,7 @@ function finish(state: BattleState, victory: boolean): void {
   });
 }
 
-/** 玩家出手（普攻 / 武学 / 防御 / 逃跑） */
+/** 玩家出手（普攻 / 武学 / 防御 / 逃跑 / 蓄力 / 用药 / 队友指令） */
 function heroTurn(state: BattleState, action: BattleAction): void {
   const { hero, foe, ctx } = state;
 
@@ -209,11 +234,58 @@ function heroTurn(state: BattleState, action: BattleAction): void {
     return;
   }
 
+  // B4：蓄力 —— 本回合不出手，换下一击 ×1.6 且被击时反击
+  if (action.kind === 'charge') {
+    state.charged = true;
+    hero.vars.rage = Math.min(RAGE_MAX, hero.vars.rage + 20);
+    addStatus(hero, 'guard', 1, 1);
+    push(state, {
+      attacker: '勇者', defender: '勇者', damage: 0, isCrit: false,
+      description: `勇者沉腰蓄力，真气在周身流转（怒气 ${hero.vars.rage}）：下一击伤害大增，被击中时还会反手一下。`,
+    });
+    return;
+  }
+
+  // B4：用药 —— 消耗一回合换一口血
+  if (action.kind === 'item') {
+    const before = state.heroHp;
+    state.heroHp = Math.min(state.heroMaxHp, state.heroHp + Math.max(0, Math.floor(action.heal)));
+    const gained = state.heroHp - before;
+    push(state, {
+      attacker: '勇者', defender: '勇者', damage: 0, isCrit: false,
+      description: gained > 0
+        ? `勇者服下伤药，回复 ${gained} 点生命。勇者剩余 HP: ${state.heroHp}`
+        : '勇者服下伤药，却已无伤可愈。',
+    });
+    return;
+  }
+
+  // B4：队友指令 —— 本回合队友改为强攻或掩护
+  if (action.kind === 'order') {
+    state.mateOrder = action.command;
+    const label = action.command === 'focus' ? '全力强攻' : '回身掩护';
+    const note = action.command === 'focus'
+      ? `队友本回合协战伤害 ×${ORDER_FOCUS_MULT}`
+      : `队友本回合替你挡下部分伤害（勇者受伤 ×${ORDER_GUARD_CUT}）`;
+    push(state, {
+      attacker: '勇者', defender: '勇者', damage: 0, isCrit: false,
+      description: state.mates.length > 0
+        ? `勇者向队友传令：${label}。${note}。`
+        : `勇者向队友传令，却无人应声。`,
+    });
+    return;
+  }
+
+  // B4：蓄力倍率只在这一次出手时消费掉
+  const dmgMult = state.charged ? CHARGE_MULT : 1;
+  const chargedNote = state.charged ? '（蓄力一击）' : '';
+
   if (action.kind === 'art') {
     const art = heroArtsOf(hero).find((a) => a.id === action.artId);
     if (art && hero.vars.rage >= (art.cost ?? RAGE_MAX)) {
       hero.vars.rage = Math.max(0, hero.vars.rage - (art.cost ?? RAGE_MAX));
-      const out = useMartialArt(hero, foe, art);
+      const out = useMartialArt(hero, foe, art, dmgMult);
+      if (state.charged) state.charged = false;
       state.foeHp = Math.max(0, state.foeHp - out.hpDmg);
       if (out.healed > 0) state.heroHp = Math.min(state.heroMaxHp, state.heroHp + out.healed);
       const extra = [
@@ -224,11 +296,13 @@ function heroTurn(state: BattleState, action: BattleAction): void {
       const resistNote = out.resisted.length > 0
         ? `，但${out.resisted.map((r) => STATUS_NAME[r]).join('、')}被对方硬抗住了`
         : '';
+      // B3：连携/克制生效时也要让玩家看得见，否则组合玩法等于白做
+      const comboNote = out.bonusMult > 1 ? `，连携加成 ×${out.bonusMult}` : '';
       push(state, {
         attacker: '勇者', defender: foe.name, damage: out.hpDmg, isCrit: art.kind === 'burst',
         description: out.missed
           ? `勇者施展「${art.name}」，却未击中。`
-          : `勇者施展「${art.name}」${out.multihit > 1 ? `（${out.multihit} 段全中）` : ''}，造成 ${out.hpDmg} 点伤害${resistNote}${extra ? `，${extra}` : ''}。${foe.name} 剩余 HP: ${state.foeHp}`,
+          : `勇者施展「${art.name}」${chargedNote}${out.multihit > 1 ? `（${out.multihit} 段全中）` : ''}，造成 ${out.hpDmg} 点伤害${comboNote}${resistNote}${extra ? `，${extra}` : ''}。${foe.name} 剩余 HP: ${state.foeHp}`,
       });
       if (state.foeHp <= 0) finish(state, true);
       return; // 放武学的回合不再触发普攻/连击
@@ -237,16 +311,17 @@ function heroTurn(state: BattleState, action: BattleAction): void {
   }
 
   const isCrit = checkCrit(hero.derived.crit);
-  const hpDmg = strike(hero, foe, isCrit);
+  const hpDmg = strike(hero, foe, isCrit, dmgMult);
   if (hpDmg < 0) {
     push(state, { attacker: '勇者', defender: foe.name, damage: 0, isCrit: false, description: `勇者攻击 ${foe.name}，未命中。` });
     return;
   }
+  if (state.charged) state.charged = false;
   state.foeHp = Math.max(0, state.foeHp - hpDmg);
   if (ctx.lifesteal > 0) state.heroHp = Math.min(state.heroMaxHp, state.heroHp + hpDmg * ctx.lifesteal);
   push(state, {
     attacker: '勇者', defender: foe.name, damage: hpDmg, isCrit,
-    description: `勇者攻击 ${foe.name}，造成 ${hpDmg} 点伤害${isCrit ? '（暴击！）' : ''}。${foe.name} 剩余 HP: ${state.foeHp}`,
+    description: `勇者攻击 ${foe.name}${chargedNote}，造成 ${hpDmg} 点伤害${isCrit ? '（暴击！）' : ''}。${foe.name} 剩余 HP: ${state.foeHp}`,
   });
   if (state.foeHp <= 0) { finish(state, true); return; }
 
@@ -258,16 +333,19 @@ function heroTurn(state: BattleState, action: BattleAction): void {
   }
 }
 
-/** 队友协战（每回合各出手一次，怪物仍视勇者为唯一目标） */
+/** 队友协战（每回合各出手一次，怪物仍视勇者为唯一目标）；B4 起受队友指令影响 */
 function matesTurn(state: BattleState): void {
+  // B4：强攻增伤 / 掩护降伤（掩护的减伤在 foeTurn 结算）
+  const mult = state.mateOrder === 'focus' ? ORDER_FOCUS_MULT : state.mateOrder === 'guard' ? 0.6 : 1;
+  const tag = state.mateOrder === 'focus' ? '（强攻）' : state.mateOrder === 'guard' ? '（虚应）' : '';
   for (const mate of state.mates) {
     if (state.foeHp <= 0) return;
-    const dmg = strike(mate, state.foe, false);
+    const dmg = strike(mate, state.foe, false, mult);
     if (dmg < 0) {
-      push(state, { attacker: mate.name, defender: state.foe.name, damage: 0, isCrit: false, description: `${mate.name}协战 ${state.foe.name}，未命中。` });
+      push(state, { attacker: mate.name, defender: state.foe.name, damage: 0, isCrit: false, description: `${mate.name}协战${tag} ${state.foe.name}，未命中。` });
     } else {
       state.foeHp = Math.max(0, state.foeHp - dmg);
-      push(state, { attacker: mate.name, defender: state.foe.name, damage: dmg, isCrit: false, description: `${mate.name}协战 ${state.foe.name}，造成 ${dmg} 点伤害。${state.foe.name} 剩余 HP: ${state.foeHp}` });
+      push(state, { attacker: mate.name, defender: state.foe.name, damage: dmg, isCrit: false, description: `${mate.name}协战${tag} ${state.foe.name}，造成 ${dmg} 点伤害。${state.foe.name} 剩余 HP: ${state.foeHp}` });
     }
   }
   if (state.foeHp <= 0) finish(state, true);
@@ -304,11 +382,30 @@ function foeTurn(state: BattleState): void {
   let afterCut = hpDmg;
   if (ctx.guardChance > 0 && Math.random() < ctx.guardChance) afterCut = Math.floor(afterCut * 0.7);
   afterCut = Math.max(1, Math.floor(afterCut * (1 - ctx.damageCut)));
+  // B4：队友「掩护」指令 —— 队友替你挡下部分伤害
+  let guardNote = '';
+  if (state.mateOrder === 'guard') {
+    const before = afterCut;
+    afterCut = Math.max(1, Math.floor(afterCut * ORDER_GUARD_CUT));
+    guardNote = `（队友掩护，${before} → ${afterCut}）`;
+  }
   state.heroHp = Math.max(0, state.heroHp - afterCut);
   push(state, {
     attacker: foe.name, defender: '勇者', damage: afterCut, isCrit: false,
-    description: `${foe.name}${artName ? `施展「${artName}」` : '攻击勇者'}，造成 ${afterCut} 点伤害。勇者剩余 HP: ${state.heroHp}`,
+    description: `${foe.name}${artName ? `施展「${artName}」` : '攻击勇者'}，造成 ${afterCut} 点伤害${guardNote}。勇者剩余 HP: ${state.heroHp}`,
   });
+
+  // B4：蓄力反击 —— 蓄力期间挨打会反手一下（同时消耗掉蓄力态）
+  if (state.charged && state.heroHp > 0) {
+    const counter = Math.max(1, Math.floor(rollDamage(hero, foe, false) * CHARGE_COUNTER_RATIO));
+    const applied = applyShield(state.foe, counter);
+    state.foeHp = Math.max(0, state.foeHp - applied);
+    push(state, {
+      attacker: '勇者', defender: foe.name, damage: applied, isCrit: false,
+      description: `勇者趁隙反击，反震 ${foe.name} ${applied} 点伤害。${foe.name} 剩余 HP: ${state.foeHp}`,
+    });
+    if (state.foeHp <= 0) { finish(state, true); return; }
+  }
 
   if (state.foeHp > 0) {
     let recoil = 0;
@@ -357,6 +454,8 @@ function endRound(state: BattleState): void {
   tickStatuses(state.hero);
   tickStatuses(state.foe);
   for (const m of state.mates) tickStatuses(m);
+  // B4：队友指令只维持一回合，下一回合要用就得重新下令（否则等于常驻 buff）
+  state.mateOrder = null;
   state.round++;
 }
 

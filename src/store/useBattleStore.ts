@@ -7,13 +7,15 @@
 import { create } from 'zustand';
 import type { Monster } from '../types';
 import { createBattle, playerAct, type BattleAction, type BattleState } from '../engine/Battle';
+import { isStunned } from '../engine/BattleCore';
 import { useGameStore } from './useGameStore';
+import { useInventoryStore } from './useInventoryStore';
 
 interface BattleStoreState {
   battle: BattleState | null;
   /** 开始一场手动战斗（已在战斗中则忽略） */
   start: (monster: Monster) => void;
-  /** 出一个回合（普攻 / 武学 / 防御 / 逃跑） */
+  /** 出一个回合（普攻 / 武学 / 防御 / 逃跑 / 蓄力 / 用药 / 队友指令） */
   act: (action: BattleAction) => void;
   /** 关闭结算面板 */
   close: () => void;
@@ -38,6 +40,15 @@ export const useBattleStore = create<BattleStoreState>((set, get) => ({
   act: (action) => {
     const cur = get().battle;
     if (!cur || cur.over) return;
+
+    // B4：战斗中用药要先真的从背包扣掉，否则就是无中生有的无限回血。
+    // 两种情况不消耗：已被麻痹（这一手递不出去）、背包里没有这瓶药。
+    if (action.kind === 'item') {
+      if (isStunned(cur.hero)) return;
+      const removed = useInventoryStore.getState().removeNovelty(action.itemId, 1);
+      if (!removed) return;
+    }
+
     const next = playerAct(cur, action);
     set({ battle: next });
     if (next.over) settle(next);

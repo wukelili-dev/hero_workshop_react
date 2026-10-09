@@ -21,6 +21,10 @@ import {
 } from '../src/data/skills';
 import { ITEM_DEFS } from '../src/data/items/items';
 import { weightedPickByGrade } from '../src/engine/Bounty';
+import {
+  CHARGE_MULT, ORDER_FOCUS_MULT, ORDER_GUARD_CUT, playerAct,
+  type BattleState,
+} from '../src/engine/Battle';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rows: Array<{ name: string; ok: boolean; detail: string }> = [];
@@ -309,6 +313,131 @@ check('悬赏掉落按品级加权（每高一阶更稀有）', () => {
     ok: decreasing && counts.every((c) => c > 0),
     detail: grades.map((g, i) => `G${g}:${counts[i]}`).join(' / '),
   };
+});
+
+// ═══ B4：动作空间（用药 / 蓄力反击 / 队友指令） ═══
+
+/** 造一个"打不死"的战斗场景：双方血厚到不会分胜负，只用来量伤害与回血 */
+function mkBattle(over: Partial<BattleState> = {}): BattleState {
+  const make = (side: 'ally' | 'foe'): Combatant => ({
+    id: side, name: side === 'ally' ? '勇者' : '测试妖', side, level: 10,
+    primary: { root: 20, qi: 20, agility: 20, spirit: 20, fortune: 10 },
+    derived: {
+      hpMax: 1e9, atk: 200, def: 50, hit: 0.9, dodge: 0, speed: 20,
+      pen: 0, tenacity: 0, resist: 0, crit: 0, critDmg: 1.5,
+    },
+    vars: { rage: 100, shield: 0, statuses: [] },
+    lineage: side === 'foe' ? 'demon' : 'human',
+  });
+  return {
+    monster: {
+      id: 'test_mon', name: '测试妖', expReward: 0, goldReward: 0, drops: [], level: 10,
+    } as BattleState['monster'],
+    hero: make('ally'), mates: [], foe: make('foe'),
+    ctx: { comboChance: 0, reflect: 0, thorns: 0, guardChance: 0, damageCut: 0, lifesteal: 0 },
+    heroHp: 1e9, heroMaxHp: 1e9, foeHp: 1e9, foeMaxHp: 1e9, round: 1,
+    heroFirst: true, logs: [], over: false, victory: false, fled: false,
+    rewards: { exp: 0, gold: 0, drops: [], equipment: [] },
+    charged: false, mateOrder: null, foePhase: 1,
+    ...over,
+  };
+}
+
+function mkMate(name = '队友'): Combatant {
+  const c = mkBattle().hero;
+  return { ...c, id: `mate_${name}`, name, side: 'ally' };
+}
+
+const avg = (fn: () => number, n = 400): number => {
+  let s = 0;
+  for (let i = 0; i < n; i++) s += fn();
+  return s / n;
+};
+
+check(`蓄力后一击伤害 ×${CHARGE_MULT}（400 次实测）`, () => {
+  const plain = avg(() => {
+    const s = mkBattle();
+    const n = playerAct(s, { kind: 'attack' });
+    return s.foeHp - n.foeHp;
+  });
+  const charged = avg(() => {
+    const s = mkBattle();
+    const a = playerAct(s, { kind: 'charge' });
+    const b = playerAct(a, { kind: 'attack' });
+    return a.foeHp - b.foeHp;
+  });
+  const ratio = charged / plain;
+  return { ok: ratio >= 1.45 && ratio <= 1.75, detail: `普通 ${plain.toFixed(0)} → 蓄力 ${charged.toFixed(0)}（×${ratio.toFixed(2)}）` };
+});
+
+check('蓄力期间挨打会反击（战报可见）', () => {
+  let hit = false;
+  for (let i = 0; i < 30 && !hit; i++) {
+    const s = mkBattle({ heroFirst: true });
+    const a = playerAct(s, { kind: 'charge' });
+    hit = a.logs.some((l) => l.description.includes('趁隙反击'));
+  }
+  return { ok: hit, detail: hit ? '战报出现「勇者趁隙反击」' : '30 次尝试均未触发' };
+});
+
+check(`队友「强攻」令提高协战伤害 ×${ORDER_FOCUS_MULT}（400 次实测）`, () => {
+  const base = avg(() => {
+    const s = mkBattle({ mates: [mkMate()] });
+    const n = playerAct(s, { kind: 'order', command: 'guard' });
+    return s.foeHp - n.foeHp;
+  });
+  const focus = avg(() => {
+    const s = mkBattle({ mates: [mkMate()] });
+    const n = playerAct(s, { kind: 'order', command: 'focus' });
+    return s.foeHp - n.foeHp;
+  });
+  const ratio = focus / base;
+  return { ok: ratio >= 1.5, detail: `虚应 ${base.toFixed(0)} → 强攻 ${focus.toFixed(0)}（×${ratio.toFixed(2)}，设计 1.7/0.6=${(1.7 / 0.6).toFixed(2)}）` };
+});
+
+check(`队友「掩护」令降低勇者受伤 ×${ORDER_GUARD_CUT}（400 次实测）`, () => {
+  const loose = avg(() => {
+    const s = mkBattle({ mates: [mkMate()] });
+    const n = playerAct(s, { kind: 'order', command: 'focus' });
+    return s.heroHp - n.heroHp;
+  });
+  const guarded = avg(() => {
+    const s = mkBattle({ mates: [mkMate()] });
+    const n = playerAct(s, { kind: 'order', command: 'guard' });
+    return s.heroHp - n.heroHp;
+  });
+  const ratio = guarded / loose;
+  return { ok: ratio <= 0.85 && ratio > 0.5, detail: `无掩护 ${loose.toFixed(0)} → 掩护 ${guarded.toFixed(0)}（×${ratio.toFixed(2)}）` };
+});
+
+check('战斗中用药按上限结算（不溢出）', () => {
+  const s1 = mkBattle({ heroHp: 500, heroMaxHp: 1000 });
+  const a1 = playerAct(s1, { kind: 'item', itemId: 'x', heal: 300 });
+  const heal1 = a1.logs.find((l) => l.description.includes('服下伤药'));
+  const s2 = mkBattle({ heroHp: 900, heroMaxHp: 1000 });
+  const a2 = playerAct(s2, { kind: 'item', itemId: 'x', heal: 300 });
+  const heal2 = a2.logs.find((l) => l.description.includes('服下伤药'));
+  const ok = !!heal1?.description.includes('回复 300 点生命') && !!heal2?.description.includes('回复 100 点生命');
+  return { ok, detail: `${heal1?.description.match(/回复 \d+ 点生命/)?.[0]} / ${heal2?.description.match(/回复 \d+ 点生命/)?.[0]}` };
+});
+
+check('战斗中用药会真的扣背包（接线断言）', () => {
+  const src = readFileSync(join(root, 'src/store/useBattleStore.ts'), 'utf8');
+  const consumes = /removeNovelty\(action\.itemId, 1\)/.test(src);
+  const guards = /isStunned\(cur\.hero\)/.test(src);
+  return { ok: consumes && guards, detail: `扣背包=${consumes} 麻痹保护=${guards}` };
+});
+
+check('动作空间四种新选择都已接线', () => {
+  const src = readFileSync(join(root, 'src/engine/Battle.ts'), 'utf8');
+  const parts = {
+    charge: /action\.kind === 'charge'/.test(src),
+    item: /action\.kind === 'item'/.test(src),
+    order: /action\.kind === 'order'/.test(src),
+    reset: /state\.mateOrder = null/.test(src),
+  };
+  const ok = Object.values(parts).every(Boolean);
+  return { ok, detail: Object.entries(parts).map(([k, v]) => `${k}=${v}`).join(' ') };
 });
 
 const pad = Math.max(...rows.map((r) => r.name.length));
