@@ -14,6 +14,7 @@ import { deriveTeammate } from './NpcStats';
 import { buildHeroCombatant, heroEquipEffects, type HeroStats } from './HeroCombat';
 import { generateDrop } from './equipmentDrops';
 import { buildRelicEquipment } from '../data/relics';
+import { NAMED_BOSS_ARTS } from '../data/skills';
 import { useGameStore } from '../store/useGameStore';
 import {
   RAGE_MAX, RAGE_INIT, STATUS_NAME, addStatus, applyShield, battleCtxFrom, bossArtsOf, checkCrit,
@@ -97,6 +98,9 @@ function lineageOf(monster: Monster): 'human' | 'demon' | 'divine' {
   return 'demon';
 }
 
+/** B5：Boss 默认在半血时进入第二阶段 */
+export const DEFAULT_ENRAGE_AT = 0.5;
+
 function monsterCombatant(monster: Monster): Combatant {
   const level = monster.level ?? 1;
   const { primary, derived } = monster.primary
@@ -108,12 +112,21 @@ function monsterCombatant(monster: Monster): Combatant {
           ...NEUTRAL_AXES, crit: 0, critDmg: 1.5,
         } as DerivedStats,
       };
+  const named = monster.isNamedBoss
+    ? (NAMED_BOSS_ARTS[monster.id] ?? NAMED_BOSS_ARTS[monster.name])
+    : undefined;
+  const arts = monster.arts ?? named?.arts;
+  const phaseArts = monster.artsPhase2 ?? named?.phase2;
   return {
     id: monster.id, name: monster.name, side: 'foe', level,
     primary, derived,
     vars: { rage: 0, shield: 0, statuses: [] },
     lineage: lineageOf(monster),
     isBoss: monster.isBoss,
+    // B5：Boss 招式按怪物数据走；名角从 NAMED_BOSS_ARTS 取，没配的自动回退
+    // DEFAULT_BOSS_ARTS（见 BattleCore.bossArtsOf）
+    ...(arts && arts.length > 0 ? { skills: arts } : {}),
+    ...(phaseArts && phaseArts.length > 0 ? { phaseArts } : {}),
   };
 }
 
@@ -351,9 +364,30 @@ function matesTurn(state: BattleState): void {
   if (state.foeHp <= 0) finish(state, true);
 }
 
-/** 敌方出手（Boss 怒气满会放妖术；B1 起麻痹会直接封掉这一手） */
+/**
+ * B5：半血换阶段 —— Boss 血量跌破阈值时换一套招式并涨怒。
+ * 只在第一阶段触发一次；切换后战报明确说出来，否则玩家只会觉得"它突然变强了"。
+ */
+function maybeEnrage(state: BattleState): void {
+  if (state.foePhase >= 2) return;
+  const { monster, foe } = state;
+  if (!foe.phaseArts || foe.phaseArts.length === 0) return;
+  const threshold = monster.enrageAt ?? DEFAULT_ENRAGE_AT;
+  if (state.foeHp > state.foeMaxHp * threshold) return;
+  state.foePhase = 2;
+  foe.skills = foe.phaseArts;
+  foe.vars.rage = Math.min(RAGE_MAX, foe.vars.rage + 30);
+  push(state, {
+    attacker: foe.name, defender: '勇者', damage: 0, isCrit: false,
+    description: `${foe.name} 气血大损，凶性大发，换了一套打法！（怒气 +30）`,
+  });
+}
+
+/** 敌方出手（Boss 会放专属妖术；B1 起麻痹会直接封掉这一手） */
 function foeTurn(state: BattleState): void {
   const { foe, hero, ctx } = state;
+
+  maybeEnrage(state);
 
   if (isStunned(foe)) {
     push(state, { attacker: foe.name, defender: '勇者', damage: 0, isCrit: false, description: `${foe.name} 被麻痹，妖气凝滞，这一手没能使出来。` });

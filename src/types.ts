@@ -233,6 +233,15 @@ export interface Monster {
   relicId?: string;
   /** 章节名（原著回目，如「尸魔三戏唐三藏」） */
   chapter?: string;
+  /**
+   * B5：Boss 常态招式（武学 id，见 data/skills.ts）。
+   * 缺省回退 DEFAULT_BOSS_ARTS，所以旧 Boss / 杂鱼 Boss 不用改也能正常打。
+   */
+  arts?: string[];
+  /** B5：半血狂暴后替换的招式组；不配则不进入第二阶段 */
+  artsPhase2?: string[];
+  /** B5：进入第二阶段的血量比例（0~1，默认 0.5） */
+  enrageAt?: number;
 }
 
 export interface GameMap {
@@ -917,6 +926,8 @@ export interface Combatant {
   isBoss?: boolean;
   equipmentEffects?: ItemEffect[];
   skills?: string[];
+  /** B5：Boss 半血狂暴后替换的招式组（由 monster.artsPhase2 / NAMED_BOSS_ARTS 解析而来） */
+  phaseArts?: string[];
 }
 
 /** 技能 */

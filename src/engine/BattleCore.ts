@@ -8,7 +8,7 @@
 import type { Combatant, ItemEffect, SkillDef, StatusEffectId } from '../types';
 import { sum as sumEffect, sumList } from './ItemEffects';
 import { STAT_CAPS } from './Stats';
-import { getSkill, DEFAULT_HERO_SKILLS } from '../data/skills';
+import { getSkill, DEFAULT_HERO_SKILLS, DEFAULT_BOSS_ARTS } from '../data/skills';
 
 // ── 怒气常量 ──
 export const RAGE_MAX = 100;
@@ -277,11 +277,16 @@ export function heroArtsOf(c: Combatant): SkillDef[] {
   return (c.skills ?? DEFAULT_HERO_SKILLS).map(getSkill).filter((s): s is SkillDef => !!s);
 }
 
-/** Boss 武学 */
+/**
+ * Boss 武学（B5）。
+ * B5 之前这里硬编码返回 `['blood_frenzy','poison_breath']` —— 白骨精和青牛精
+ * 打起来完全一样。现在改读 combatant.skills（由 monster.arts / artsPhase2 填），
+ * 没配的才回退到 DEFAULT_BOSS_ARTS。
+ */
 export function bossArtsOf(c: Combatant): SkillDef[] {
-  return c.isBoss
-    ? (['blood_frenzy', 'poison_breath'].map(getSkill).filter(Boolean) as SkillDef[])
-    : [];
+  if (!c.isBoss) return [];
+  const ids = c.skills && c.skills.length > 0 ? c.skills : DEFAULT_BOSS_ARTS;
+  return ids.map(getSkill).filter((s): s is SkillDef => !!s);
 }
 
 /** 把装备/套装/被动词条与名物持有词条折算成战斗上下文 */

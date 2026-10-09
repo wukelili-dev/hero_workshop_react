@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import type { Combatant } from '../src/types';
 import {
-  DOT_RATIO, RAGE_INIT, addStatus, bonusMultOf, controlResistRate, dotTotalOf, dotsOf,
+  DOT_RATIO, RAGE_INIT, addStatus, bonusMultOf, bossArtsOf, controlResistRate, dotTotalOf, dotsOf,
   isStunned, tickStatuses, useMartialArt,
 } from '../src/engine/BattleCore';
 import {
@@ -25,6 +25,8 @@ import {
   CHARGE_MULT, ORDER_FOCUS_MULT, ORDER_GUARD_CUT, playerAct,
   type BattleState,
 } from '../src/engine/Battle';
+import { NAMED_BOSS_ARTS, DEFAULT_BOSS_ARTS } from '../src/data/skills';
+import { MONSTERS } from '../src/data/maps';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rows: Array<{ name: string; ok: boolean; detail: string }> = [];
@@ -438,6 +440,87 @@ check('动作空间四种新选择都已接线', () => {
   };
   const ok = Object.values(parts).every(Boolean);
   return { ok, detail: Object.entries(parts).map(([k, v]) => `${k}=${v}`).join(' ') };
+});
+
+// ═══ B5：名角 Boss 差异化 ═══
+
+check('每个名角 Boss 都配了常态 + 狂暴两套招式', () => {
+  const named = Object.values(MONSTERS).filter((m) => m.isNamedBoss);
+  const cfgOf = (m: (typeof named)[number]) => NAMED_BOSS_ARTS[m.id] ?? NAMED_BOSS_ARTS[m.name];
+  const missing = named.filter((m) => {
+    const cfg = cfgOf(m);
+    return !cfg || cfg.arts.length < 2 || cfg.phase2.length < 1;
+  });
+  // 反向：NAMED_BOSS_ARTS 里不能有多余的、地图上不存在的名角
+  const extra = Object.keys(NAMED_BOSS_ARTS).filter(
+    (n) => !named.some((m) => m.name === n || m.id === n),
+  );
+  return {
+    ok: missing.length === 0 && extra.length === 0 && named.length >= 9,
+    detail: missing.length === 0 && extra.length === 0
+      ? `${named.length} 个名角招式齐备（${named.map((m) => m.name).join('、')}）`
+      : `缺配置：${missing.map((m) => m.name).join(', ') || '无'}；多余：${extra.join(', ') || '无'}`,
+  };
+});
+
+check('名角招式都是 monsterOnly 且引用的武学存在', () => {
+  const ids = new Set<string>();
+  for (const cfg of Object.values(NAMED_BOSS_ARTS)) {
+    for (const id of [...cfg.arts, ...cfg.phase2]) ids.add(id);
+  }
+  const dangling = [...ids].filter((id) => !SKILLS[id]);
+  const leaky = [...ids].filter((id) => SKILLS[id] && !SKILLS[id].monsterOnly);
+  return {
+    ok: dangling.length === 0 && leaky.length === 0,
+    detail: dangling.length === 0 && leaky.length === 0
+      ? `${ids.size} 条专属招式全部 monsterOnly`
+      : `空指向：${dangling.join(', ') || '无'}；未标 monsterOnly：${leaky.join(', ') || '无'}`,
+  };
+});
+
+check('名角两阶段招式确实不同（换阶段不是换个说法）', () => {
+  const same = Object.entries(NAMED_BOSS_ARTS).filter(
+    ([, c]) => c.arts.length === c.phase2.length && c.arts.every((a, i) => a === c.phase2[i]),
+  );
+  return { ok: same.length === 0, detail: same.length === 0 ? '9 个名角狂暴后都换了招' : `未换招：${same.map(([n]) => n).join(', ')}` };
+});
+
+check('Boss 招式读取 combatant.skills（接线断言）', () => {
+  const src = readFileSync(join(root, 'src/engine/BattleCore.ts'), 'utf8');
+  const reads = /export function bossArtsOf[\s\S]{0,320}c\.skills/.test(src);
+  const fallback = /DEFAULT_BOSS_ARTS/.test(src);
+  return { ok: reads && fallback, detail: `读 c.skills=${reads} 回退兜底=${fallback}` };
+});
+
+check('未配招式的普通 Boss 回退到默认妖术', () => {
+  const boss = mkBattle().foe;
+  boss.isBoss = true;
+  const arts = bossArtsOf(boss).map((a) => a.id);
+  return { ok: arts.join(',') === DEFAULT_BOSS_ARTS.join(','), detail: `回退为 ${arts.join('、')}` };
+});
+
+check('名角半血真的换阶段（实测）', () => {
+  const cfg = NAMED_BOSS_ARTS['白骨精'];
+  const foe = mkBattle().foe;
+  foe.isBoss = true;
+  foe.skills = cfg.arts;
+  foe.phaseArts = cfg.phase2;
+  const s = mkBattle({
+    monster: {
+      id: '白骨精', name: '白骨精', expReward: 0, goldReward: 0, drops: [], level: 65,
+      isBoss: true, isNamedBoss: true, relicId: 'baigu_zhang',
+    } as BattleState['monster'],
+    foe,
+    foeHp: 40,
+    foeMaxHp: 100,
+  });
+  const n = playerAct(s, { kind: 'defend' });
+  const switched = n.foePhase === 2 && n.foe.skills === cfg.phase2;
+  const logged = n.logs.some((l) => l.description.includes('凶性大发'));
+  return {
+    ok: switched && logged,
+    detail: `阶段 ${n.foePhase}，招式 ${n.foe.skills?.join('/')}，战报提示=${logged}`,
+  };
 });
 
 const pad = Math.max(...rows.map((r) => r.name.length));

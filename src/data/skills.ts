@@ -200,7 +200,160 @@ export const SKILLS: Record<string, SkillDef> = {
     cost: RAGE_ULT, kind: 'burst', power: 3.5, hits: 2, apply: ['stun'],
     desc: '白象玉鼻横扫，两段合计 350% 攻击伤害并震晕敌方',
   },
-  // ══ 妖类（怪物 / Boss 使用；monsterOnly 让 learnableArts 自动排除，玩家永远学不到） ══
+  // ══════════════════════════════════════════════════════════════════════
+  // B5：名角 Boss 专属招式（monsterOnly）
+  // B5 之前所有 Boss 共用 `['blood_frenzy','poison_breath']` 两招 —— 白骨精和
+  // 青牛精打起来一模一样，玩家练出来的"针对性打法"毫无意义。
+  // 现在每个名角各有 2 招常态 + 1 招半血狂暴，招式口味也按原著设定走：
+  // 白骨精（魅惑+白骨）、红孩儿（三昧真火）、牛魔王（蛮力）、青牛精（金刚琢）、
+  // 金角（葫芦收人）、百眼魔君（千眼金光）、大鹏（遮天一击）、青狮（吞天）、白象（卷山）。
+  // 倍率同样受档位断言约束，不会因为"是 Boss"就随便越档。
+  // ══════════════════════════════════════════════════════════════════════
+  // ── 白骨精 ──
+  'bg_seduce': {
+    id: 'bg_seduce', name: '魅惑之舞', grade: 2, school: 'art',
+    cost: RAGE_LIGHT, kind: 'strike', power: 1.15, apply: ['sunder'], monsterOnly: true,
+    desc: '一舞惑心，造成 115% 攻击伤害并松懈对手护体',
+  },
+  'bg_bone_claw': {
+    id: 'bg_bone_claw', name: '白骨爪', grade: 3, school: 'fist',
+    cost: RAGE_HEAVY, kind: 'strike', power: 1.7, apply: ['bleed'], monsterOnly: true,
+    desc: '枯爪透体，造成 170% 攻击伤害并使目标流血',
+  },
+  'bg_three_lives': {
+    id: 'bg_three_lives', name: '三戏还魂', grade: 4, school: 'art',
+    cost: RAGE_ULT, kind: 'burst', power: 2.6, drain: 0.25, monsterOnly: true,
+    desc: '三戏轮回，造成 260% 攻击伤害并夺其精气回己身',
+  },
+  // ── 红孩儿 ──
+  'he_smoke': {
+    id: 'he_smoke', name: '烟火迷障', grade: 2, school: 'art',
+    cost: RAGE_LIGHT, kind: 'strike', power: 1.2, apply: ['poison'], monsterOnly: true,
+    desc: '烟熏火燎，造成 120% 攻击伤害并施加中毒',
+  },
+  'he_flame': {
+    id: 'he_flame', name: '三昧真火', grade: 3, school: 'art',
+    cost: RAGE_HEAVY, kind: 'area', power: 1.7, apply: ['bleed'], monsterOnly: true,
+    desc: '真火焚身，造成 170% 攻击伤害并使目标灼血不止',
+  },
+  'he_firecloud': {
+    id: 'he_firecloud', name: '火云漫天', grade: 5, school: 'art',
+    cost: RAGE_ULT, kind: 'area', power: 2.9, apply: ['bleed'], monsterOnly: true,
+    desc: '一洞火云压下，造成 290% 攻击伤害并燃及周身',
+  },
+  // ── 牛魔王 ──
+  'nm_roar': {
+    id: 'nm_roar', name: '牛王怒吼', grade: 2, school: 'body',
+    cost: RAGE_LIGHT, kind: 'strike', power: 1.15, apply: ['rally'], monsterOnly: true,
+    desc: '一声怒吼，造成 115% 攻击伤害并自身进入狂热',
+  },
+  'nm_staff': {
+    id: 'nm_staff', name: '混铁横扫', grade: 3, school: 'blade',
+    cost: RAGE_HEAVY, kind: 'strike', power: 1.85, monsterOnly: true,
+    desc: '万斤铁棍横扫，造成 185% 攻击伤害',
+  },
+  'nm_fury': {
+    id: 'nm_fury', name: '蛮牛践踏', grade: 5, school: 'body',
+    cost: RAGE_ULT, kind: 'burst', power: 3.1, apply: ['sunder'], monsterOnly: true,
+    desc: '一身蛮力踏下，造成 310% 攻击伤害并震裂护体',
+  },
+  // ── 青牛精 ──
+  'qn_charge': {
+    id: 'qn_charge', name: '独角冲撞', grade: 2, school: 'body',
+    cost: RAGE_LIGHT, kind: 'strike', power: 1.25, monsterOnly: true,
+    desc: '低头一撞，造成 125% 攻击伤害',
+  },
+  'qn_ring': {
+    id: 'qn_ring', name: '金刚琢套', grade: 3, school: 'art',
+    cost: RAGE_HEAVY, kind: 'strike', power: 1.7, apply: ['sunder'], monsterOnly: true,
+    desc: '金刚琢一收，造成 170% 攻击伤害并套走对方兵器（破防）',
+  },
+  'qn_devour': {
+    id: 'qn_devour', name: '套尽天下', grade: 5, school: 'art',
+    cost: RAGE_ULT, kind: 'drain', power: 3.0, drain: 0.35, monsterOnly: true,
+    desc: '琢光罩下，造成 300% 攻击伤害并吞其四成精气',
+  },
+  // ── 金角大王 ──
+  'jj_call': {
+    id: 'jj_call', name: '呼名摄魂', grade: 2, school: 'art',
+    cost: RAGE_LIGHT, kind: 'strike', power: 1.2, apply: ['stun'], monsterOnly: true,
+    desc: '一声呼名，造成 120% 攻击伤害并震摄心神',
+  },
+  'jj_gourd': {
+    id: 'jj_gourd', name: '紫金葫芦', grade: 3, school: 'art',
+    cost: RAGE_HEAVY, kind: 'drain', power: 1.7, drain: 0.3, monsterOnly: true,
+    desc: '葫芦一吸，造成 170% 攻击伤害并转其三成精气为己用',
+  },
+  'jj_command': {
+    id: 'jj_command', name: '平顶山号令', grade: 4, school: 'body',
+    cost: RAGE_ULT, kind: 'burst', power: 2.7, apply: ['rally'], monsterOnly: true,
+    desc: '号令群山，造成 270% 攻击伤害并自身狂热',
+  },
+  // ── 百眼魔君 ──
+  'by_glare': {
+    id: 'by_glare', name: '金光灼射', grade: 2, school: 'art',
+    cost: RAGE_LIGHT, kind: 'strike', power: 1.2, apply: ['sunder'], monsterOnly: true,
+    desc: '胁下眼光一射，造成 120% 攻击伤害并灼裂护体',
+  },
+  'by_web': {
+    id: 'by_web', name: '蛛丝缠身', grade: 3, school: 'art',
+    cost: RAGE_HEAVY, kind: 'strike', power: 1.7, apply: ['stun'], monsterOnly: true,
+    desc: '千丝缚身，造成 170% 攻击伤害并缠得对手动弹不得',
+  },
+  'by_dazzle': {
+    id: 'by_dazzle', name: '千眼齐睁', grade: 5, school: 'art',
+    cost: RAGE_ULT, kind: 'area', power: 2.8, apply: ['poison'], monsterOnly: true,
+    desc: '千眼同睁，金光罩定一方，造成 280% 攻击伤害并附剧毒',
+  },
+  // ── 大鹏金翅雕 ──
+  'dp_bottle': {
+    id: 'dp_bottle', name: '阴阳二气', grade: 2, school: 'art',
+    cost: RAGE_LIGHT, kind: 'drain', power: 1.2, drain: 0.3, monsterOnly: true,
+    desc: '瓶中二气一泄，造成 120% 攻击伤害并化其三成精气',
+  },
+  'dp_wing': {
+    id: 'dp_wing', name: '遮天翼展', grade: 3, school: 'body',
+    cost: RAGE_HEAVY, kind: 'strike', power: 1.8, monsterOnly: true,
+    desc: '双翼遮天，造成 180% 攻击伤害',
+  },
+  'dp_dash': {
+    id: 'dp_dash', name: '大鹏一击', grade: 5, school: 'body',
+    cost: RAGE_ULT, kind: 'burst', power: 3.3, monsterOnly: true,
+    desc: '一翼九万里，俯冲直下，造成 330% 攻击伤害',
+  },
+  // ── 青狮精 ──
+  'qs_roar': {
+    id: 'qs_roar', name: '狮吼摄魄', grade: 2, school: 'body',
+    cost: RAGE_LIGHT, kind: 'strike', power: 1.15, apply: ['stun'], monsterOnly: true,
+    desc: '一声狮吼，造成 115% 攻击伤害并摄人心神',
+  },
+  'qs_bite': {
+    id: 'qs_bite', name: '血盆大口', grade: 3, school: 'body',
+    cost: RAGE_HEAVY, kind: 'drain', power: 1.75, drain: 0.25, monsterOnly: true,
+    desc: '张口一咬，造成 175% 攻击伤害并吞其气血',
+  },
+  'qs_swallow': {
+    id: 'qs_swallow', name: '吞天之势', grade: 5, school: 'body',
+    cost: RAGE_ULT, kind: 'burst', power: 2.8, apply: ['rally'], monsterOnly: true,
+    desc: '一钹吞天，造成 280% 攻击伤害并气势暴涨',
+  },
+  // ── 白象精 ──
+  'bx_step': {
+    id: 'bx_step', name: '象步震地', grade: 2, school: 'body',
+    cost: RAGE_LIGHT, kind: 'strike', power: 1.2, apply: ['sunder'], monsterOnly: true,
+    desc: '一步落下，造成 120% 攻击伤害并震松护体',
+  },
+  'bx_trunk': {
+    id: 'bx_trunk', name: '玉鼻横扫', grade: 3, school: 'body',
+    cost: RAGE_HEAVY, kind: 'area', power: 1.75, monsterOnly: true,
+    desc: '长鼻横扫，造成 175% 攻击伤害',
+  },
+  'bx_crush': {
+    id: 'bx_crush', name: '卷山裂岳', grade: 5, school: 'body',
+    cost: RAGE_ULT, kind: 'burst', power: 3.0, apply: ['stun'], monsterOnly: true,
+    desc: '鼻卷山岳一搓，造成 300% 攻击伤害并震晕对手',
+  },
+  // ══ 通用妖类（无专属招式的杂鱼 Boss 用） ══
   'poison_breath': {
     id: 'poison_breath', name: '剧毒吐息', grade: 2, school: 'art',
     cost: RAGE_LIGHT, kind: 'strike', power: 0.95, apply: ['poison'], monsterOnly: true,
@@ -288,3 +441,23 @@ export function passiveEffectsOf(passiveIds: string[] | undefined): ItemEffect[]
 
 /** 玩家的默认武学（无秘籍时的起手三招，全是轻招，开局就能放） */
 export const DEFAULT_HERO_SKILLS = ['power_strike', 'guard_stance', 'drain_strike'];
+
+/**
+ * 无专属招式的普通 Boss 的兜底招式（B5）。
+ * 名角 Boss 各自带 arts / artsPhase2；这条只在怪物没配 arts 时使用，
+ * 保证"随便一只 isBoss 杂鱼"也有妖术可放，不会退化成只会普攻。
+ */
+export const DEFAULT_BOSS_ARTS = ['blood_frenzy', 'poison_breath'];
+
+/** 名角 Boss 的专属招式组（B5 断言用：每个名角都要配齐常态 + 狂暴两套） */
+export const NAMED_BOSS_ARTS: Record<string, { arts: string[]; phase2: string[] }> = {
+  '白骨精': { arts: ['bg_seduce', 'bg_bone_claw'], phase2: ['bg_three_lives', 'bg_bone_claw'] },
+  '红孩儿': { arts: ['he_smoke', 'he_flame'], phase2: ['he_firecloud', 'he_flame'] },
+  '牛魔王': { arts: ['nm_roar', 'nm_staff'], phase2: ['nm_fury', 'nm_staff'] },
+  '青牛精': { arts: ['qn_charge', 'qn_ring'], phase2: ['qn_devour', 'qn_ring'] },
+  '金角大王': { arts: ['jj_call', 'jj_gourd'], phase2: ['jj_command', 'jj_gourd'] },
+  '百眼魔君': { arts: ['by_glare', 'by_web'], phase2: ['by_dazzle', 'by_web'] },
+  '大鹏金翅雕': { arts: ['dp_bottle', 'dp_wing'], phase2: ['dp_dash', 'dp_wing'] },
+  '青狮精': { arts: ['qs_roar', 'qs_bite'], phase2: ['qs_swallow', 'qs_bite'] },
+  '白象精': { arts: ['bx_step', 'bx_trunk'], phase2: ['bx_crush', 'bx_trunk'] },
+};
