@@ -12,13 +12,15 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import type { Combatant } from '../src/types';
 import {
-  DOT_RATIO, RAGE_INIT, addStatus, controlResistRate, dotTotalOf, dotsOf,
+  DOT_RATIO, RAGE_INIT, addStatus, bonusMultOf, controlResistRate, dotTotalOf, dotsOf,
   isStunned, tickStatuses, useMartialArt,
 } from '../src/engine/BattleCore';
 import {
-  DEFAULT_HERO_SKILLS, MAX_ACTIVE_SKILLS, RAGE_HEAVY, RAGE_LIGHT, RAGE_ULT,
-  SKILLS, getSkill,
+  DEFAULT_HERO_SKILLS, MAX_ACTIVE_SKILLS, PASSIVE_SKILLS, RAGE_HEAVY, RAGE_LIGHT, RAGE_ULT,
+  SCHOOL_NAME, SKILLS, SKILL_SCHOOL_IDS, artsBySchool, artsNeedingBook, getSkill, learnableArts,
 } from '../src/data/skills';
+import { ITEM_DEFS } from '../src/data/items/items';
+import { weightedPickByGrade } from '../src/engine/Bounty';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rows: Array<{ name: string; ok: boolean; detail: string }> = [];
@@ -230,6 +232,82 @@ check('技能槽上限由常量统一驱动（无 length>=3 顶替残留）', ()
   return {
     ok: MAX_ACTIVE_SKILLS === 6 && uses >= 3 && guarded === 2 && !leaked,
     detail: `上限 ${MAX_ACTIVE_SKILLS}，store 引用 ${uses} 处，常量顶替 ${guarded}/2，残留硬编码=${leaked}`,
+  };
+});
+
+// ═══ B3：技能库扩容 / 秘籍闭环 / 连携克制 ═══
+
+check('六门类各有 ≥3 招可学武学（门派均衡）', () => {
+  const bySchool = artsBySchool();
+  const counts = SKILL_SCHOOL_IDS.map((id) => `${SCHOOL_NAME[id]} ${bySchool[id].length}`);
+  const bad = SKILL_SCHOOL_IDS.filter((id) => bySchool[id].length < 3);
+  return { ok: bad.length === 0, detail: bad.length === 0 ? counts.join(' / ') : `不足：${bad.join(', ')}` };
+});
+
+check('每个可学武学都有且仅有一本秘籍（无孤儿）', () => {
+  const need = artsNeedingBook();
+  const books = ITEM_DEFS.filter((d) => d.category === 'skillbook');
+  const missing = need.filter((s) => !books.some((b) => b.skillId === s.id));
+  // 反向：秘籍指向的招式必须存在
+  const dangling = books.filter((b) => {
+    const sid = b.skillId;
+    return !sid || (!SKILLS[sid] && !PASSIVE_SKILLS[sid]);
+  });
+  return {
+    ok: missing.length === 0 && dangling.length === 0,
+    detail: missing.length === 0 && dangling.length === 0
+      ? `${need.length} 招武学 ↔ ${books.length} 本秘籍一一对应`
+      : `缺秘籍：${missing.map((s) => s.name).join(', ') || '无'}；空指向：${dangling.map((b) => b.id).join(', ') || '无'}`,
+  };
+});
+
+check('monsterOnly 招式不进玩家武学库', () => {
+  const leak = learnableArts().filter((s) => s.monsterOnly);
+  const pool = Object.values(SKILLS).filter((s) => s.monsterOnly);
+  return {
+    ok: leak.length === 0 && pool.length >= 2,
+    detail: `妖类招式 ${pool.length} 条（${pool.map((s) => s.name).join('、')}），泄漏进武学库 ${leak.length} 条`,
+  };
+});
+
+check('连携/克制加成真的生效（斩魄刀对流血目标）', () => {
+  const skill = getSkill('blade_execute');
+  if (!skill) throw new Error('blade_execute 不存在');
+  const atk = mk();
+  const plain = bonusMultOf(mk(), skill);
+  const bleeding = mk();
+  addStatus(bleeding, 'bleed', 1, 2, 100);
+  const combo = bonusMultOf(bleeding, skill);
+  return { ok: plain === 1 && combo > 1.3, detail: `无流血 ×${plain} → 有流血 ×${combo}（设计 1.4）` };
+});
+
+check('克制加成对大妖生效（撼地拳）', () => {
+  const skill = getSkill('fist_quake');
+  if (!skill) throw new Error('fist_quake 不存在');
+  const boss = mk();
+  boss.isBoss = true;
+  return {
+    ok: bonusMultOf(mk(), skill) === 1 && bonusMultOf(boss, skill) > 1.1,
+    detail: `普通目标 ×${bonusMultOf(mk(), skill)} → 大妖 ×${bonusMultOf(boss, skill)}`,
+  };
+});
+
+check('悬赏掉落按品级加权（每高一阶更稀有）', () => {
+  const pool = ITEM_DEFS.filter((d) => d.source === 'drop');
+  let s = 12345;
+  const rnd = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+  const tally: Record<number, number> = {};
+  const N = 20000;
+  for (let i = 0; i < N; i++) {
+    const it = weightedPickByGrade(pool, rnd);
+    if (it) tally[it.grade] = (tally[it.grade] ?? 0) + 1;
+  }
+  const grades = [...new Set(pool.map((i) => i.grade))].sort((a, b) => a - b);
+  const counts = grades.map((g) => tally[g] ?? 0);
+  const decreasing = counts.every((c, i) => i === 0 || c < counts[i - 1]);
+  return {
+    ok: decreasing && counts.every((c) => c > 0),
+    detail: grades.map((g, i) => `G${g}:${counts[i]}`).join(' / '),
   };
 });
 

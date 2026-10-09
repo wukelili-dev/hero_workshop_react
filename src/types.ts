@@ -941,6 +941,18 @@ export interface SkillDef {
   heal?: number;
   /** 护体：获得最大生命该比例的护盾 */
   shield?: number;
+  /**
+   * B3：仅供怪物 / Boss 使用的招式。
+   * 用显式标记代替"按 id 黑名单排除"——新加一条妖类招式不必再回去改 learnableArts，
+   * 断言也能据此保证「凡是标了 monsterOnly 的，绝不进玩家武学库」。
+   */
+  monsterOnly?: boolean;
+  /**
+   * B3：连携 / 克制加成。满足条件时本次伤害再乘 mult（可叠加）。
+   * 与 lineageFactor 的阵营克制不同，这里针对的是**战斗状态与目标类型**，
+   * 让"先挂流血、再上斩魄刀"这类组合真正成立。
+   */
+  bonus?: Array<{ when: 'targetBleeding' | 'targetPoisoned' | 'targetSundered' | 'targetBoss' | 'targetDemon'; mult: number }>;
 }
 
 /** 装备形态与词条（C4） */

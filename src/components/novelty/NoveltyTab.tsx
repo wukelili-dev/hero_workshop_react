@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { FaGift, FaGem } from 'react-icons/fa6';
+import { FaGift, FaGem, FaBook } from 'react-icons/fa6';
 import { NOVELTY_ITEMS, NOVELTY_RARITY_COLORS, NOVELTY_RARITY_NAMES } from '../../data/inventory';
 import { getItemsBySource } from '../../data/items/items';
+import { PASSIVE_SKILLS, SKILLS } from '../../data/skills';
 import { ItemCard } from '../shared/ItemCard';
 import { useGameStore } from '../../store/useGameStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
@@ -15,6 +16,19 @@ export const NoveltyTab: React.FC = () => {
   const [msg, setMsg] = useState<string | null>(null);
 
   const shopItems = getItemsBySource('shop');
+  // B3：把技能书单独拎出来 —— 之前它们和纯装饰杂货混排，玩家根本看不出"这是本招式秘籍"
+  const shopBooks = shopItems.filter((i) => i.category === 'skillbook');
+  const shopMisc = shopItems.filter((i) => i.category !== 'skillbook');
+
+  /** 秘籍卡片提示：使用后习得哪一招 */
+  const bookHint = (skillId?: string): string => {
+    if (!skillId) return '使用后习得武学';
+    const active = SKILLS[skillId];
+    if (active) return `使用后习得：${active.name}（${active.cost} 怒气）`;
+    const passive = PASSIVE_SKILLS[skillId];
+    if (passive) return `使用后参悟被动：${passive.name}`;
+    return '使用后习得武学';
+  };
 
   const handleBuy = (item: { name: string; price: number }) => {
     if (hero.gold < item.price) {
@@ -57,11 +71,47 @@ export const NoveltyTab: React.FC = () => {
 
       <p className="text-xs text-gray-400">收藏各种稀奇古怪的玩意儿，纯装饰，无实际用途。可出售（80%价格）。</p>
 
+      {/* B3：武学秘籍（使用后习得招式，与杂货分开陈列） */}
+      {shopBooks.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-xs font-bold text-purple-700 flex items-center gap-1"><FaBook /> 武学秘籍</h3>
+          <p className="text-[11px] text-gray-400">购得后进背包，在背包里点「学习」才会入技能槽。</p>
+          {shopBooks.map((item) => {
+            const owned = novelties[item.id] ?? 0;
+            const canAfford = hero.gold >= item.price;
+            return (
+              <ItemCard
+                key={item.id}
+                name={item.name}
+                grade={item.grade}
+                lore={item.lore}
+                effects={item.effects}
+                price={item.price}
+                source={item.source}
+                hint={bookHint(item.skillId)}
+                footer={
+                  <>
+                    {owned > 0 && <span className="text-xs px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded">拥有: {owned}</span>}
+                    <button
+                      onClick={() => { if (!buyItem(item.id)) setMsg('❌ 金币不足'); }}
+                      disabled={!canAfford}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${canAfford ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                    >
+                      购买
+                    </button>
+                  </>
+                }
+              />
+            );
+          })}
+        </div>
+      )}
+
       {/* 名物（带词条，持在背包即生效） */}
-      {shopItems.length > 0 && (
+      {shopMisc.length > 0 && (
         <div className="space-y-2">
           <h3 className="text-xs font-bold text-purple-700 flex items-center gap-1"><FaGem /> 名物·词条生效</h3>
-          {shopItems.map((item) => {
+          {shopMisc.map((item) => {
             const owned = novelties[item.id] ?? 0;
             const canAfford = hero.gold >= item.price;
             return (

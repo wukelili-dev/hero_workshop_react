@@ -41,6 +41,8 @@ export interface ItemCardProps {
   footer?: React.ReactNode;
   /** 未发现时置灰 */
   dimmed?: boolean;
+  /** B3：一行显式提示（技能书用它标注「使用后习得：XX」，避免和纯装饰杂货混排看不清） */
+  hint?: string;
 }
 
 /**
@@ -56,6 +58,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
   source,
   footer,
   dimmed,
+  hint,
 }) => {
   const color = GRADE_COLORS[grade] ?? GRADE_COLORS[0];
   const gradeName = ITEM_GRADE_NAME[grade as ItemGrade] ?? '凡品';
@@ -92,6 +95,12 @@ export const ItemCard: React.FC<ItemCardProps> = ({
       </div>
 
       {lore && <div className="text-xs text-gray-500 mt-1.5 leading-relaxed">{lore}</div>}
+
+      {hint && (
+        <div className="mt-1.5 text-[11px] font-medium" style={{ color: '#6b4a7a' }}>
+          {hint}
+        </div>
+      )}
 
       {effectList.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">

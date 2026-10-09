@@ -179,14 +179,35 @@ export function applyShield(defender: Combatant, dmg: number): number {
 
 /**
  * 一次普通攻击：返回落到血量上的伤害；未命中返回 -1。
- * 命中/受击各累积怒气。
+ * 命中/受击各累积怒气。dmgMult（B4）：蓄力等一次性外部倍率。
  */
-export function strike(attacker: Combatant, defender: Combatant, isCrit: boolean): number {
+export function strike(attacker: Combatant, defender: Combatant, isCrit: boolean, dmgMult = 1): number {
   if (Math.random() > hitRateOf(attacker, defender)) return -1;
-  const hpDmg = applyShield(defender, rollDamage(attacker, defender, isCrit));
+  const raw = Math.max(1, Math.floor(rollDamage(attacker, defender, isCrit) * dmgMult));
+  const hpDmg = applyShield(defender, raw);
   attacker.vars.rage = Math.min(RAGE_MAX, attacker.vars.rage + RAGE_GAIN_ATK);
   defender.vars.rage = Math.min(RAGE_MAX, defender.vars.rage + RAGE_GAIN_HIT);
   return hpDmg;
+}
+
+/**
+ * B3：连携 / 克制加成的实际倍率。
+ * 与阵营克制（lineageFactor）正交：那条看"人/妖/神"循环，这条看**战斗状态与目标类型**，
+ * 于是一套招式组合（先流血、再斩魄刀）能打出比单招更多的价值，而不是各自为战。
+ */
+export function bonusMultOf(defender: Combatant, skill: SkillDef): number {
+  if (!skill.bonus || skill.bonus.length === 0) return 1;
+  let mult = 1;
+  for (const b of skill.bonus) {
+    const hit =
+      (b.when === 'targetBleeding' && hasStatus(defender, 'bleed')) ||
+      (b.when === 'targetPoisoned' && hasStatus(defender, 'poison')) ||
+      (b.when === 'targetSundered' && hasStatus(defender, 'sunder')) ||
+      (b.when === 'targetBoss' && !!defender.isBoss) ||
+      (b.when === 'targetDemon' && defender.lineage === 'demon');
+    if (hit) mult *= b.mult;
+  }
+  return mult;
 }
 
 export interface ArtOutcome {
@@ -198,14 +219,18 @@ export interface ArtOutcome {
   skill: SkillDef;
   /** B1：被目标韧性抵抗掉的状态（日志要如实说明"没挂上"） */
   resisted: StatusEffectId[];
+  /** B3：本次吃到的连携 / 克制倍率（1 = 未触发），日志可提示"连携生效" */
+  bonusMult: number;
 }
 
 /**
  * 释放一招武学：按 kind 结算，支持多段、吸血、回气、护体。
  * 调用方负责扣除怒气（cost）与把 hpDmg 落到目标血量上。
+ * dmgMult（B4）：蓄力 / 队友增益等一次性外部倍率，与 skill.power 相乘。
  */
-export function useMartialArt(attacker: Combatant, defender: Combatant, skill: SkillDef): ArtOutcome {
+export function useMartialArt(attacker: Combatant, defender: Combatant, skill: SkillDef, dmgMult = 1): ArtOutcome {
   const hits = Math.max(1, skill.hits ?? 1);
+  const bonusMult = bonusMultOf(defender, skill);
   let hpDmg = 0;
   let landed = 0;
 
@@ -213,7 +238,7 @@ export function useMartialArt(attacker: Combatant, defender: Combatant, skill: S
     if (Math.random() > hitRateOf(attacker, defender)) continue;
     landed++;
     // power 是总倍率 → 按段数摊分，多段不会直接翻倍
-    const per = rollDamage(attacker, defender, skill.kind === 'burst') * (skill.power / hits);
+    const per = rollDamage(attacker, defender, skill.kind === 'burst') * (skill.power / hits) * dmgMult * bonusMult;
     hpDmg += applyShield(defender, Math.max(1, Math.floor(per)));
   }
 
@@ -244,7 +269,7 @@ export function useMartialArt(attacker: Combatant, defender: Combatant, skill: S
   if (landed > 0) attacker.vars.rage = Math.min(RAGE_MAX, attacker.vars.rage + RAGE_GAIN_ATK);
   defender.vars.rage = Math.min(RAGE_MAX, defender.vars.rage + RAGE_GAIN_HIT);
 
-  return { hpDmg, missed: landed === 0, multihit: landed, healed, shieldGained, skill, resisted };
+  return { hpDmg, missed: landed === 0, multihit: landed, healed, shieldGained, skill, resisted, bonusMult };
 }
 
 /** 玩家已学武学（缺省起手三招） */

@@ -113,6 +113,67 @@ export const SKILLS: Record<string, SkillDef> = {
     cost: RAGE_ULT, kind: 'burst', power: 3.0, hits: 4, apply: ['bleed', 'stun'],
     desc: '四象连击，合计 300% 攻击伤害，血光与雷震齐下',
   },
+  // ══════════════════════════════════════════════════════════════════════
+  // B3：门派补齐 + 连携 / 克制
+  // B3 之前六门类严重失衡：掌法 0 招、拳法只有 1 招，玩家再怎么收集也只有剑/刀可选。
+  // 这一批把六门类都补到 ≥3 招，并引入两条新维度：
+  //   连携 —— 先挂状态、再用对应招式收割（斩魄刀对流血目标、无相劫指对破防目标）
+  //   克制 —— 对特定类型目标额外伤害（撼地拳对大妖）
+  // 倍率严格遵守档位区间（轻 0.85~1.45 / 中 1.5~2.0 / 绝 ≥2.4），由断言把关。
+  // ══════════════════════════════════════════════════════════════════════
+  // ── 掌法（B3 补齐：此前一门全空） ──
+  'palm_shock': {
+    id: 'palm_shock', name: '震山掌', grade: 1, school: 'palm',
+    cost: RAGE_LIGHT, kind: 'strike', power: 1.2, apply: ['sunder'],
+    desc: '掌力沉猛，造成 120% 攻击伤害并震松对手护体真气',
+  },
+  'palm_break': {
+    id: 'palm_break', name: '金刚掌', grade: 2, school: 'palm',
+    cost: RAGE_HEAVY, kind: 'strike', power: 1.75, hits: 2,
+    desc: '两掌连拍，合计 175% 攻击伤害，掌掌透骨',
+  },
+  'palm_void': {
+    id: 'palm_void', name: '无相劫指', grade: 4, school: 'palm',
+    cost: RAGE_ULT, kind: 'burst', power: 2.7, apply: ['stun'],
+    bonus: [{ when: 'targetSundered', mult: 1.3 }],
+    desc: '一指破空，造成 270% 攻击伤害并震得对手动弹不得；对已被破防的目标额外加伤',
+  },
+  // ── 拳法（B3 补齐：此前只有崩山拳） ──
+  'fist_chain': {
+    id: 'fist_chain', name: '连环拳', grade: 1, school: 'fist',
+    cost: RAGE_LIGHT, kind: 'strike', power: 1.1, hits: 3,
+    desc: '三拳连环，合计 110% 攻击伤害；段数多，命中更稳、更易触发附带效果',
+  },
+  'fist_quake': {
+    id: 'fist_quake', name: '撼地拳', grade: 2, school: 'fist',
+    cost: RAGE_HEAVY, kind: 'area', power: 1.8, apply: ['sunder'],
+    bonus: [{ when: 'targetBoss', mult: 1.15 }],
+    desc: '一拳撼地，造成 180% 攻击伤害并震裂护体；对大妖额外加伤',
+  },
+  // ── 刀法（B3 补齐） ──
+  'blade_wave': {
+    id: 'blade_wave', name: '断浪刀', grade: 1, school: 'blade',
+    cost: RAGE_LIGHT, kind: 'area', power: 1.25, apply: ['bleed'],
+    desc: '横刀断浪，造成 125% 攻击伤害并使目标流血',
+  },
+  'blade_execute': {
+    id: 'blade_execute', name: '斩魄刀', grade: 2, school: 'blade',
+    cost: RAGE_HEAVY, kind: 'strike', power: 1.85,
+    bonus: [{ when: 'targetBleeding', mult: 1.4 }],
+    desc: '一刀斩魄，造成 185% 攻击伤害；对正在流血的目标额外加伤（连携）',
+  },
+  // ── 剑法（B3 补齐） ──
+  'sword_qi': {
+    id: 'sword_qi', name: '剑气纵横', grade: 1, school: 'sword',
+    cost: RAGE_LIGHT, kind: 'strike', power: 1.25, hits: 2,
+    desc: '两道剑气交错，合计 125% 攻击伤害',
+  },
+  // ── 术法（B3 补齐） ──
+  'art_frost': {
+    id: 'art_frost', name: '玄冰咒', grade: 2, school: 'art',
+    cost: RAGE_HEAVY, kind: 'strike', power: 1.6, apply: ['sunder'],
+    desc: '寒气冻体，造成 160% 攻击伤害并冻裂护体',
+  },
   // ══ 法宝专属大招（装备名角法宝解锁） ══
   'gourd_devour': {
     id: 'gourd_devour', name: '葫芦吞天', grade: 5, school: 'art',
@@ -139,15 +200,15 @@ export const SKILLS: Record<string, SkillDef> = {
     cost: RAGE_ULT, kind: 'burst', power: 3.5, hits: 2, apply: ['stun'],
     desc: '白象玉鼻横扫，两段合计 350% 攻击伤害并震晕敌方',
   },
-  // ══ 妖类（怪物 / Boss 使用） ══
+  // ══ 妖类（怪物 / Boss 使用；monsterOnly 让 learnableArts 自动排除，玩家永远学不到） ══
   'poison_breath': {
     id: 'poison_breath', name: '剧毒吐息', grade: 2, school: 'art',
-    cost: RAGE_LIGHT, kind: 'strike', power: 0.95, apply: ['poison'],
+    cost: RAGE_LIGHT, kind: 'strike', power: 0.95, apply: ['poison'], monsterOnly: true,
     desc: '造成 95% 攻击伤害并施加中毒',
   },
   'blood_frenzy': {
     id: 'blood_frenzy', name: '血性狂暴', grade: 2, school: 'body',
-    cost: RAGE_HEAVY, kind: 'burst', power: 1.7, apply: ['rally'],
+    cost: RAGE_HEAVY, kind: 'burst', power: 1.7, apply: ['rally'], monsterOnly: true,
     desc: '造成 170% 攻击伤害并进入狂热',
   },
 };
@@ -164,11 +225,40 @@ export const SCHOOL_NAME: Record<NonNullable<SkillDef['school']>, string> = {
   sword: '剑法', blade: '刀法', fist: '拳法', palm: '掌法', body: '体术', art: '术法',
 };
 
-/** 按品级升序列出全部可学武学（不含妖类招式），供秘籍/师门/图鉴使用 */
+/** 按品级升序列出全部可学武学（自动排除 monsterOnly 的妖类/Boss 招式），供秘籍/师门/图鉴使用 */
 export function learnableArts(): SkillDef[] {
   return Object.values(SKILLS)
-    .filter((s) => (s.grade ?? 0) < 6 && s.id !== 'poison_breath' && s.id !== 'blood_frenzy')
+    .filter((s) => (s.grade ?? 0) < 6 && !s.monsterOnly)
     .sort((a, b) => (a.grade ?? 0) - (b.grade ?? 0));
+}
+
+/** 六门类名（断言与界面共用） */
+export const SKILL_SCHOOL_IDS = ['sword', 'blade', 'fist', 'palm', 'body', 'art'] as const;
+
+/** 按门类统计可学武学（B3 门派均衡断言用） */
+export function artsBySchool(): Record<string, SkillDef[]> {
+  const out: Record<string, SkillDef[]> = {};
+  for (const id of SKILL_SCHOOL_IDS) out[id] = [];
+  for (const s of learnableArts()) {
+    if (s.school && out[s.school]) out[s.school].push(s);
+  }
+  return out;
+}
+
+/**
+ * 法宝专属大招 id 集合。
+ * 这些招式由装备法宝注入技能槽，**不配秘籍**——是"收集法宝"的奖励，
+ * 而不是"读书"能拿到的。断言据此区分"需要秘籍的武学"与"法宝附赠"。
+ */
+export const RELIC_ART_IDS: string[] = [
+  'gourd_devour', 'golden_glow', 'ox_charge', 'lion_roar', 'elephant_sweep',
+];
+
+/** 需要秘籍才能学到的武学（可学主动 − 起手三招 − 法宝专属） */
+export function artsNeedingBook(): SkillDef[] {
+  return learnableArts().filter(
+    (s) => !DEFAULT_HERO_SKILLS.includes(s.id) && !RELIC_ART_IDS.includes(s.id),
+  );
 }
 
 // ── 被动技能（C5）：学得后作为「持有类词条」常驻生效，复用 ItemEffects 的全部挂点 ──
