@@ -8,7 +8,9 @@
  *
  * 先手沿用旧口径：速度高者先动手（同速玩家先手）；敌方更快时，会在你出手前先打你一下。
  */
-import type { Combatant, Monster, TeamMember, PrimaryStats, DerivedStats, Equipment } from '../types';
+import type {
+  Combatant, Monster, TeamMember, PrimaryStats, DerivedStats, Equipment, SkillDef, StatusEffectId,
+} from '../types';
 import { buildMonsterDerived } from './Stats';
 import { deriveTeammate } from './NpcStats';
 import { buildHeroCombatant, heroEquipEffects, type HeroStats } from './HeroCombat';
@@ -552,10 +554,26 @@ export function autoResolve(state: BattleState): BattleState {
   return s;
 }
 
+/** 手动战斗里一张武学卡所需的信息（B6：技能卡要显示倍率/段数/附带状态） */
+export interface ArtChoice {
+  id: string;
+  name: string;
+  cost: number;
+  desc: string;
+  ready: boolean;
+  kind: SkillDef['kind'];
+  power: number;
+  hits: number;
+  apply: StatusEffectId[];
+  bonus?: SkillDef['bonus'];
+}
+
 /** 手动战斗：当前能用的选择（怒气不足的武学标 ready=false，UI 直接读它） */
-export function availableArts(state: BattleState): Array<{ id: string; name: string; cost: number; desc: string; ready: boolean }> {
+export function availableArts(state: BattleState): ArtChoice[] {
   return heroArtsOf(state.hero).map((a) => ({
     id: a.id, name: a.name, cost: a.cost ?? RAGE_MAX, desc: a.desc,
     ready: state.hero.vars.rage >= (a.cost ?? RAGE_MAX),
+    kind: a.kind, power: a.power, hits: a.hits ?? 1,
+    apply: a.apply ?? [], bonus: a.bonus,
   }));
 }

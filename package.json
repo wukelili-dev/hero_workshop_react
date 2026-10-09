@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:battle": "jiti scripts/status-check.ts",
+    "check:ui": "vite build --config scripts/vite.ui-check.config.ts && node .tmp-ui-check/ui-render-check.js"
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.12",

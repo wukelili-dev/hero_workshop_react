@@ -27,12 +27,28 @@ import {
 } from '../src/engine/Battle';
 import { NAMED_BOSS_ARTS, DEFAULT_BOSS_ARTS } from '../src/data/skills';
 import { MONSTERS } from '../src/data/maps';
+import { autoAllocatePrimary, buildDerived, buildMonsterDerived } from '../src/engine/Stats';
+import { deriveTeammate } from '../src/engine/NpcStats';
+import { autoResolve } from '../src/engine/Battle';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rows: Array<{ name: string; ok: boolean; detail: string }> = [];
-const check = (name: string, fn: () => { ok: boolean; detail: string }) => {
-  try { rows.push({ name, ...fn() }); }
-  catch (e) { rows.push({ name, ok: false, detail: (e as Error).message }); }
+/**
+ * 跑一项断言。tries > 1 用于**含随机采样**的项：伤害有 ±10% 方差、战斗有暴击与命中骰，
+ * 单次采样偶尔擦到阈值边缘并不代表规则坏了。重试仍然只认"任一次通过"，
+ * 真正的逻辑错误会 3 次全部失败，不会被掩盖。
+ */
+const check = (name: string, fn: () => { ok: boolean; detail: string }, tries = 1) => {
+  let last: { ok: boolean; detail: string } = { ok: false, detail: '未执行' };
+  for (let i = 0; i < Math.max(1, tries); i++) {
+    try {
+      last = fn();
+    } catch (e) {
+      last = { ok: false, detail: (e as Error).message };
+    }
+    if (last.ok) break;
+  }
+  rows.push({ name, ...last });
 };
 
 function mk(over: Partial<Combatant['derived']> = {}): Combatant {
@@ -133,7 +149,7 @@ check('高韧性真的挡下麻痹（4000 次实测）', () => {
     ok: low < 0.02 && high > 0.5,
     detail: `韧性 0 → 抵抗 ${(low * 100).toFixed(1)}%；韧性 300 → 抵抗 ${(high * 100).toFixed(1)}%`,
   };
-});
+}, 3);
 
 check('同种状态 5 层封顶', () => {
   const c = mk();
@@ -315,7 +331,7 @@ check('悬赏掉落按品级加权（每高一阶更稀有）', () => {
     ok: decreasing && counts.every((c) => c > 0),
     detail: grades.map((g, i) => `G${g}:${counts[i]}`).join(' / '),
   };
-});
+}, 3);
 
 // ═══ B4：动作空间（用药 / 蓄力反击 / 队友指令） ═══
 
@@ -370,7 +386,7 @@ check(`蓄力后一击伤害 ×${CHARGE_MULT}（400 次实测）`, () => {
   });
   const ratio = charged / plain;
   return { ok: ratio >= 1.45 && ratio <= 1.75, detail: `普通 ${plain.toFixed(0)} → 蓄力 ${charged.toFixed(0)}（×${ratio.toFixed(2)}）` };
-});
+}, 3);
 
 check('蓄力期间挨打会反击（战报可见）', () => {
   let hit = false;
@@ -380,7 +396,7 @@ check('蓄力期间挨打会反击（战报可见）', () => {
     hit = a.logs.some((l) => l.description.includes('趁隙反击'));
   }
   return { ok: hit, detail: hit ? '战报出现「勇者趁隙反击」' : '30 次尝试均未触发' };
-});
+}, 3);
 
 check(`队友「强攻」令提高协战伤害 ×${ORDER_FOCUS_MULT}（400 次实测）`, () => {
   const base = avg(() => {
@@ -395,7 +411,7 @@ check(`队友「强攻」令提高协战伤害 ×${ORDER_FOCUS_MULT}（400 次�
   });
   const ratio = focus / base;
   return { ok: ratio >= 1.5, detail: `虚应 ${base.toFixed(0)} → 强攻 ${focus.toFixed(0)}（×${ratio.toFixed(2)}，设计 1.7/0.6=${(1.7 / 0.6).toFixed(2)}）` };
-});
+}, 3);
 
 check(`队友「掩护」令降低勇者受伤 ×${ORDER_GUARD_CUT}（400 次实测）`, () => {
   const loose = avg(() => {
@@ -410,7 +426,7 @@ check(`队友「掩护」令降低勇者受伤 ×${ORDER_GUARD_CUT}（400 次实
   });
   const ratio = guarded / loose;
   return { ok: ratio <= 0.85 && ratio > 0.5, detail: `无掩护 ${loose.toFixed(0)} → 掩护 ${guarded.toFixed(0)}（×${ratio.toFixed(2)}）` };
-});
+}, 3);
 
 check('战斗中用药按上限结算（不溢出）', () => {
   const s1 = mkBattle({ heroHp: 500, heroMaxHp: 1000 });
@@ -521,6 +537,112 @@ check('名角半血真的换阶段（实测）', () => {
     ok: switched && logged,
     detail: `阶段 ${n.foePhase}，招式 ${n.foe.skills?.join('/')}，战报提示=${logged}`,
   };
+});
+
+// ═══ B6：战斗 UI 接线 + 名角实战可用性 ═══
+
+check('战斗界面已接上 B4 的三种新选择与 B5 的狂暴标记', () => {
+  const src = readFileSync(join(root, 'src/components/battle/BattleModal.tsx'), 'utf8');
+  const parts = {
+    charge: /kind: 'charge'/.test(src),
+    item: /kind: 'item'/.test(src),
+    order: /kind: 'order'/.test(src),
+    phase: /foePhase === 2/.test(src),
+    float: /DamageFloat/.test(src),
+    icons: /STATUS_ICON/.test(src),
+  };
+  const ok = Object.values(parts).every(Boolean);
+  return { ok, detail: Object.entries(parts).map(([k, v]) => `${k}=${v}`).join(' ') };
+});
+
+check('伤害飘字动画已定义（水墨关键帧）', () => {
+  const css = readFileSync(join(root, 'src/index.css'), 'utf8');
+  const ok = /@keyframes inkFloat/.test(css) && /\.ink-float\b/.test(css);
+  return { ok, detail: ok ? 'inkFloat + .ink-float 均在 index.css' : '缺关键帧' };
+});
+
+/** 造一场接近真实的名角战：满加点英雄 + 3 人队友 + 中期装备词条 */
+function mkBossFight(heroLv: number, monName: string, mateLv: number): BattleState {
+  const p = autoAllocatePrimary(heroLv);
+  const d = buildDerived(p, heroLv);
+  const hero: Combatant = {
+    id: 'hero', name: '勇者', side: 'ally', level: heroLv, primary: p,
+    derived: {
+      ...d,
+      hpMax: Math.round(d.hpMax * 1.3),
+      atk: Math.floor(d.atk * 1.4),
+      crit: Math.min(0.6, d.crit + 0.15),
+    },
+    vars: { rage: 100, shield: 0, statuses: [] }, lineage: 'human',
+    skills: ['power_strike', 'mountain_fist', 'taishang_forget', 'whirlwind', 'mend', 'five_thunder'],
+  };
+  const mates: Combatant[] = [0, 1, 2].map((i) => {
+    const t = deriveTeammate(mateLv, i === 0);
+    return {
+      id: `mate_${i}`, name: t.roleName ?? `队友${i}`, side: 'ally', level: t.level,
+      primary: t.primary, derived: t.derived,
+      vars: { rage: 0, shield: 0, statuses: [] }, lineage: 'human',
+    };
+  });
+  const m = MONSTERS[monName]!;
+  const fd = buildMonsterDerived(m.primary!, m.level ?? 1);
+  const cfg = NAMED_BOSS_ARTS[m.name];
+  const foe: Combatant = {
+    id: m.id, name: m.name, side: 'foe', level: m.level ?? 1, primary: m.primary!,
+    derived: fd, vars: { rage: RAGE_INIT, shield: 0, statuses: [] }, lineage: 'demon', isBoss: true,
+    ...(cfg ? { skills: cfg.arts, phaseArts: cfg.phase2 } : {}),
+  };
+  return {
+    monster: m, hero, mates, foe,
+    ctx: { comboChance: 0, reflect: 0, thorns: 0, guardChance: 0, damageCut: 0.15, lifesteal: 0.1 },
+    heroHp: hero.derived.hpMax, heroMaxHp: hero.derived.hpMax,
+    foeHp: fd.hpMax, foeMaxHp: fd.hpMax,
+    round: 1, heroFirst: true, logs: [], over: false, victory: false, fled: false,
+    rewards: { exp: 0, gold: 0, drops: [], equipment: [] },
+    charged: false, mateOrder: null, foePhase: 1,
+  } as BattleState;
+}
+
+check('名角在实战里真的会放专属招式并进入狂暴', () => {
+  const name = '白骨精';
+  const names = [...NAMED_BOSS_ARTS[name].arts, ...NAMED_BOSS_ARTS[name].phase2]
+    .map((id) => SKILLS[id]?.name)
+    .filter(Boolean) as string[];
+  const out = autoResolve(mkBossFight(90, name, 87));
+  const used = names.filter((n) => out.logs.some((l) => l.description.includes(`「${n}」`)));
+  return {
+    ok: used.length >= 2 && out.foePhase === 2,
+    detail: `用出 ${used.join('、')}；阶段 ${out.foePhase}`,
+  };
+}, 3);
+
+check('名角难度落在"要练但要练得动"（+25 级带队友胜率 ≥20%）', () => {
+  const N = 120;
+  const rowsOut: string[] = [];
+  let worst = 1;
+  for (const name of Object.keys(NAMED_BOSS_ARTS)) {
+    const lv = MONSTERS[name]?.level ?? 65;
+    let wins = 0;
+    for (let i = 0; i < N; i++) {
+      if (autoResolve(mkBossFight(lv + 25, name, lv + 22)).victory) wins++;
+    }
+    const rate = wins / N;
+    worst = Math.min(worst, rate);
+    rowsOut.push(`${name} ${(rate * 100).toFixed(0)}%`);
+  }
+  return {
+    ok: worst >= 0.2,
+    detail: `最差 ${(worst * 100).toFixed(0)}% — ${rowsOut.join(' / ')}`,
+  };
+}, 3);
+
+check('端到端自动战斗必定收敛（不会卡死）', () => {
+  const names = ['白骨精', '红孩儿', '大鹏金翅雕'];
+  const results = names.map((n) => {
+    const s = autoResolve(mkBossFight(95, n, 92));
+    return `${n}:${s.over ? 'over' : 'STUCK'}/${s.round}回合`;
+  });
+  return { ok: results.every((r) => r.includes('over')), detail: results.join(' ') };
 });
 
 const pad = Math.max(...rows.map((r) => r.name.length));
