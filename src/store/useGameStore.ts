@@ -15,7 +15,7 @@ import { sum as sumEffect } from '../engine/ItemEffects';
 import { getItemDef } from '../data/items/items';
 import { getWeaponFormByName, getArmorFormByName } from '../data/equipment';
 import { formSetId } from '../data/equipmentForms';
-import { SKILLS, PASSIVE_SKILLS, DEFAULT_HERO_SKILLS } from '../data/skills';
+import { SKILLS, PASSIVE_SKILLS, DEFAULT_HERO_SKILLS, MAX_ACTIVE_SKILLS } from '../data/skills';
 import { FREE_POINTS_PER_LEVEL, PRIMARY_NAME, LEVEL_BASE_ATK, LEVEL_BASE_DEF, LEVEL_BASE_HP } from '../engine/Stats';
 import { syncHeroDerived } from '../engine/HeroCombat';
 import type { PrimaryStats } from '../types';
@@ -632,7 +632,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     let skills = hero.skills ?? [...DEFAULT_HERO_SKILLS];
     if (w.skillId && SKILLS[w.skillId] && !skills.includes(w.skillId)) {
       const next = [...skills];
-      if (next.length >= 3) next.shift();
+      if (next.length >= MAX_ACTIVE_SKILLS) next.shift();
       next.push(w.skillId);
       skills = next;
       get().addGameLog(`法宝「${w.name}」附灵，习得大招「${SKILLS[w.skillId].name}」`);
@@ -681,7 +681,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     let skills = hero.skills ?? [...DEFAULT_HERO_SKILLS];
     if (a.skillId && SKILLS[a.skillId] && !skills.includes(a.skillId)) {
       const next = [...skills];
-      if (next.length >= 3) next.shift();
+      if (next.length >= MAX_ACTIVE_SKILLS) next.shift();
       next.push(a.skillId);
       skills = next;
       get().addGameLog(`法宝「${a.name}」附灵，习得大招「${SKILLS[a.skillId].name}」`);
@@ -736,7 +736,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const def = getItemDef(itemId);
     if (!def) return false;
 
-    // C5：技能书 —— 主动技能进技能槽（上限 3，满则替换），被动技能进 passives
+    // C5：技能书 —— 主动技能进技能槽（上限 MAX_ACTIVE_SKILLS，满则替换），被动技能进 passives
     if (def.category === 'skillbook') {
       const sid = def.skillId;
       if (!sid) return false;
@@ -762,13 +762,13 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       }
       let next = [...current];
       let replaced: string | undefined;
-      if (next.length >= 3) replaced = next.shift();
+      if (next.length >= MAX_ACTIVE_SKILLS) replaced = next.shift();
       next.push(sid);
       set((s) => ({ hero: { ...s.hero, skills: next } }));
       get().addGameLog(
         replaced
-          ? `习得「${SKILLS[sid].name}」，技能槽已满，顶替「${SKILLS[replaced]?.name ?? replaced}」`
-          : `习得「${SKILLS[sid].name}」`,
+          ? `习得「${SKILLS[sid].name}」，技能槽已满（${MAX_ACTIVE_SKILLS} 个），顶替「${SKILLS[replaced]?.name ?? replaced}」`
+          : `习得「${SKILLS[sid].name}」（技能槽 ${next.length}/${MAX_ACTIVE_SKILLS}）`,
       );
       return true;
     }

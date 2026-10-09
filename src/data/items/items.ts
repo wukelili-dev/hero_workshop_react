@@ -6,7 +6,7 @@
 import type { ItemDef } from '../../types';
 
 export const ITEM_DEFS: ItemDef[] = [
-  // ── 技能书（C5）：使用后学会对应技能，占用技能槽（上限 3） ──
+  // ── 技能书（C5）：使用后学会对应技能，占用技能槽（上限见 data/skills 的 MAX_ACTIVE_SKILLS） ──
   // 高级武学秘籍（C8）：品级越高，招式的倍率/段数/附加效果越强
   { id: 'book_falling_petals', name: '落英剑法·剑谱', grade: 2, category: 'skillbook', price: 700, source: 'shop', skillId: 'falling_petals', effects: [], lore: '剑谱上画满飘落的桃花，每一片都是一剑。' },
   { id: 'book_mountain_fist', name: '崩山拳·拳经', grade: 2, category: 'skillbook', price: 0, source: 'drop', skillId: 'mountain_fist', effects: [], lore: '拳经开篇只有四字：拳出山崩。' },

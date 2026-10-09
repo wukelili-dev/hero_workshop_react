@@ -8,7 +8,8 @@ import React, { useEffect, useRef } from 'react';
 import { FaBolt, FaHeart } from 'react-icons/fa6';
 import { useBattleStore } from '../../store/useBattleStore';
 import { availableArts, type BattleState } from '../../engine/Battle';
-import { STATUS_NAME, controlResistRate, isStunned } from '../../engine/BattleCore';
+import { RAGE_MAX, STATUS_NAME, controlResistRate, isStunned } from '../../engine/BattleCore';
+import { RAGE_HEAVY, RAGE_LIGHT, RAGE_ULT } from '../../data/skills';
 
 const pct = (v: number, max: number) => `${Math.max(0, Math.min(100, (v / Math.max(1, max)) * 100)).toFixed(1)}%`;
 
@@ -47,6 +48,15 @@ export const BattleModal: React.FC = () => {
   const arts = availableArts(battle);
   const rage = battle.hero.vars.rage;
   const stunned = isStunned(battle.hero);
+
+  // B2：按怒气档位分组展示 —— 一眼看清"哪些现在能放、哪些还差多少"
+  const tiered = [
+    { cost: RAGE_LIGHT, label: '轻招' },
+    { cost: RAGE_HEAVY, label: '中招' },
+    { cost: RAGE_ULT, label: '绝招' },
+  ]
+    .map((t) => ({ ...t, list: arts.filter((a) => a.cost === t.cost) }))
+    .filter((t) => t.list.length > 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3f3527]/45 p-3">
@@ -116,22 +126,29 @@ export const BattleModal: React.FC = () => {
             <div className="mb-1 flex items-center gap-2">
               <span className="ink-title text-[11px]">武学</span>
               <span className="ink-rule flex-1" />
-              <span className="text-[10px] text-[#9c917b]">怒气满 100 可释放</span>
+              <span className="text-[10px] text-[#9c917b]">
+                怒气 {Math.round(rage)}/{RAGE_MAX} · 出手 +15、受击 +10、防御 +20
+              </span>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {arts.map((a) => (
-                <button
-                  key={a.id}
-                  type="button"
-                  disabled={!a.ready || stunned}
-                  onClick={() => act({ kind: 'art', artId: a.id })}
-                  title={a.desc}
-                  className={`ink-btn px-2 py-1 text-xs ${a.ready && !stunned ? '' : 'opacity-40'}`}
-                >
-                  {a.name}
-                </button>
-              ))}
-            </div>
+            {tiered.map((t) => (
+              <div key={t.cost} className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                <span className={`w-11 shrink-0 text-[10px] ${rage >= t.cost ? 'text-[#b08a2e]' : 'text-[#9c917b]'}`}>
+                  {t.label} {t.cost}
+                </span>
+                {t.list.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    disabled={!a.ready || stunned}
+                    onClick={() => act({ kind: 'art', artId: a.id })}
+                    title={a.desc}
+                    className={`ink-btn px-2 py-1 text-xs ${a.ready && !stunned ? '' : 'opacity-40'}`}
+                  >
+                    {a.name}
+                  </button>
+                ))}
+              </div>
+            ))}
             <div className="mt-2 flex flex-wrap gap-1.5">
               <button type="button" disabled={stunned} className="ink-btn-seal px-3 py-1 text-xs disabled:opacity-40" onClick={() => act({ kind: 'attack' })}>
                 普通攻击

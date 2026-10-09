@@ -14,7 +14,7 @@ import { AnimatedNumber } from '../../hooks/useCountUp';
 import { FaHeart, FaBolt, FaShield, FaStar } from 'react-icons/fa6';
 import { heroBattlePreview, heroBasePrimaryOf, heroGearPrimary } from '../../engine/HeroCombat';
 import { sum as sumEffect, sumList } from '../../engine/ItemEffects';
-import { getSkill, DEFAULT_HERO_SKILLS } from '../../data/skills';
+import { getSkill, DEFAULT_HERO_SKILLS, MAX_ACTIVE_SKILLS } from '../../data/skills';
 import type { ItemEffect, PrimaryStats } from '../../types';
 
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
@@ -192,9 +192,13 @@ export const HeroInfoPanel: React.FC = () => {
               {label} <b className="text-[#3f3527]">{value}</b>
             </span>
           ))}
+          {skills.length > 0 && (
+            <span className="text-[10px] text-[#9c917b]">武学 {skills.length}/{MAX_ACTIVE_SKILLS}</span>
+          )}
           {skills.map((s) => (
-            <span key={s.id} className="ink-tag" title={s.desc}>
+            <span key={s.id} className="ink-tag" title={`${s.desc}（怒气 ${s.cost}）`}>
               {s.name}
+              <b className="ml-0.5 text-[#b08a2e]">{s.cost}</b>
             </span>
           ))}
         </div>

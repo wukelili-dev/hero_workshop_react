@@ -85,7 +85,7 @@ export interface HeroState {
   weapon: Equipment | null;
   armor: Equipment | null;
   passives: string[];
-  /** 已装配的技能（技能槽，上限 3）；缺省用 DEFAULT_HERO_SKILLS */
+  /** 已装配的技能（技能槽，上限见 data/skills 的 MAX_ACTIVE_SKILLS）；缺省用 DEFAULT_HERO_SKILLS */
   skills?: string[];
   /** 玩家自由加点（升级获得点数）；缺省 {} */
   allocated?: Partial<PrimaryStats>;

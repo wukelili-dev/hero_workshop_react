@@ -16,7 +16,7 @@ import { generateDrop } from './equipmentDrops';
 import { buildRelicEquipment } from '../data/relics';
 import { useGameStore } from '../store/useGameStore';
 import {
-  RAGE_MAX, STATUS_NAME, addStatus, battleCtxFrom, bossArtsOf, checkCrit, dotsOf,
+  RAGE_MAX, RAGE_INIT, STATUS_NAME, addStatus, battleCtxFrom, bossArtsOf, checkCrit, dotsOf,
   heroArtsOf, isStunned, rollDamage, speedOf, strike, tickStatuses, useMartialArt, type BattleCtx,
 } from './BattleCore';
 
@@ -141,6 +141,10 @@ export function createBattle(heroStats: HeroStats, team: TeamMember[], monster: 
   const mates = (team ?? []).map((m, i) => teammateCombatant(m, i));
   const heroHp = Math.max(1, Math.min(heroStats.hp, heroC.derived.hpMax));
   const heroFirst = speedOf(heroC) >= speedOf(foeC);
+
+  // B2：开局怒气 —— 轻招只要 40 点，起手 25 点意味着第二回合就能发招
+  heroC.vars.rage = RAGE_INIT;
+  foeC.vars.rage = RAGE_INIT;
 
   const state: BattleState = {
     monster, hero: heroC, mates, foe: foeC,

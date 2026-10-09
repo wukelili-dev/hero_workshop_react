@@ -14,6 +14,8 @@ import { getSkill, DEFAULT_HERO_SKILLS } from '../data/skills';
 export const RAGE_MAX = 100;
 export const RAGE_GAIN_ATK = 15;
 export const RAGE_GAIN_HIT = 10;
+/** B2：开局怒气 —— 双方起手就带一点底子，第一回合便有招可选，不必先空转三轮攒怒 */
+export const RAGE_INIT = 25;
 
 /** 战斗上下文：来自装备/名物的那些"每次受击/出手才结算"的词条 */
 export interface BattleCtx {

@@ -1,9 +1,9 @@
 /**
- * 战斗状态断言（B1）
+ * 战斗状态与怒气分档断言（B1 / B2）
  *
- * 为什么要有这个脚本：状态是"看不见的规则"——界面只显示一个标签，结算错了肉眼
- * 完全发现不了（B1 之前流血/中毒就是不掉血的装饰）。这里用 jiti 直接 import 真引擎
- * 跑数字，不复制公式，改坏了立刻红。
+ * 为什么要有这个脚本：状态与怒气是"看不见的规则"——界面只显示一个标签，结算错了
+ * 肉眼完全发现不了（B1 之前流血/中毒就是不掉血的装饰；B2 之前所有招都是一刀切 100 怒气）。
+ * 这里用 jiti 直接 import 真引擎跑数字，不复制公式，改坏了立刻红。
  *
  * 用法：npx jiti scripts/status-check.ts
  */
@@ -12,10 +12,13 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import type { Combatant } from '../src/types';
 import {
-  DOT_RATIO, addStatus, controlResistRate, dotTotalOf, dotsOf,
+  DOT_RATIO, RAGE_INIT, addStatus, controlResistRate, dotTotalOf, dotsOf,
   isStunned, tickStatuses, useMartialArt,
 } from '../src/engine/BattleCore';
-import { getSkill } from '../src/data/skills';
+import {
+  DEFAULT_HERO_SKILLS, MAX_ACTIVE_SKILLS, RAGE_HEAVY, RAGE_LIGHT, RAGE_ULT,
+  SKILLS, getSkill,
+} from '../src/data/skills';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rows: Array<{ name: string; ok: boolean; detail: string }> = [];
@@ -152,10 +155,104 @@ check('回合流程已接入 DOT 与麻痹（接线断言）', () => {
   };
 });
 
+// ═══ B2：怒气分档 / 技能槽 ═══
+
+const TIERS = [
+  { cost: RAGE_LIGHT, label: '轻招' },
+  { cost: RAGE_HEAVY, label: '中招' },
+  { cost: RAGE_ULT, label: '绝招' },
+];
+const isOffensive = (s: { kind: string }) => s.kind !== 'guard' && s.kind !== 'support';
+
+check('所有武学怒气消耗只有 40 / 70 / 100 三档', () => {
+  const allowed = TIERS.map((t) => t.cost);
+  const bad = Object.values(SKILLS).filter((s) => !allowed.includes(s.cost));
+  return {
+    ok: bad.length === 0,
+    detail: bad.length === 0
+      ? `${Object.keys(SKILLS).length} 条全部落档`
+      : `越档：${bad.map((s) => `${s.name}(${s.cost})`).join(', ')}`,
+  };
+});
+
+check('三档都有技能，且玩家可用轻招 ≥ 5', () => {
+  const count = (c: number) => Object.values(SKILLS).filter((s) => s.cost === c).length;
+  const playableLight = Object.values(SKILLS)
+    .filter((s) => s.cost === RAGE_LIGHT && !['poison_breath', 'blood_frenzy'].includes(s.id)).length;
+  const ok = TIERS.every((t) => count(t.cost) >= 3) && playableLight >= 5;
+  return { ok, detail: `${TIERS.map((t) => `${t.label} ${count(t.cost)}`).join(' / ')}；玩家可用轻招 ${playableLight}` };
+});
+
+check('轻招倍率 0.85~1.45（不能弱过普攻或强过中招）', () => {
+  const lights = Object.values(SKILLS).filter((s) => s.cost === RAGE_LIGHT && isOffensive(s));
+  const bad = lights.filter((s) => s.power < 0.85 || s.power > 1.45);
+  return {
+    ok: bad.length === 0,
+    detail: bad.length === 0
+      ? `${lights.length} 个攻击型轻招合规（${Math.min(...lights.map((s) => s.power))}~${Math.max(...lights.map((s) => s.power))}）`
+      : `越界：${bad.map((s) => `${s.name}(${s.power})`).join(', ')}`,
+  };
+});
+
+check('中招倍率 1.5~2.0', () => {
+  const heavies = Object.values(SKILLS).filter((s) => s.cost === RAGE_HEAVY && isOffensive(s));
+  const bad = heavies.filter((s) => s.power < 1.5 || s.power > 2.0);
+  return {
+    ok: bad.length === 0,
+    detail: bad.length === 0 ? `${heavies.length} 个中招合规` : `越界：${bad.map((s) => `${s.name}(${s.power})`).join(', ')}`,
+  };
+});
+
+check('绝招倍率至少是轻招峰值的 1.8 倍（档位差距成立）', () => {
+  const off = (c: number) => Object.values(SKILLS).filter((s) => s.cost === c && isOffensive(s));
+  const maxLight = Math.max(...off(RAGE_LIGHT).map((s) => s.power));
+  const minUlt = Math.min(...off(RAGE_ULT).map((s) => s.power));
+  return { ok: minUlt >= maxLight * 1.8, detail: `绝招最低 ${minUlt} vs 轻招最高 ${maxLight}（比值 ${(minUlt / maxLight).toFixed(2)}）` };
+});
+
+check('默认起手三招全是轻招（开局第一回合就有招可放）', () => {
+  const costs = DEFAULT_HERO_SKILLS.map((id) => getSkill(id)?.cost);
+  return { ok: costs.every((c) => c === RAGE_LIGHT), detail: `破军斩/铁壁/噬血 怒气 = ${costs.join(' / ')}` };
+});
+
+check('开局怒气已接入（不会先空转三轮）', () => {
+  const src = readFileSync(join(root, 'src/engine/Battle.ts'), 'utf8');
+  const wired = /heroC\.vars\.rage = RAGE_INIT/.test(src) && /foeC\.vars\.rage = RAGE_INIT/.test(src);
+  return { ok: RAGE_INIT >= 25 && wired, detail: `RAGE_INIT=${RAGE_INIT}，双方接入=${wired}` };
+});
+
+check('技能槽上限由常量统一驱动（无 length>=3 顶替残留）', () => {
+  const store = readFileSync(join(root, 'src/store/useGameStore.ts'), 'utf8');
+  const uses = (store.match(/MAX_ACTIVE_SKILLS/g) || []).length;
+  // 顶替逻辑出现在两个地方：技能书学习 + 法宝大招注入，两处都必须走常量
+  const guarded = (store.match(/MAX_ACTIVE_SKILLS\) next\.shift\(\)/g) || []).length;
+  const leaked = /length >= 3\) next\.shift\(\)/.test(store);
+  return {
+    ok: MAX_ACTIVE_SKILLS === 6 && uses >= 3 && guarded === 2 && !leaked,
+    detail: `上限 ${MAX_ACTIVE_SKILLS}，store 引用 ${uses} 处，常量顶替 ${guarded}/2，残留硬编码=${leaked}`,
+  };
+});
+
 const pad = Math.max(...rows.map((r) => r.name.length));
 console.log('检查项'.padEnd(pad) + ' | 结果');
 console.log('-'.repeat(pad) + '-|------');
 for (const r of rows) console.log(`${(r.ok ? '✓ ' : '✗ ') + r.name}`.padEnd(pad + 2) + `| ${r.detail}`);
+// ── 附：档位收益对照（信息输出，不参与判定）──
+// 设计意图：三档的「每点怒气效率」刻意保持接近，档位差异体现在释放频率与附带效果上，
+// 而不是逼玩家只放大招——否则轻招又会沦为没人点的按钮。
+console.log('怒气档位     | 攻击型技能数 | 倍率区间      | 每点怒气效率');
+console.log('-------------|--------------|---------------|--------------');
+for (const t of TIERS) {
+  const list = Object.values(SKILLS).filter((s) => s.cost === t.cost && isOffensive(s));
+  const lo = Math.min(...list.map((s) => s.power));
+  const hi = Math.max(...list.map((s) => s.power));
+  console.log(
+    `${t.label} ${t.cost}`.padEnd(13)
+    + `| ${String(list.length).padEnd(13)}| ${`${lo} ~ ${hi}`.padEnd(14)}| ${(lo / t.cost).toFixed(3)} ~ ${(hi / t.cost).toFixed(3)}`,
+  );
+}
+console.log('');
+
 const failed = rows.filter((r) => !r.ok);
 console.log('');
 console.log(failed.length === 0 ? `全部通过（${rows.length} 项）` : `${failed.length}/${rows.length} 项未通过`);
